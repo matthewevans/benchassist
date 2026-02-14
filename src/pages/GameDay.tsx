@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
+import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
+import { PeriodTimer } from '@/components/game/PeriodTimer.tsx';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { Player, PlayerId, Game } from '@/types/domain.ts';
 
@@ -20,8 +23,12 @@ export function GameDay() {
   const roster = team?.rosters.find((r) => r.id === game?.rosterId);
   const config = team?.gameConfigs.find((c) => c.id === game?.gameConfigId);
   const schedule = game?.schedule;
+  const currentRotation = schedule?.rotations[game?.currentRotationIndex ?? 0];
 
-  if (!game || !schedule || !roster || !config) {
+  // Hook must be called before any early returns (rules of hooks)
+  const timer = usePeriodTimer(game, config, currentRotation, dispatch);
+
+  if (!game || !schedule || !roster || !config || !currentRotation) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Game not found</p>
@@ -30,7 +37,6 @@ export function GameDay() {
     );
   }
 
-  const currentRotation = schedule.rotations[game.currentRotationIndex];
   const nextRotation = schedule.rotations[game.currentRotationIndex + 1];
   const isLastRotation = game.currentRotationIndex >= schedule.rotations.length - 1;
   const isCompleted = game.status === 'completed';
@@ -69,23 +75,49 @@ export function GameDay() {
     dispatch({ type: 'ADVANCE_ROTATION', payload: gameId });
   }
 
-  function handleRemovePlayer(playerId: PlayerId) {
-    if (!gameId || !game || !roster || !config) return;
-    const player = playerMap.get(playerId);
-    if (!player || !confirm(`Remove ${player.name} from the game?`)) return;
+  const [removingPlayerId, setRemovingPlayerId] = useState<PlayerId | null>(null);
+  const removingPlayer = removingPlayerId ? playerMap.get(removingPlayerId) : undefined;
 
-    dispatch({ type: 'REMOVE_PLAYER_FROM_GAME', payload: { gameId, playerId } });
+  function handleConfirmRemovePlayer() {
+    if (!gameId || !game || !roster || !config || !schedule || !removingPlayerId) return;
 
-    const remainingPlayers = activePlayers.filter((p) => p.id !== playerId);
+    dispatch({ type: 'REMOVE_PLAYER_FROM_GAME', payload: { gameId, playerId: removingPlayerId } });
+
+    const remainingPlayers = activePlayers.filter((p) => p.id !== removingPlayerId);
     solver.solve({
       players: remainingPlayers,
       config,
-      absentPlayerIds: [...game.absentPlayerIds, playerId, ...game.removedPlayerIds],
+      absentPlayerIds: [...game.absentPlayerIds, removingPlayerId, ...game.removedPlayerIds],
       goalieAssignments: game.goalieAssignments,
       manualOverrides: [],
       startFromRotation: game.currentRotationIndex,
+      existingRotations: schedule.rotations,
+    });
+    setRemovingPlayerId(null);
+  }
+
+  function handleAddPlayerBack(playerId: PlayerId) {
+    if (!gameId || !game || !roster || !config || !schedule) return;
+
+    dispatch({ type: 'ADD_PLAYER_TO_GAME', payload: { gameId, playerId } });
+
+    const returningPlayer = roster.players.find((p) => p.id === playerId);
+    if (!returningPlayer) return;
+
+    const updatedPlayers = [...activePlayers, returningPlayer];
+    const updatedRemoved = game.removedPlayerIds.filter((id) => id !== playerId);
+    solver.solve({
+      players: updatedPlayers,
+      config,
+      absentPlayerIds: [...game.absentPlayerIds, ...updatedRemoved],
+      goalieAssignments: game.goalieAssignments,
+      manualOverrides: [],
+      startFromRotation: game.currentRotationIndex,
+      existingRotations: schedule.rotations,
     });
   }
+
+  const removedPlayers = roster.players.filter((p) => game.removedPlayerIds.includes(p.id));
 
   function handleEndGame() {
     if (!gameId || !game) return;
@@ -156,15 +188,8 @@ export function GameDay() {
         </Button>
       </div>
 
-      {/* Rotation progress */}
-      <div className="w-full bg-secondary rounded-full h-2">
-        <div
-          className="bg-primary h-2 rounded-full transition-all"
-          style={{
-            width: `${((game.currentRotationIndex + 1) / schedule.rotations.length) * 100}%`,
-          }}
-        />
-      </div>
+      {/* Period timer with substitution markers */}
+      <PeriodTimer timer={timer} />
 
       {/* Current rotation */}
       <Card>
@@ -188,7 +213,7 @@ export function GameDay() {
                       variant="ghost"
                       size="sm"
                       className="h-6 text-xs text-destructive"
-                      onClick={() => handleRemovePlayer(p.id)}
+                      onClick={() => setRemovingPlayerId(p.id)}
                     >
                       Remove
                     </Button>
@@ -207,7 +232,7 @@ export function GameDay() {
                     variant="ghost"
                     size="sm"
                     className="h-6 text-xs text-destructive"
-                    onClick={() => handleRemovePlayer(p.id)}
+                    onClick={() => setRemovingPlayerId(p.id)}
                   >
                     Remove
                   </Button>
@@ -226,7 +251,7 @@ export function GameDay() {
                       variant="ghost"
                       size="sm"
                       className="h-6 text-xs text-destructive"
-                      onClick={() => handleRemovePlayer(p.id)}
+                      onClick={() => setRemovingPlayerId(p.id)}
                     >
                       Remove
                     </Button>
@@ -237,6 +262,30 @@ export function GameDay() {
           )}
         </CardContent>
       </Card>
+
+      {/* Removed players */}
+      {removedPlayers.length > 0 && (
+        <Card className="border-dashed">
+          <CardContent className="py-3">
+            <p className="text-xs font-medium text-muted-foreground mb-2">REMOVED</p>
+            <div className="flex flex-wrap gap-2">
+              {removedPlayers.map((p) => (
+                <div key={p.id} className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-base py-1 px-3 opacity-50 line-through">{p.name}</Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-primary"
+                    onClick={() => handleAddPlayerBack(p.id)}
+                  >
+                    Add back
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Next rotation preview */}
       {nextRotation && (
@@ -290,6 +339,16 @@ export function GameDay() {
           View full rotation grid
         </Link>
       </div>
+
+      <ConfirmDialog
+        open={removingPlayerId !== null}
+        onConfirm={handleConfirmRemovePlayer}
+        onCancel={() => setRemovingPlayerId(null)}
+        title={`Remove ${removingPlayer?.name ?? 'player'}?`}
+        description="They will be removed from remaining rotations. The schedule will be recalculated."
+        confirmLabel="Remove"
+        variant="destructive"
+      />
     </div>
   );
 }

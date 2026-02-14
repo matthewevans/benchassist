@@ -43,7 +43,10 @@ export type AppAction =
   | { type: 'SET_GAME_SCHEDULE'; payload: { gameId: GameId; schedule: RotationSchedule } }
   | { type: 'ADVANCE_ROTATION'; payload: GameId }
   | { type: 'REMOVE_PLAYER_FROM_GAME'; payload: { gameId: GameId; playerId: PlayerId } }
-  | { type: 'ADD_PLAYER_TO_GAME'; payload: { gameId: GameId; playerId: PlayerId } };
+  | { type: 'ADD_PLAYER_TO_GAME'; payload: { gameId: GameId; playerId: PlayerId } }
+  | { type: 'START_PERIOD_TIMER'; payload: { gameId: GameId; startedAt: number } }
+  | { type: 'PAUSE_PERIOD_TIMER'; payload: { gameId: GameId; pausedElapsed: number } }
+  | { type: 'RESET_PERIOD_TIMER'; payload: { gameId: GameId } };
 
 // --- Reducer ---
 
@@ -191,7 +194,14 @@ function appReducer(state: AppState, action: AppAction): AppState {
       case 'ADVANCE_ROTATION':
         if (draft.games[action.payload]) {
           const game = draft.games[action.payload];
+          const prevPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
           game.currentRotationIndex += 1;
+          const nextPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
+          // Reset period timer when entering a new period
+          if (prevPeriod !== nextPeriod) {
+            game.periodTimerStartedAt = null;
+            game.periodTimerPausedElapsed = 0;
+          }
           if (game.schedule && game.currentRotationIndex >= game.schedule.rotations.length) {
             game.status = 'completed';
             game.completedAt = Date.now();
@@ -212,6 +222,28 @@ function appReducer(state: AppState, action: AppAction): AppState {
           game.absentPlayerIds = game.absentPlayerIds.filter(
             (id) => id !== action.payload.playerId,
           );
+        }
+        break;
+
+      case 'START_PERIOD_TIMER':
+        if (draft.games[action.payload.gameId]) {
+          draft.games[action.payload.gameId].periodTimerStartedAt = action.payload.startedAt;
+        }
+        break;
+
+      case 'PAUSE_PERIOD_TIMER':
+        if (draft.games[action.payload.gameId]) {
+          const game = draft.games[action.payload.gameId];
+          game.periodTimerStartedAt = null;
+          game.periodTimerPausedElapsed = action.payload.pausedElapsed;
+        }
+        break;
+
+      case 'RESET_PERIOD_TIMER':
+        if (draft.games[action.payload.gameId]) {
+          const game = draft.games[action.payload.gameId];
+          game.periodTimerStartedAt = null;
+          game.periodTimerPausedElapsed = 0;
         }
         break;
     }

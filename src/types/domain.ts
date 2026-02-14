@@ -144,6 +144,10 @@ export interface Game {
   removedPlayerIds: PlayerId[];
   addedPlayerIds: PlayerId[]; // late arrivals
 
+  // Period timer (persisted for refresh survival)
+  periodTimerStartedAt: number | null; // null = paused/stopped
+  periodTimerPausedElapsed: number; // accumulated ms before current run
+
   createdAt: number;
   startedAt: number | null;
   completedAt: number | null;

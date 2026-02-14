@@ -8,8 +8,10 @@ import type {
   Roster,
   Game,
   Rotation,
+  RotationSchedule,
   SkillRanking,
 } from '@/types/domain.ts';
+import { calculatePlayerStats } from '@/utils/stats.ts';
 
 export const playerFactory = Factory.define<Player>(({ sequence }) => ({
   id: generateId(),
@@ -75,6 +77,8 @@ export const gameFactory = Factory.define<Game>(() => ({
   currentRotationIndex: 0,
   removedPlayerIds: [],
   addedPlayerIds: [],
+  periodTimerStartedAt: null,
+  periodTimerPausedElapsed: 0,
   createdAt: Date.now(),
   startedAt: null,
   completedAt: null,
@@ -112,4 +116,26 @@ export function buildRoster(
     ...p,
     canPlayGoalie: i < goalieCount,
   }));
+}
+
+export function buildSchedule(rotations: Rotation[], players: Player[]): RotationSchedule {
+  const playerStats = calculatePlayerStats(rotations, players);
+  const strengths = rotations.map((r) => r.teamStrength);
+  const avg = strengths.length > 0
+    ? strengths.reduce((s, v) => s + v, 0) / strengths.length
+    : 0;
+
+  return {
+    rotations,
+    playerStats,
+    overallStats: {
+      strengthVariance: 0,
+      minStrength: Math.min(...strengths),
+      maxStrength: Math.max(...strengths),
+      avgStrength: avg,
+      violations: [],
+      isValid: true,
+    },
+    generatedAt: Date.now(),
+  };
 }

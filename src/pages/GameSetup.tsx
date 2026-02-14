@@ -101,6 +101,8 @@ export function GameSetup() {
       currentRotationIndex: 0,
       removedPlayerIds: [],
       addedPlayerIds: [],
+      periodTimerStartedAt: null,
+      periodTimerPausedElapsed: 0,
       createdAt: Date.now(),
       startedAt: null,
       completedAt: null,
