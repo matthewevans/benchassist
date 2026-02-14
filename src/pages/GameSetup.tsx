@@ -8,7 +8,9 @@ import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
+import { cn } from '@/lib/utils.ts';
 import { generateId } from '@/utils/id.ts';
 import { validateRosterForGame } from '@/utils/validation.ts';
 import type { Game, GoalieAssignment, PlayerId } from '@/types/domain.ts';
@@ -46,6 +48,22 @@ export function GameSetup() {
 
   const canGenerate = selectedTeam && selectedRoster && selectedConfig &&
     validationErrors.filter((e) => !e.includes('no substitutions')).length === 0;
+
+  const summaryText = useMemo(() => {
+    if (!selectedRoster || !selectedConfig) return null;
+    const playerCount = activePlayers.length;
+    const totalRotations = selectedConfig.periods * selectedConfig.rotationsPerPeriod;
+    const fieldSlots = selectedConfig.fieldSize;
+    const benchPerRotation = Math.max(0, playerCount - fieldSlots);
+    return `${playerCount} players · ${selectedConfig.fieldSize}v${selectedConfig.fieldSize} · ${totalRotations} rotations · ~${benchPerRotation} benched per rotation`;
+  }, [selectedRoster, selectedConfig, activePlayers]);
+
+  const [configCollapsed, setConfigCollapsed] = useState(false);
+  const configComplete = !!(teamId && rosterId && configId);
+
+  useEffect(() => {
+    if (configComplete) setConfigCollapsed(true);
+  }, [configComplete]);
 
   function handleToggleAbsent(playerId: PlayerId) {
     setAbsentPlayerIds((prev) => {
@@ -129,70 +147,87 @@ export function GameSetup() {
 
       {/* Step 1: Select Team */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Team & Configuration</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Team</Label>
-            <Select value={teamId} onValueChange={(v) => { setTeamId(v); setRosterId(''); setConfigId(''); }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select team" />
-              </SelectTrigger>
-              <SelectContent>
-                {teams.map((team) => (
-                  <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {selectedTeam && (
-            <>
+        {configCollapsed && summaryText ? (
+          <CardContent className="py-3 flex items-center justify-between">
+            <div>
+              <p className="font-medium text-sm">{selectedTeam?.name} · {selectedRoster?.name}</p>
+              <p className="text-xs text-muted-foreground">{summaryText}</p>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setConfigCollapsed(false)}>
+              Edit
+            </Button>
+          </CardContent>
+        ) : (
+          <>
+            <CardHeader>
+              <CardTitle className="text-base">Team & Configuration</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Roster</Label>
-                <Select value={rosterId} onValueChange={setRosterId}>
+                <Label>Team</Label>
+                <Select value={teamId} onValueChange={(v) => { setTeamId(v); setRosterId(''); setConfigId(''); }}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select roster" />
+                    <SelectValue placeholder="Select team" />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedTeam.rosters.map((roster) => (
-                      <SelectItem key={roster.id} value={roster.id}>
-                        {roster.name} ({roster.players.length} players)
-                      </SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Game Configuration</Label>
-                <Select value={configId} onValueChange={setConfigId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select configuration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {selectedTeam.gameConfigs.map((config) => (
-                      <SelectItem key={config.id} value={config.id}>
-                        {config.name} ({config.fieldSize}v{config.fieldSize})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {selectedTeam && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Roster</Label>
+                    <Select value={rosterId} onValueChange={setRosterId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select roster" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedTeam.rosters.map((roster) => (
+                          <SelectItem key={roster.id} value={roster.id}>
+                            {roster.name} ({roster.players.length} players)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="game-name">Game Name (optional)</Label>
-                <Input
-                  id="game-name"
-                  value={gameName}
-                  onChange={(e) => setGameName(e.target.value)}
-                  placeholder="e.g., vs Thunder - Feb 15"
-                />
-              </div>
-            </>
-          )}
-        </CardContent>
+                  <div className="space-y-2">
+                    <Label>Game Configuration</Label>
+                    <Select value={configId} onValueChange={setConfigId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select configuration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {selectedTeam.gameConfigs.map((config) => (
+                          <SelectItem key={config.id} value={config.id}>
+                            {config.name} ({config.fieldSize}v{config.fieldSize})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="game-name">Game Name (optional)</Label>
+                    <Input
+                      id="game-name"
+                      value={gameName}
+                      onChange={(e) => setGameName(e.target.value)}
+                      placeholder="e.g., vs Thunder - Feb 15"
+                    />
+                  </div>
+                </>
+              )}
+              {summaryText && (
+                <p className="text-sm text-muted-foreground pt-2 border-t">{summaryText}</p>
+              )}
+            </CardContent>
+          </>
+        )}
       </Card>
 
       {/* Step 2: Mark absences */}
@@ -210,21 +245,20 @@ export function GameSetup() {
                 return (
                   <div
                     key={player.id}
-                    className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
-                      isAbsent ? 'bg-destructive/10 opacity-60' : 'hover:bg-accent'
-                    }`}
+                    className={cn(
+                      "flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors",
+                      isAbsent ? "bg-destructive/10 opacity-60" : "hover:bg-accent"
+                    )}
                     onClick={() => handleToggleAbsent(player.id)}
                   >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={!isAbsent}
-                        onChange={() => handleToggleAbsent(player.id)}
-                        className="h-4 w-4"
-                      />
-                      <span className={isAbsent ? 'line-through' : ''}>{player.name}</span>
-                      <Badge variant="secondary" className="text-xs">{player.skillRanking}</Badge>
-                    </div>
+                    <Checkbox
+                      checked={!isAbsent}
+                      onCheckedChange={() => handleToggleAbsent(player.id)}
+                    />
+                    <span className={cn("text-sm flex-1", isAbsent && "line-through")}>
+                      {player.name}
+                    </span>
+                    <Badge variant="secondary" className="text-xs">{player.skillRanking}</Badge>
                   </div>
                 );
               })}
