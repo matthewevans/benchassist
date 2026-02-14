@@ -5,9 +5,11 @@ import { Label } from '@/components/ui/label.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
+import { ChevronDownIcon } from 'lucide-react';
+import { cn } from '@/lib/utils.ts';
 import { generateId } from '@/utils/id.ts';
-import { GAME_CONFIG_TEMPLATES } from '@/types/domain.ts';
-import type { GameConfig, GameConfigTemplate } from '@/types/domain.ts';
+import type { GameConfig } from '@/types/domain.ts';
 
 interface GameConfigFormProps {
   teamId: string;
@@ -31,14 +33,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
   const [goalieRestAfterPeriod, setGoalieRestAfterPeriod] = useState(initialConfig?.goalieRestAfterPeriod ?? true);
   const [balancePriority, setBalancePriority] = useState<GameConfig['balancePriority']>(initialConfig?.balancePriority ?? 'balanced');
 
-  function applyTemplate(template: GameConfigTemplate) {
-    setName(template.name);
-    setFieldSize(template.fieldSize);
-    setPeriods(template.periods);
-    setPeriodDuration(template.periodDurationMinutes);
-    setRotationsPerPeriod(template.rotationsPerPeriod);
-    setUseGoalie(template.useGoalie);
-  }
+  const [rulesOpen, setRulesOpen] = useState(!!initialConfig);
 
   function handleSave() {
     if (!name.trim()) return;
@@ -70,27 +65,6 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
 
   return (
     <div className="space-y-4 pt-2">
-      {/* Quick templates */}
-      {!initialConfig && (
-        <div className="space-y-2">
-          <Label>Start from template</Label>
-          <div className="flex flex-wrap gap-2">
-            {GAME_CONFIG_TEMPLATES.map((template) => (
-              <Button
-                key={template.name}
-                variant="outline"
-                size="sm"
-                onClick={() => applyTemplate(template)}
-              >
-                {template.name}
-              </Button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <Separator />
-
       <div className="space-y-2">
         <Label htmlFor="config-name">Configuration Name</Label>
         <Input
@@ -148,97 +122,103 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
         </div>
       </div>
 
-      <Separator />
-
-      <h3 className="font-medium text-sm">Rules</h3>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-sm">No consecutive benching</Label>
-            <p className="text-xs text-muted-foreground">Prevent back-to-back bench rotations</p>
-          </div>
-          <Switch checked={noConsecutiveBench} onCheckedChange={setNoConsecutiveBench} />
-        </div>
-        {noConsecutiveBench && (
-          <div className="pl-4 space-y-2">
-            <Label htmlFor="max-consecutive">Max consecutive bench rotations</Label>
-            <Input
-              id="max-consecutive"
-              type="number"
-              min={1}
-              max={5}
-              value={maxConsecutiveBench}
-              onChange={(e) => setMaxConsecutiveBench(Number(e.target.value))}
-              className="w-20"
-            />
-          </div>
-        )}
-
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-sm">Minimum play time</Label>
-            <p className="text-xs text-muted-foreground">Every player plays at least this %</p>
-          </div>
-          <Switch checked={enforceMinPlayTime} onCheckedChange={setEnforceMinPlayTime} />
-        </div>
-        {enforceMinPlayTime && (
-          <div className="pl-4 space-y-2">
-            <Label htmlFor="min-play">Minimum play percentage</Label>
-            <Input
-              id="min-play"
-              type="number"
-              min={10}
-              max={100}
-              value={minPlayPercentage}
-              onChange={(e) => setMinPlayPercentage(Number(e.target.value))}
-              className="w-20"
-            />
-          </div>
-        )}
-
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-sm">Uses goalkeeper</Label>
-            <p className="text-xs text-muted-foreground">Format includes a dedicated goalkeeper</p>
-          </div>
-          <Switch checked={useGoalie} onCheckedChange={setUseGoalie} />
-        </div>
-
-        {useGoalie && (
-          <>
-            <div className="flex items-center justify-between pl-4">
+      <Collapsible open={rulesOpen} onOpenChange={setRulesOpen}>
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center justify-between w-full py-2 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground">
+            Rules & Balance
+            <ChevronDownIcon className={cn("h-4 w-4 transition-transform", rulesOpen && "rotate-180")} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
               <div>
-                <Label className="text-sm">Goalie plays full period</Label>
-                <p className="text-xs text-muted-foreground">No mid-period goalie swaps</p>
+                <Label className="text-sm">No consecutive benching</Label>
+                <p className="text-xs text-muted-foreground">Prevent back-to-back bench rotations</p>
               </div>
-              <Switch checked={goaliePlayFullPeriod} onCheckedChange={setGoaliePlayFullPeriod} />
+              <Switch checked={noConsecutiveBench} onCheckedChange={setNoConsecutiveBench} />
+            </div>
+            {noConsecutiveBench && (
+              <div className="pl-4 space-y-2">
+                <Label htmlFor="max-consecutive">Max consecutive bench rotations</Label>
+                <Input
+                  id="max-consecutive"
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={maxConsecutiveBench}
+                  onChange={(e) => setMaxConsecutiveBench(Number(e.target.value))}
+                  className="w-20"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">Minimum play time</Label>
+                <p className="text-xs text-muted-foreground">Every player plays at least this %</p>
+              </div>
+              <Switch checked={enforceMinPlayTime} onCheckedChange={setEnforceMinPlayTime} />
+            </div>
+            {enforceMinPlayTime && (
+              <div className="pl-4 space-y-2">
+                <Label htmlFor="min-play">Minimum play percentage</Label>
+                <Input
+                  id="min-play"
+                  type="number"
+                  min={10}
+                  max={100}
+                  value={minPlayPercentage}
+                  onChange={(e) => setMinPlayPercentage(Number(e.target.value))}
+                  className="w-20"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">Uses goalkeeper</Label>
+                <p className="text-xs text-muted-foreground">Format includes a dedicated goalkeeper</p>
+              </div>
+              <Switch checked={useGoalie} onCheckedChange={setUseGoalie} />
             </div>
 
-            <div className="flex items-center justify-between pl-4">
-              <div>
-                <Label className="text-sm">Goalie rests after period</Label>
-                <p className="text-xs text-muted-foreground">Goalie must bench first rotation of next period</p>
-              </div>
-              <Switch checked={goalieRestAfterPeriod} onCheckedChange={setGoalieRestAfterPeriod} />
-            </div>
-          </>
-        )}
+            {useGoalie && (
+              <>
+                <div className="flex items-center justify-between pl-4">
+                  <div>
+                    <Label className="text-sm">Goalie plays full period</Label>
+                    <p className="text-xs text-muted-foreground">No mid-period goalie swaps</p>
+                  </div>
+                  <Switch checked={goaliePlayFullPeriod} onCheckedChange={setGoaliePlayFullPeriod} />
+                </div>
 
-        <div className="space-y-2">
-          <Label>Balance Priority</Label>
-          <Select value={balancePriority} onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="strict">Strict (bench weaker players more)</SelectItem>
-              <SelectItem value="balanced">Balanced (moderate skill weighting)</SelectItem>
-              <SelectItem value="off">Off (equal play time for all)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+                <div className="flex items-center justify-between pl-4">
+                  <div>
+                    <Label className="text-sm">Goalie rests after period</Label>
+                    <p className="text-xs text-muted-foreground">Goalie must bench first rotation of next period</p>
+                  </div>
+                  <Switch checked={goalieRestAfterPeriod} onCheckedChange={setGoalieRestAfterPeriod} />
+                </div>
+              </>
+            )}
+
+            <div className="space-y-2">
+              <Label>Balance Priority</Label>
+              <Select value={balancePriority} onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="strict">Strict (bench weaker players more)</SelectItem>
+                  <SelectItem value="balanced">Balanced (moderate skill weighting)</SelectItem>
+                  <SelectItem value="off">Off (equal play time for all)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       <Separator />
 

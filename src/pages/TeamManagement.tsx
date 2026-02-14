@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from '@/components/ui/separator.tsx';
 import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { generateId } from '@/utils/id.ts';
+import { GAME_CONFIG_TEMPLATES } from '@/types/domain.ts';
 import type { Roster, GameConfig } from '@/types/domain.ts';
 
 export function TeamManagement() {
@@ -20,6 +21,7 @@ export function TeamManagement() {
   const [isAddingConfig, setIsAddingConfig] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
+  const [editingConfig, setEditingConfig] = useState<GameConfig | null>(null);
 
   const team = teamId ? state.teams[teamId] : undefined;
 
@@ -55,6 +57,12 @@ export function TeamManagement() {
     if (!teamId) return;
     dispatch({ type: 'ADD_GAME_CONFIG', payload: { teamId, config } });
     setIsAddingConfig(false);
+  }
+
+  function handleUpdateConfig(config: GameConfig) {
+    if (!teamId) return;
+    dispatch({ type: 'UPDATE_GAME_CONFIG', payload: { teamId, config } });
+    setEditingConfig(null);
   }
 
   function handleDeleteTeam() {
@@ -184,7 +192,7 @@ export function TeamManagement() {
           <h2 className="text-lg font-semibold">Game Configurations</h2>
           <Dialog open={isAddingConfig} onOpenChange={setIsAddingConfig}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">Add Config</Button>
+              <Button variant="outline" size="sm">Custom...</Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -199,6 +207,43 @@ export function TeamManagement() {
           </Dialog>
         </div>
 
+        {/* Template quick-create buttons */}
+        <div className="flex flex-wrap gap-2">
+          {GAME_CONFIG_TEMPLATES.map((template) => (
+            <Button
+              key={template.name}
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const config: GameConfig = {
+                  id: generateId(),
+                  teamId: teamId!,
+                  name: template.name,
+                  fieldSize: template.fieldSize,
+                  periods: template.periods,
+                  periodDurationMinutes: template.periodDurationMinutes,
+                  rotationsPerPeriod: template.rotationsPerPeriod,
+                  usePositions: template.usePositions,
+                  formation: template.formation,
+                  useGoalie: template.useGoalie,
+                  noConsecutiveBench: true,
+                  maxConsecutiveBench: 1,
+                  enforceMinPlayTime: true,
+                  minPlayPercentage: 50,
+                  goaliePlayFullPeriod: true,
+                  goalieRestAfterPeriod: true,
+                  balancePriority: 'balanced',
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                };
+                dispatch({ type: 'ADD_GAME_CONFIG', payload: { teamId: teamId!, config } });
+              }}
+            >
+              {template.name}
+            </Button>
+          ))}
+        </div>
+
         {team.gameConfigs.length === 0 ? (
           <Card>
             <CardContent className="py-6 text-center text-muted-foreground text-sm">
@@ -208,7 +253,11 @@ export function TeamManagement() {
         ) : (
           <div className="grid gap-2">
             {team.gameConfigs.map((config) => (
-              <Card key={config.id}>
+              <Card
+                key={config.id}
+                className="hover:bg-accent/50 transition-colors cursor-pointer"
+                onClick={() => setEditingConfig(config)}
+              >
                 <CardContent className="py-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -222,7 +271,8 @@ export function TeamManagement() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (!teamId) return;
                         if (confirm(`Delete "${config.name}"?`)) {
                           dispatch({
@@ -240,6 +290,23 @@ export function TeamManagement() {
             ))}
           </div>
         )}
+
+        {/* Edit config dialog */}
+        <Dialog open={!!editingConfig} onOpenChange={(open) => { if (!open) setEditingConfig(null); }}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Configuration</DialogTitle>
+            </DialogHeader>
+            {editingConfig && (
+              <GameConfigForm
+                teamId={teamId ?? ''}
+                initialConfig={editingConfig}
+                onSave={handleUpdateConfig}
+                onCancel={() => setEditingConfig(null)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </section>
     </div>
   );
