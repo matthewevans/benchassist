@@ -100,6 +100,13 @@ export function usePeriodTimer(
     }
   }, [periodIndex]);
 
+  // Sync elapsed when timer is externally reset (e.g., period boundary advance)
+  useEffect(() => {
+    if (!isRunning) {
+      setElapsedMs(game?.periodTimerPausedElapsed ?? 0);
+    }
+  }, [isRunning, game?.periodTimerPausedElapsed]);
+
   // Tick the timer
   useEffect(() => {
     if (!isRunning) return;

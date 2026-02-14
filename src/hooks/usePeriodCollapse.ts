@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UsePeriodCollapseParams {
   totalPeriods: number;
@@ -7,29 +7,18 @@ interface UsePeriodCollapseParams {
 }
 
 export function usePeriodCollapse({ currentPeriodIndex, isLive }: UsePeriodCollapseParams) {
-  const [collapsedPeriods, setCollapsedPeriods] = useState<Set<number>>(() => {
-    if (!isLive) return new Set();
-    const initial = new Set<number>();
-    for (let i = 0; i < currentPeriodIndex; i++) {
-      initial.add(i);
-    }
-    return initial;
-  });
+  const [collapsedPeriods, setCollapsedPeriods] = useState<Set<number>>(new Set());
 
-  const prevPeriodRef = useRef(currentPeriodIndex);
-
+  // Auto-collapse all periods before the current one whenever period advances
   useEffect(() => {
-    if (!isLive) return;
-    if (prevPeriodRef.current !== currentPeriodIndex && currentPeriodIndex > prevPeriodRef.current) {
-      setCollapsedPeriods((prev) => {
-        const next = new Set(prev);
-        for (let i = prevPeriodRef.current; i < currentPeriodIndex; i++) {
-          next.add(i);
-        }
-        return next;
-      });
-    }
-    prevPeriodRef.current = currentPeriodIndex;
+    if (!isLive || currentPeriodIndex === 0) return;
+    setCollapsedPeriods((prev) => {
+      const next = new Set(prev);
+      for (let i = 0; i < currentPeriodIndex; i++) {
+        next.add(i);
+      }
+      return next;
+    });
   }, [currentPeriodIndex, isLive]);
 
   const togglePeriod = useCallback((periodIndex: number) => {

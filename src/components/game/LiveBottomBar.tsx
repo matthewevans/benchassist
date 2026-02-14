@@ -1,4 +1,4 @@
-import { PlayIcon, PauseIcon, RotateCcwIcon, XIcon, ChevronRightIcon } from 'lucide-react';
+import { PlayIcon, PauseIcon, RotateCcwIcon, XIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 import type { UsePeriodTimerResult } from '@/hooks/usePeriodTimer.ts';
@@ -6,6 +6,8 @@ import type { UsePeriodTimerResult } from '@/hooks/usePeriodTimer.ts';
 interface LiveBottomBarProps {
   timer: UsePeriodTimerResult;
   onAdvance: () => void;
+  onRetreat: () => void;
+  isFirstRotation: boolean;
   isLastRotation: boolean;
   isCrossingPeriod: boolean;
   swapPlayerName: string | null;
@@ -15,6 +17,8 @@ interface LiveBottomBarProps {
 export function LiveBottomBar({
   timer,
   onAdvance,
+  onRetreat,
+  isFirstRotation,
   isLastRotation,
   isCrossingPeriod,
   swapPlayerName,
@@ -96,16 +100,28 @@ export function LiveBottomBar({
           ) : null}
         </div>
 
-        {/* Right: Advance button */}
-        <Button
-          size="lg"
-          className="px-6"
-          onClick={onAdvance}
-          aria-label={advanceLabel}
-        >
-          {advanceLabel}
-          {!isLastRotation && <ChevronRightIcon className="size-4 ml-1" />}
-        </Button>
+        {/* Right: Navigation buttons */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="lg"
+            className="px-3"
+            onClick={onRetreat}
+            disabled={isFirstRotation}
+            aria-label="Previous rotation"
+          >
+            <ChevronLeftIcon className="size-4" />
+          </Button>
+          <Button
+            size="lg"
+            className="px-6"
+            onClick={onAdvance}
+            aria-label={advanceLabel}
+          >
+            {advanceLabel}
+            {!isLastRotation && <ChevronRightIcon className="size-4 ml-1" />}
+          </Button>
+        </div>
       </div>
     </div>
   );

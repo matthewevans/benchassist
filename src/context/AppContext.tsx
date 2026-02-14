@@ -42,6 +42,7 @@ export type AppAction =
   | { type: 'DELETE_GAME'; payload: GameId }
   | { type: 'SET_GAME_SCHEDULE'; payload: { gameId: GameId; schedule: RotationSchedule } }
   | { type: 'ADVANCE_ROTATION'; payload: GameId }
+  | { type: 'RETREAT_ROTATION'; payload: GameId }
   | { type: 'REMOVE_PLAYER_FROM_GAME'; payload: { gameId: GameId; playerId: PlayerId } }
   | { type: 'ADD_PLAYER_TO_GAME'; payload: { gameId: GameId; playerId: PlayerId } }
   | { type: 'START_PERIOD_TIMER'; payload: { gameId: GameId; startedAt: number } }
@@ -209,6 +210,20 @@ function appReducer(state: AppState, action: AppAction): AppState {
         }
         break;
 
+      case 'RETREAT_ROTATION':
+        if (draft.games[action.payload]) {
+          const game = draft.games[action.payload];
+          if (game.currentRotationIndex <= 0) break;
+          const prevPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
+          game.currentRotationIndex -= 1;
+          const newPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
+          if (prevPeriod !== newPeriod) {
+            game.periodTimerStartedAt = null;
+            game.periodTimerPausedElapsed = 0;
+          }
+        }
+        break;
+
       case 'REMOVE_PLAYER_FROM_GAME':
         if (draft.games[action.payload.gameId]) {
           draft.games[action.payload.gameId].removedPlayerIds.push(action.payload.playerId);
@@ -219,6 +234,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
         if (draft.games[action.payload.gameId]) {
           const game = draft.games[action.payload.gameId];
           game.addedPlayerIds.push(action.payload.playerId);
+          game.removedPlayerIds = game.removedPlayerIds.filter(
+            (id) => id !== action.payload.playerId,
+          );
           game.absentPlayerIds = game.absentPlayerIds.filter(
             (id) => id !== action.payload.playerId,
           );

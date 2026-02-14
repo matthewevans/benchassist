@@ -20,104 +20,57 @@ function buildTimer(overrides?: Partial<UsePeriodTimerResult>): UsePeriodTimerRe
   };
 }
 
+const defaultProps = {
+  timer: buildTimer(),
+  onAdvance: vi.fn(),
+  onRetreat: vi.fn(),
+  isFirstRotation: false,
+  isLastRotation: false,
+  isCrossingPeriod: false,
+  swapPlayerName: null,
+  onCancelSwap: vi.fn(),
+};
+
 describe('LiveBottomBar', () => {
   it('renders timer display', () => {
-    render(
-      <LiveBottomBar
-        timer={buildTimer()}
-        onAdvance={vi.fn()}
-        isLastRotation={false}
-        isCrossingPeriod={false}
-        swapPlayerName={null}
-        onCancelSwap={vi.fn()}
-      />
-    );
+    render(<LiveBottomBar {...defaultProps} />);
     expect(screen.getByText(/5:30/)).toBeInTheDocument();
     expect(screen.getByText(/25:00/)).toBeInTheDocument();
   });
 
   it('shows NEXT button', () => {
-    render(
-      <LiveBottomBar
-        timer={buildTimer()}
-        onAdvance={vi.fn()}
-        isLastRotation={false}
-        isCrossingPeriod={false}
-        swapPlayerName={null}
-        onCancelSwap={vi.fn()}
-      />
-    );
+    render(<LiveBottomBar {...defaultProps} />);
     expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
   });
 
   it('shows END GAME on last rotation', () => {
-    render(
-      <LiveBottomBar
-        timer={buildTimer()}
-        onAdvance={vi.fn()}
-        isLastRotation={true}
-        isCrossingPeriod={false}
-        swapPlayerName={null}
-        onCancelSwap={vi.fn()}
-      />
-    );
+    render(<LiveBottomBar {...defaultProps} isLastRotation={true} />);
     expect(screen.getByRole('button', { name: /end game/i })).toBeInTheDocument();
   });
 
   it('shows swap mode indicator when swapPlayerName is set', () => {
-    render(
-      <LiveBottomBar
-        timer={buildTimer()}
-        onAdvance={vi.fn()}
-        isLastRotation={false}
-        isCrossingPeriod={false}
-        swapPlayerName="Alex"
-        onCancelSwap={vi.fn()}
-      />
-    );
+    render(<LiveBottomBar {...defaultProps} swapPlayerName="Alex" />);
     expect(screen.getByText(/Swapping Alex/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
   });
 
   it('calls onCancelSwap when cancel is clicked', async () => {
     const onCancelSwap = vi.fn();
-    render(
-      <LiveBottomBar
-        timer={buildTimer()}
-        onAdvance={vi.fn()}
-        isLastRotation={false}
-        isCrossingPeriod={false}
-        swapPlayerName="Alex"
-        onCancelSwap={onCancelSwap}
-      />
-    );
+    render(<LiveBottomBar {...defaultProps} swapPlayerName="Alex" onCancelSwap={onCancelSwap} />);
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
     expect(onCancelSwap).toHaveBeenCalled();
   });
 
   it('shows NEXT PERIOD at period boundary', () => {
-    render(
-      <LiveBottomBar
-        timer={buildTimer()}
-        onAdvance={vi.fn()}
-        isLastRotation={false}
-        isCrossingPeriod={true}
-        swapPlayerName={null}
-        onCancelSwap={vi.fn()}
-      />
-    );
+    render(<LiveBottomBar {...defaultProps} isCrossingPeriod={true} />);
     expect(screen.getByRole('button', { name: /next period/i })).toBeInTheDocument();
   });
 
   it('shows next sub hint when marker is ahead', () => {
     render(
       <LiveBottomBar
+        {...defaultProps}
         timer={buildTimer({ elapsedMs: 330000, markers: [{ progress: 0.5, timeMs: 750000 }] })}
-        onAdvance={vi.fn()}
-        isLastRotation={false}
-        isCrossingPeriod={false}
-        swapPlayerName={null}
-        onCancelSwap={vi.fn()}
       />
     );
     expect(screen.getByText(/Next sub ~7 min/)).toBeInTheDocument();
@@ -125,17 +78,20 @@ describe('LiveBottomBar', () => {
 
   it('calls onAdvance when advance button clicked', async () => {
     const onAdvance = vi.fn();
-    render(
-      <LiveBottomBar
-        timer={buildTimer()}
-        onAdvance={onAdvance}
-        isLastRotation={false}
-        isCrossingPeriod={false}
-        swapPlayerName={null}
-        onCancelSwap={vi.fn()}
-      />
-    );
+    render(<LiveBottomBar {...defaultProps} onAdvance={onAdvance} />);
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     expect(onAdvance).toHaveBeenCalled();
+  });
+
+  it('disables prev button on first rotation', () => {
+    render(<LiveBottomBar {...defaultProps} isFirstRotation={true} />);
+    expect(screen.getByRole('button', { name: /previous/i })).toBeDisabled();
+  });
+
+  it('calls onRetreat when prev button clicked', async () => {
+    const onRetreat = vi.fn();
+    render(<LiveBottomBar {...defaultProps} onRetreat={onRetreat} isFirstRotation={false} />);
+    await userEvent.click(screen.getByRole('button', { name: /previous/i }));
+    expect(onRetreat).toHaveBeenCalled();
   });
 });

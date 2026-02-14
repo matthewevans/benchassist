@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label.tsx';
 import { cn } from '@/lib/utils.ts';
 import { Settings2, ChevronRightIcon } from 'lucide-react';
-import { SUB_POSITION_LABELS } from '@/types/domain.ts';
+import { SUB_POSITION_LABELS, RotationAssignment } from '@/types/domain.ts';
 import type { PlayerId, Game, GoalieAssignment } from '@/types/domain.ts';
 import { previewSwap } from '@/utils/stats.ts';
 import { getAssignmentDisplay } from '@/utils/positions.ts';
@@ -131,6 +131,60 @@ export function RotationGrid() {
   const isCrossingPeriod = nextRotation ? nextRotation.periodIndex !== currentPeriodIndex : false;
   const removingPlayer = removingPlayerId ? (playerMap.get(removingPlayerId) ?? roster.players.find((p) => p.id === removingPlayerId)) : undefined;
 
+  // Tooltip map: for changing cells in next rotation, show who they're replacing
+  const subTooltipMap = useMemo(() => {
+    if (!isLive || !currentRotation || !nextRotation) return new Map<PlayerId, string>();
+    const tips = new Map<PlayerId, string>();
+
+    // Categorise changing players into bench→field and field→bench
+    const comingIn: PlayerId[] = [];
+    const goingOut: PlayerId[] = [];
+    for (const pid of changingPlayerIds) {
+      const cur = currentRotation.assignments[pid];
+      const nxt = nextRotation.assignments[pid];
+      if (cur === RotationAssignment.Bench && nxt !== RotationAssignment.Bench) comingIn.push(pid);
+      if (cur !== RotationAssignment.Bench && nxt === RotationAssignment.Bench) goingOut.push(pid);
+    }
+
+    // Match by sub-position: who currently holds the slot the incoming player will take?
+    const matched = new Set<PlayerId>();
+    if (currentRotation.fieldPositions && nextRotation.fieldPositions) {
+      const curSubPosToPlayer = new Map<string, PlayerId>();
+      for (const [pid, subPos] of Object.entries(currentRotation.fieldPositions)) {
+        curSubPosToPlayer.set(subPos, pid as PlayerId);
+      }
+      for (const pid of comingIn) {
+        const nextSubPos = nextRotation.fieldPositions![pid];
+        if (!nextSubPos) continue;
+        const replaced = curSubPosToPlayer.get(nextSubPos);
+        if (replaced && replaced !== pid && goingOut.includes(replaced)) {
+          const inName = playerMap.get(pid)?.name;
+          const outName = playerMap.get(replaced)?.name;
+          if (inName && outName) {
+            tips.set(pid, `Replacing ${outName}`);
+            tips.set(replaced, `Replaced by ${inName}`);
+            matched.add(pid);
+            matched.add(replaced);
+          }
+        }
+      }
+    }
+
+    // Fallback: if exactly one unmatched in each direction, pair them
+    const unmatchedIn = comingIn.filter((p) => !matched.has(p));
+    const unmatchedOut = goingOut.filter((p) => !matched.has(p));
+    if (unmatchedIn.length === 1 && unmatchedOut.length === 1) {
+      const inName = playerMap.get(unmatchedIn[0])?.name;
+      const outName = playerMap.get(unmatchedOut[0])?.name;
+      if (inName && outName) {
+        tips.set(unmatchedIn[0], `Replacing ${outName}`);
+        tips.set(unmatchedOut[0], `Replaced by ${inName}`);
+      }
+    }
+
+    return tips;
+  }, [isLive, currentRotation, nextRotation, changingPlayerIds, playerMap]);
+
   function handleCellClick(rotationIndex: number, playerId: PlayerId) {
     // Block interaction in completed mode
     if (isCompleted) return;
@@ -148,6 +202,15 @@ export function RotationGrid() {
     }
 
     if (swapSource.rotationIndex === rotationIndex && schedule) {
+      // In live mode on current rotation, only allow swaps involving a bench player
+      if (isLive && rotationIndex === currentRotationIndex) {
+        const sourceAssignment = schedule.rotations[rotationIndex].assignments[swapSource.playerId];
+        const targetAssignment = schedule.rotations[rotationIndex].assignments[playerId];
+        if (sourceAssignment !== RotationAssignment.Bench && targetAssignment !== RotationAssignment.Bench) {
+          setSwapSource({ rotationIndex, playerId });
+          return;
+        }
+      }
       const newSchedule = previewSwap(
         schedule,
         rotationIndex,
@@ -183,6 +246,11 @@ export function RotationGrid() {
       return;
     }
     dispatch({ type: 'ADVANCE_ROTATION', payload: gameId });
+  }
+
+  function handleRetreat() {
+    if (!gameId || currentRotationIndex <= 0) return;
+    dispatch({ type: 'RETREAT_ROTATION', payload: gameId });
   }
 
   function handleEndGame() {
@@ -236,13 +304,25 @@ export function RotationGrid() {
 
   function handleRegenerate() {
     if (!roster || !config || !game) return;
-    solver.solve({
-      players: roster.players,
-      config,
-      absentPlayerIds: game.absentPlayerIds,
-      goalieAssignments: game.goalieAssignments,
-      manualOverrides: game.manualOverrides,
-    });
+    if (isLive && schedule) {
+      solver.solve({
+        players: activePlayers,
+        config,
+        absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
+        goalieAssignments: game.goalieAssignments,
+        manualOverrides: [],
+        startFromRotation: game.currentRotationIndex,
+        existingRotations: schedule.rotations,
+      });
+    } else {
+      solver.solve({
+        players: roster.players,
+        config,
+        absentPlayerIds: game.absentPlayerIds,
+        goalieAssignments: game.goalieAssignments,
+        manualOverrides: game.manualOverrides,
+      });
+    }
   }
 
   function handleOpenSettings() {
@@ -312,9 +392,14 @@ export function RotationGrid() {
             </h1>
             <p className="text-sm text-muted-foreground">{game.name}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleEndGame}>
-            End Game
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={solver.isRunning}>
+              {solver.isRunning ? 'Solving...' : 'Regenerate'}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleEndGame}>
+              End Game
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="flex items-center justify-between">
@@ -412,12 +497,15 @@ export function RotationGrid() {
                 return group.rotations.map((r, i) => {
                   const isCurrent = isLive && r.index === currentRotationIndex;
                   const isPast = isLive && r.index < currentRotationIndex;
+                  const isNext = isLive && r.index === currentRotationIndex + 1;
                   return (
                     <th
                       key={r.index}
                       className={cn(
-                        'text-center py-2 px-1 font-medium min-w-[60px]',
+                        'text-center py-2 font-medium',
+                        isLive ? 'px-2 min-w-[76px]' : 'px-1 min-w-[60px]',
                         isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
+                        isNext && 'bg-accent/30',
                         isPast && 'opacity-40',
                       )}
                       {...(isCurrent ? { 'data-current-rotation': '' } : {})}
@@ -425,6 +513,15 @@ export function RotationGrid() {
                       <div className="flex items-center justify-center gap-1">
                         <span>R{r.index + 1}</span>
                       </div>
+                      {(isCurrent || isNext) && (
+                        <span className={cn(
+                          'text-[10px] font-semibold uppercase tracking-wide',
+                          isCurrent && 'text-primary',
+                          isNext && 'text-muted-foreground',
+                        )}>
+                          {isCurrent ? 'Now' : 'Next'}
+                        </span>
+                      )}
                       <div className="text-xs text-muted-foreground font-normal">
                         {i === 0 && isLive ? (
                           <button
@@ -455,7 +552,7 @@ export function RotationGrid() {
               );
               return (
                 <tr key={player.id} className={cn('border-b', isRemoved && 'opacity-60')}>
-                  <td className="py-1.5 pr-3 sticky left-0 bg-background z-10">
+                  <td className={cn('pr-3 sticky left-0 bg-background z-10', isLive ? 'py-2.5' : 'py-1.5')}>
                     {isLive ? (
                       <PlayerPopover
                         playerName={player.name}
@@ -499,12 +596,16 @@ export function RotationGrid() {
                         swapSource.rotationIndex === rotation.index &&
                         !isPast &&
                         !isCompleted;
+                      const subTip = isChanging ? subTooltipMap.get(player.id) : undefined;
+                      const cellTitle = subTip ?? (fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined);
                       return (
                         <td
                           key={rotation.index}
                           className={cn(
-                            'text-center py-1.5 px-1',
+                            'text-center',
+                            isLive ? 'py-2.5 px-2' : 'py-1.5 px-1',
                             isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
+                            isNext && 'bg-accent/30',
                             isPast && 'opacity-40',
                           )}
                           {...(isCurrent ? { 'data-current-rotation': '' } : {})}
@@ -512,7 +613,8 @@ export function RotationGrid() {
                         >
                           <span
                             className={cn(
-                              'inline-block px-2 py-0.5 rounded text-xs font-medium transition-all',
+                              'inline-block rounded font-medium transition-all',
+                              isLive ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs',
                               display.className,
                               isSelected && 'ring-2 ring-primary ring-offset-1 animate-pulse',
                               isValidTarget && 'ring-1 ring-primary/50 hover:ring-2 hover:ring-primary',
@@ -520,7 +622,7 @@ export function RotationGrid() {
                               !isPast && !isCompleted && 'cursor-pointer',
                               swapSource && !isSelected && !isValidTarget && 'opacity-70 hover:opacity-100',
                             )}
-                            title={fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined}
+                            title={cellTitle}
                           >
                             {display.label}
                           </span>
@@ -623,6 +725,8 @@ export function RotationGrid() {
         <LiveBottomBar
           timer={timer}
           onAdvance={handleAdvance}
+          onRetreat={handleRetreat}
+          isFirstRotation={currentRotationIndex === 0}
           isLastRotation={isLastRotation}
           isCrossingPeriod={isCrossingPeriod}
           swapPlayerName={swapSource ? (playerMap.get(swapSource.playerId)?.name ?? null) : null}
