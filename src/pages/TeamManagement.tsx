@@ -6,11 +6,12 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { generateId } from '@/utils/id.ts';
 import { GAME_CONFIG_TEMPLATES } from '@/types/domain.ts';
-import type { Roster, GameConfig } from '@/types/domain.ts';
+import type { Roster, GameConfig, GameConfigId } from '@/types/domain.ts';
 
 export function TeamManagement() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -22,6 +23,8 @@ export function TeamManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editingConfig, setEditingConfig] = useState<GameConfig | null>(null);
+  const [confirmDeleteTeam, setConfirmDeleteTeam] = useState(false);
+  const [deletingConfigId, setDeletingConfigId] = useState<GameConfigId | null>(null);
 
   const team = teamId ? state.teams[teamId] : undefined;
 
@@ -67,10 +70,8 @@ export function TeamManagement() {
 
   function handleDeleteTeam() {
     if (!teamId || !team) return;
-    if (confirm(`Delete "${team.name}" and all its data?`)) {
-      dispatch({ type: 'DELETE_TEAM', payload: teamId });
-      navigate('/');
-    }
+    dispatch({ type: 'DELETE_TEAM', payload: teamId });
+    navigate('/');
   }
 
   function handleRenameTeam() {
@@ -118,7 +119,7 @@ export function TeamManagement() {
           <Link to={`/games/new?teamId=${teamId}`}>
             <Button>New Game</Button>
           </Link>
-          <Button variant="destructive" size="sm" onClick={handleDeleteTeam}>
+          <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteTeam(true)}>
             Delete
           </Button>
         </div>
@@ -273,13 +274,7 @@ export function TeamManagement() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!teamId) return;
-                        if (confirm(`Delete "${config.name}"?`)) {
-                          dispatch({
-                            type: 'DELETE_GAME_CONFIG',
-                            payload: { teamId, configId: config.id },
-                          });
-                        }
+                        setDeletingConfigId(config.id);
                       }}
                     >
                       Delete
@@ -308,6 +303,34 @@ export function TeamManagement() {
           </DialogContent>
         </Dialog>
       </section>
+
+      <ConfirmDialog
+        open={confirmDeleteTeam}
+        onConfirm={() => {
+          setConfirmDeleteTeam(false);
+          handleDeleteTeam();
+        }}
+        onCancel={() => setConfirmDeleteTeam(false)}
+        title={`Delete "${team.name}"?`}
+        description="This will permanently delete the team and all its rosters, configs, and games."
+        confirmLabel="Delete"
+        variant="destructive"
+      />
+
+      <ConfirmDialog
+        open={deletingConfigId !== null}
+        onConfirm={() => {
+          if (teamId && deletingConfigId) {
+            dispatch({ type: 'DELETE_GAME_CONFIG', payload: { teamId, configId: deletingConfigId } });
+          }
+          setDeletingConfigId(null);
+        }}
+        onCancel={() => setDeletingConfigId(null)}
+        title="Delete configuration?"
+        description="This game configuration will be permanently removed."
+        confirmLabel="Delete"
+        variant="destructive"
+      />
     </div>
   );
 }

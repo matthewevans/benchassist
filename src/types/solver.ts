@@ -1,4 +1,4 @@
-import type { Player, GameConfig, GoalieAssignment, ManualOverride, RotationSchedule } from './domain.ts';
+import type { Player, GameConfig, GoalieAssignment, ManualOverride, Rotation, RotationSchedule } from './domain.ts';
 
 export type SolverRequest =
   | {
@@ -11,6 +11,7 @@ export type SolverRequest =
         goalieAssignments: GoalieAssignment[];
         manualOverrides: ManualOverride[];
         startFromRotation?: number; // for mid-game re-solve
+        existingRotations?: Rotation[]; // played rotations to preserve
       };
     }
   | {

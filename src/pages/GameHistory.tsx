@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 
 const STATUS_STYLES: Record<string, string> = {
   setup: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
@@ -12,12 +14,14 @@ const STATUS_STYLES: Record<string, string> = {
 
 export function GameHistory() {
   const { state, dispatch } = useAppContext();
+  const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
 
   const games = Object.values(state.games).sort((a, b) => b.createdAt - a.createdAt);
 
-  function handleDeleteGame(gameId: string) {
-    if (!confirm('Delete this game?')) return;
-    dispatch({ type: 'DELETE_GAME', payload: gameId });
+  function handleDeleteGame() {
+    if (!deletingGameId) return;
+    dispatch({ type: 'DELETE_GAME', payload: deletingGameId });
+    setDeletingGameId(null);
   }
 
   return (
@@ -60,7 +64,7 @@ export function GameHistory() {
                         variant="ghost"
                         size="sm"
                         className="text-destructive"
-                        onClick={() => handleDeleteGame(game.id)}
+                        onClick={() => setDeletingGameId(game.id)}
                       >
                         Delete
                       </Button>
@@ -72,6 +76,16 @@ export function GameHistory() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deletingGameId !== null}
+        onConfirm={handleDeleteGame}
+        onCancel={() => setDeletingGameId(null)}
+        title="Delete game?"
+        description="This will permanently remove this game and its rotation schedule."
+        confirmLabel="Delete"
+        variant="destructive"
+      />
     </div>
   );
 }

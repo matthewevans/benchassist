@@ -1,7 +1,43 @@
 import type { SolverRequest, SolverResponse } from '@/types/solver.ts';
+import type { Rotation, RotationSchedule, Player } from '@/types/domain.ts';
 import { exhaustiveSearch, setCancelled } from './solver/exhaustive.ts';
+import { calculatePlayerStats } from '@/utils/stats.ts';
 
 let currentRequestId: string | null = null;
+
+export function mergeSchedules(
+  existingRotations: Rotation[],
+  newSchedule: RotationSchedule,
+  startFromRotation: number,
+  players: Player[],
+): RotationSchedule {
+  const played = existingRotations.slice(0, startFromRotation);
+  const future = newSchedule.rotations.slice(startFromRotation);
+  const merged = [...played, ...future];
+
+  const playerStats = calculatePlayerStats(merged, players);
+  const strengths = merged.map((r) => r.teamStrength);
+  const avg = strengths.length > 0
+    ? strengths.reduce((s, v) => s + v, 0) / strengths.length
+    : 0;
+  const variance = strengths.length > 0
+    ? strengths.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / strengths.length
+    : 0;
+
+  return {
+    rotations: merged,
+    playerStats,
+    overallStats: {
+      strengthVariance: variance,
+      minStrength: Math.min(...strengths),
+      maxStrength: Math.max(...strengths),
+      avgStrength: Math.round(avg * 10) / 10,
+      violations: [],
+      isValid: true,
+    },
+    generatedAt: Date.now(),
+  };
+}
 
 self.onmessage = (e: MessageEvent<SolverRequest>) => {
   const request = e.data;
@@ -12,7 +48,7 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
       setCancelled(false);
 
       try {
-        const { players, config, absentPlayerIds, goalieAssignments, manualOverrides } = request.payload;
+        const { players, config, absentPlayerIds, goalieAssignments, manualOverrides, startFromRotation, existingRotations } = request.payload;
 
         const activePlayers = players.filter((p) => !absentPlayerIds.includes(p.id));
         const totalRotations = config.periods * config.rotationsPerPeriod;
@@ -32,7 +68,7 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           self.postMessage(response);
         };
 
-        const schedule = exhaustiveSearch({
+        const newSchedule = exhaustiveSearch({
           players: activePlayers,
           config,
           goalieAssignments,
@@ -41,6 +77,10 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           benchSlotsPerRotation,
           onProgress,
         });
+
+        const schedule = startFromRotation && startFromRotation > 0 && existingRotations
+          ? mergeSchedules(existingRotations, newSchedule, startFromRotation, activePlayers)
+          : newSchedule;
 
         const response: SolverResponse = {
           type: 'SUCCESS',

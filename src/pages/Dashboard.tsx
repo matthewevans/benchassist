@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -6,8 +6,52 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.t
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
+import { Separator } from '@/components/ui/separator.tsx';
 import { generateId } from '@/utils/id.ts';
-import type { Team } from '@/types/domain.ts';
+import type { Player, Team } from '@/types/domain.ts';
+import type { AppState } from '@/context/AppContext.tsx';
+
+const AVATAR_COLORS = [
+  'bg-red-200 text-red-800',
+  'bg-blue-200 text-blue-800',
+  'bg-green-200 text-green-800',
+  'bg-yellow-200 text-yellow-800',
+  'bg-purple-200 text-purple-800',
+  'bg-pink-200 text-pink-800',
+  'bg-indigo-200 text-indigo-800',
+  'bg-orange-200 text-orange-800',
+  'bg-teal-200 text-teal-800',
+  'bg-cyan-200 text-cyan-800',
+];
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase();
+}
+
+function getColorClass(name: string): string {
+  let hash = 0;
+  for (const ch of name) hash = ((hash << 5) - hash + ch.charCodeAt(0)) | 0;
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function getAllPlayers(team: Team): Player[] {
+  const seen = new Set<string>();
+  const players: Player[] = [];
+  for (const roster of team.rosters) {
+    for (const player of roster.players) {
+      if (!seen.has(player.id)) {
+        seen.add(player.id);
+        players.push(player);
+      }
+    }
+  }
+  return players;
+}
+
+const MAX_AVATARS = 8;
 
 export function Dashboard() {
   const { state, dispatch } = useAppContext();
@@ -21,6 +65,48 @@ export function Dashboard() {
   const recentGames = Object.values(state.games)
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, 5);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importData, setImportData] = useState<AppState | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  function handleExport() {
+    const data = { version: 1, ...state };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `benchassist-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        if (!parsed.teams || typeof parsed.teams !== 'object') {
+          setImportError('Invalid backup file: missing teams data.');
+          return;
+        }
+        setImportData({ teams: parsed.teams, games: parsed.games ?? {} });
+      } catch {
+        setImportError('Could not read file. Make sure it\'s a valid BenchAssist backup.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function handleConfirmImport() {
+    if (!importData) return;
+    dispatch({ type: 'IMPORT_DATA', payload: importData });
+    setImportData(null);
+  }
 
   function handleCreateTeam() {
     if (!newTeamName.trim()) return;
@@ -82,25 +168,48 @@ export function Dashboard() {
         </Card>
       ) : (
         <div className="grid gap-3">
-          {teams.map((team) => (
-            <Link key={team.id} to={`/teams/${team.id}`}>
-              <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">{team.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-4 text-sm text-muted-foreground">
-                    <span>
-                      {team.rosters.length} roster{team.rosters.length !== 1 ? 's' : ''}
-                    </span>
-                    <span>
-                      {team.gameConfigs.length} config{team.gameConfigs.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+          {teams.map((team) => {
+            const players = getAllPlayers(team);
+            const visible = players.slice(0, MAX_AVATARS);
+            const overflow = players.length - MAX_AVATARS;
+            return (
+              <Link key={team.id} to={`/teams/${team.id}`}>
+                <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">{team.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span>
+                        {team.rosters.length} roster{team.rosters.length !== 1 ? 's' : ''}
+                      </span>
+                      <span>
+                        {players.length} player{players.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    {players.length > 0 && (
+                      <div className="flex -space-x-2">
+                        {visible.map((player) => (
+                          <div
+                            key={player.id}
+                            title={player.name}
+                            className={`size-8 rounded-full flex items-center justify-center text-xs font-medium ring-2 ring-background ${getColorClass(player.name)}`}
+                          >
+                            {getInitials(player.name)}
+                          </div>
+                        ))}
+                        {overflow > 0 && (
+                          <div className="size-8 rounded-full flex items-center justify-center text-xs font-medium ring-2 ring-background bg-muted text-muted-foreground">
+                            +{overflow}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
 
@@ -135,6 +244,47 @@ export function Dashboard() {
             })}
           </div>
         </div>
+      )}
+      <Separator />
+
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">Data</h2>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            Export Backup
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+            Import Backup
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={importData !== null}
+        onConfirm={handleConfirmImport}
+        onCancel={() => setImportData(null)}
+        title="Import backup?"
+        description="This will replace all your current teams, rosters, and games with the imported data."
+        confirmLabel="Import"
+        variant="destructive"
+      />
+
+      {importError && (
+        <Dialog open onOpenChange={() => setImportError(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Import Failed</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">{importError}</p>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

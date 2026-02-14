@@ -1,31 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { validateSchedule, validateRosterForGame } from './validation.ts';
 import { RotationAssignment } from '@/types/domain.ts';
-import type { RotationSchedule, Rotation, Player } from '@/types/domain.ts';
-import { buildRoster, buildRotation, playerFactory, gameConfigFactory } from '@/test/factories.ts';
-import { calculatePlayerStats } from './stats.ts';
-
-function buildSchedule(rotations: Rotation[], players: Player[]): RotationSchedule {
-  const playerStats = calculatePlayerStats(rotations, players);
-  const strengths = rotations.map((r) => r.teamStrength);
-  const avg = strengths.length > 0
-    ? strengths.reduce((s, v) => s + v, 0) / strengths.length
-    : 0;
-
-  return {
-    rotations,
-    playerStats,
-    overallStats: {
-      strengthVariance: 0,
-      minStrength: Math.min(...strengths),
-      maxStrength: Math.max(...strengths),
-      avgStrength: avg,
-      violations: [],
-      isValid: true,
-    },
-    generatedAt: Date.now(),
-  };
-}
+import type { Rotation } from '@/types/domain.ts';
+import { buildRoster, buildRotation, buildSchedule, playerFactory, gameConfigFactory } from '@/test/factories.ts';
 
 describe('validateSchedule', () => {
   it('returns no violations for a valid schedule', () => {
