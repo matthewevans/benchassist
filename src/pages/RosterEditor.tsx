@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { generateId } from '@/utils/id.ts';
+import { parsePlayerImport } from '@/utils/parsePlayerImport.ts';
 import { POSITION_LABELS } from '@/types/domain.ts';
 import type { Player, SkillRanking, Position } from '@/types/domain.ts';
 
@@ -36,12 +37,24 @@ const DEFAULT_FORM: PlayerFormData = {
   secondaryPositions: [],
 };
 
+interface ImportRow {
+  name: string;
+  skillRanking: SkillRanking;
+  canPlayGoalie: boolean;
+  existingPlayerId: string | null;
+  error: string | null;
+}
+
 export function RosterEditor() {
   const { teamId, rosterId } = useParams<{ teamId: string; rosterId: string }>();
   const { state, dispatch } = useAppContext();
   const [isAdding, setIsAdding] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [form, setForm] = useState<PlayerFormData>(DEFAULT_FORM);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importStep, setImportStep] = useState<'paste' | 'preview'>('paste');
+  const [importRows, setImportRows] = useState<ImportRow[]>([]);
 
   const team = teamId ? state.teams[teamId] : undefined;
   const roster = team?.rosters.find((r) => r.id === rosterId);
@@ -106,6 +119,74 @@ export function RosterEditor() {
     dispatch({ type: 'DELETE_PLAYER', payload: { teamId, rosterId, playerId } });
   }
 
+  function handleImportParse() {
+    const parsed = parsePlayerImport(importText);
+    const rows: ImportRow[] = parsed.map((p) => {
+      if ('error' in p) {
+        return { name: p.name, skillRanking: 3, canPlayGoalie: false, existingPlayerId: null, error: p.error };
+      }
+      const existing = roster?.players.find(
+        (rp) => rp.name.toLowerCase() === p.name.toLowerCase(),
+      );
+      return {
+        name: p.name,
+        skillRanking: p.skillRanking,
+        canPlayGoalie: existing?.canPlayGoalie ?? false,
+        existingPlayerId: existing?.id ?? null,
+        error: null,
+      };
+    });
+    setImportRows(rows);
+    setImportStep('preview');
+  }
+
+  function handleImportSave() {
+    if (!teamId || !rosterId) return;
+    const validRows = importRows.filter((r) => !r.error);
+    for (const row of validRows) {
+      if (row.existingPlayerId) {
+        const existing = roster?.players.find((p) => p.id === row.existingPlayerId);
+        const player: Player = {
+          id: row.existingPlayerId,
+          name: row.name,
+          skillRanking: row.skillRanking,
+          canPlayGoalie: row.canPlayGoalie,
+          primaryPosition: existing?.primaryPosition ?? null,
+          secondaryPositions: existing?.secondaryPositions ?? [],
+          createdAt: existing?.createdAt ?? Date.now(),
+        };
+        dispatch({ type: 'UPDATE_PLAYER', payload: { teamId, rosterId, player } });
+      } else {
+        const player: Player = {
+          id: generateId(),
+          name: row.name,
+          skillRanking: row.skillRanking,
+          canPlayGoalie: row.canPlayGoalie,
+          primaryPosition: null,
+          secondaryPositions: [],
+          createdAt: Date.now(),
+        };
+        dispatch({ type: 'ADD_PLAYER', payload: { teamId, rosterId, player } });
+      }
+    }
+    handleImportClose();
+  }
+
+  function handleImportClose() {
+    setIsImporting(false);
+    setImportText('');
+    setImportStep('paste');
+    setImportRows([]);
+  }
+
+  function updateImportRow(index: number, updates: Partial<ImportRow>) {
+    setImportRows((rows) => rows.map((r, i) => (i === index ? { ...r, ...updates } : r)));
+  }
+
+  function removeImportRow(index: number) {
+    setImportRows((rows) => rows.filter((_, i) => i !== index));
+  }
+
   const sortedPlayers = [...roster.players].sort((a, b) => b.skillRanking - a.skillRanking);
 
   return (
@@ -122,97 +203,209 @@ export function RosterEditor() {
         <p className="text-sm text-muted-foreground">
           {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
         </p>
-        <Dialog
-          open={isAdding}
-          onOpenChange={(open) => {
-            setIsAdding(open);
-            if (!open) {
-              setForm(DEFAULT_FORM);
-              setEditingPlayerId(null);
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="sm">Add Player</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingPlayerId ? 'Edit Player' : 'Add Player'}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="player-name">Name</Label>
-                <Input
-                  id="player-name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Player name"
-                  autoFocus
-                />
-              </div>
+        <div className="flex gap-2">
+          <Dialog open={isImporting} onOpenChange={(open) => { if (!open) handleImportClose(); else setIsImporting(true); }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">Import Players</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {importStep === 'paste' ? 'Import Players' : 'Review Import'}
+                </DialogTitle>
+              </DialogHeader>
 
-              <div className="space-y-2">
-                <Label>Skill Ranking</Label>
-                <Select
-                  value={String(form.skillRanking)}
-                  onValueChange={(v) => setForm({ ...form, skillRanking: Number(v) as SkillRanking })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {([1, 2, 3, 4, 5] as const).map((rank) => (
-                      <SelectItem key={rank} value={String(rank)}>
-                        {SKILL_LABELS[rank]}
-                      </SelectItem>
+              {importStep === 'paste' ? (
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Paste player list (Name: Skill per line)</Label>
+                    <textarea
+                      className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+                      value={importText}
+                      onChange={(e) => setImportText(e.target.value)}
+                      placeholder={'Sloane: 4\nElla: 3\nKendall: 5'}
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    onClick={handleImportParse}
+                    className="w-full"
+                    disabled={!importText.trim()}
+                  >
+                    Preview
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4 pt-2">
+                  <div className="space-y-2">
+                    {importRows.map((row, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        {row.error ? (
+                          <div className="flex-1 flex items-center gap-2 text-sm text-destructive">
+                            <span className="truncate">{row.name}</span>
+                            <span className="text-xs">({row.error})</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Input
+                              value={row.name}
+                              onChange={(e) => updateImportRow(i, { name: e.target.value })}
+                              className="flex-1 h-8 text-sm"
+                            />
+                            <Select
+                              value={String(row.skillRanking)}
+                              onValueChange={(v) => updateImportRow(i, { skillRanking: Number(v) as SkillRanking })}
+                            >
+                              <SelectTrigger className="w-16 h-8 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {([1, 2, 3, 4, 5] as const).map((rank) => (
+                                  <SelectItem key={rank} value={String(rank)}>
+                                    {rank}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <input
+                              type="checkbox"
+                              checked={row.canPlayGoalie}
+                              onChange={(e) => updateImportRow(i, { canPlayGoalie: e.target.checked })}
+                              className="h-4 w-4"
+                              title="Can play goalie"
+                            />
+                            {row.existingPlayerId ? (
+                              <Badge variant="secondary" className="text-xs shrink-0">Update</Badge>
+                            ) : (
+                              <Badge className="text-xs shrink-0">New</Badge>
+                            )}
+                          </>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-1 text-xs text-destructive shrink-0"
+                          onClick={() => removeImportRow(i)}
+                        >
+                          X
+                        </Button>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Primary Position</Label>
-                <Select
-                  value={form.primaryPosition ?? 'none'}
-                  onValueChange={(v) =>
-                    setForm({ ...form, primaryPosition: v === 'none' ? null : (v as Position) })
-                  }
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setImportStep('paste')}
+                      className="flex-1"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleImportSave}
+                      className="flex-1"
+                      disabled={importRows.filter((r) => !r.error).length === 0}
+                    >
+                      Import {importRows.filter((r) => !r.error).length} Players
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
+            open={isAdding}
+            onOpenChange={(open) => {
+              setIsAdding(open);
+              if (!open) {
+                setForm(DEFAULT_FORM);
+                setEditingPlayerId(null);
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button size="sm">Add Player</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingPlayerId ? 'Edit Player' : 'Add Player'}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="player-name">Name</Label>
+                  <Input
+                    id="player-name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Player name"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Skill Ranking</Label>
+                  <Select
+                    value={String(form.skillRanking)}
+                    onValueChange={(v) => setForm({ ...form, skillRanking: Number(v) as SkillRanking })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {([1, 2, 3, 4, 5] as const).map((rank) => (
+                        <SelectItem key={rank} value={String(rank)}>
+                          {SKILL_LABELS[rank]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Primary Position</Label>
+                  <Select
+                    value={form.primaryPosition ?? 'none'}
+                    onValueChange={(v) =>
+                      setForm({ ...form, primaryPosition: v === 'none' ? null : (v as Position) })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="None" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {(Object.keys(POSITION_LABELS) as Position[]).map((pos) => (
+                        <SelectItem key={pos} value={pos}>
+                          {POSITION_LABELS[pos]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="can-play-goalie"
+                    checked={form.canPlayGoalie}
+                    onChange={(e) => setForm({ ...form, canPlayGoalie: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="can-play-goalie">Can play goalkeeper</Label>
+                </div>
+
+                <Button
+                  onClick={handleSavePlayer}
+                  className="w-full"
+                  disabled={!form.name.trim()}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="None" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {(Object.keys(POSITION_LABELS) as Position[]).map((pos) => (
-                      <SelectItem key={pos} value={pos}>
-                        {POSITION_LABELS[pos]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  {editingPlayerId ? 'Save Changes' : 'Add Player'}
+                </Button>
               </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="can-play-goalie"
-                  checked={form.canPlayGoalie}
-                  onChange={(e) => setForm({ ...form, canPlayGoalie: e.target.checked })}
-                  className="h-4 w-4"
-                />
-                <Label htmlFor="can-play-goalie">Can play goalkeeper</Label>
-              </div>
-
-              <Button
-                onClick={handleSavePlayer}
-                className="w-full"
-                disabled={!form.name.trim()}
-              >
-                {editingPlayerId ? 'Save Changes' : 'Add Player'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {sortedPlayers.length === 0 ? (
