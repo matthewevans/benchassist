@@ -40,6 +40,11 @@ describe('parsePlayerImport', () => {
     expect(result).toEqual([{ name: 'Nick: Jr', skillRanking: 2 }]);
   });
 
+  it('returns error for empty name', () => {
+    const result = parsePlayerImport(': 3');
+    expect(result).toEqual([{ name: ': 3', error: 'Expected format: Name: Skill' }]);
+  });
+
   it('returns empty array for empty input', () => {
     expect(parsePlayerImport('')).toEqual([]);
     expect(parsePlayerImport('  \n  \n  ')).toEqual([]);

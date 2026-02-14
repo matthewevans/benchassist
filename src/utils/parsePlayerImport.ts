@@ -18,11 +18,15 @@ function parseLine(line: string): ParsedPlayer {
   }
 
   const name = line.slice(0, lastColon).trim();
+  if (!name) {
+    return { name: line.trim(), error: 'Expected format: Name: Skill' };
+  }
+
   const skillStr = line.slice(lastColon + 1).trim();
   const skill = Number(skillStr);
 
   if (!Number.isInteger(skill) || skill < 1 || skill > 5) {
-    return { name: name || skillStr, error: 'Skill must be 1-5' };
+    return { name, error: 'Skill must be 1-5' };
   }
 
   return { name, skillRanking: skill as SkillRanking };
