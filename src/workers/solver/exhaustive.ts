@@ -1,5 +1,5 @@
 import { RotationAssignment } from '@/types/domain.ts';
-import type { Player, GoalieAssignment, RotationSchedule, Rotation, FormationSlot } from '@/types/domain.ts';
+import type { Player, GoalieAssignment, RotationSchedule, Rotation, FormationSlot, SubPosition } from '@/types/domain.ts';
 import { calculatePlayerStats, calculateRotationStrength } from '@/utils/stats.ts';
 import { autoAssignPositions } from '@/utils/positions.ts';
 import type { SolverContext, BenchPattern } from './types.ts';
@@ -479,6 +479,7 @@ function buildSchedule(
 ): RotationSchedule {
   const rotations: Rotation[] = [];
   const playerMap = config.usePositions ? new Map(allPlayers.map((p) => [p.id, p])) : undefined;
+  const positionHistory = config.usePositions ? new Map<string, Map<SubPosition, number>>() : undefined;
 
   for (let r = 0; r < totalRotations; r++) {
     const assignments: Record<string, RotationAssignment> = {};
@@ -505,7 +506,14 @@ function buildSchedule(
       const fieldPlayerIds = Object.entries(assignments)
         .filter(([, a]) => a === RotationAssignment.Field)
         .map(([id]) => id);
-      rotation.fieldPositions = autoAssignPositions(fieldPlayerIds, config.formation, playerMap);
+      rotation.fieldPositions = autoAssignPositions(fieldPlayerIds, config.formation, playerMap, positionHistory);
+
+      // Track position history for diversity in subsequent rotations
+      for (const [playerId, subPos] of Object.entries(rotation.fieldPositions)) {
+        if (!positionHistory!.has(playerId)) positionHistory!.set(playerId, new Map());
+        const playerHist = positionHistory!.get(playerId)!;
+        playerHist.set(subPos, (playerHist.get(subPos) ?? 0) + 1);
+      }
     }
 
     rotations.push(rotation);

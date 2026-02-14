@@ -50,47 +50,76 @@ export function deriveSubPositions(formation: FormationSlot[]): SubPosition[] {
 }
 
 /**
- * Auto-assign field players to sub-position slots based on their primaryPosition.
- * Pass 1: match players to slots in their preferred position group.
- * Pass 2: assign remaining players to remaining slots.
+ * Auto-assign field players to sub-position slots.
+ * Finds the minimum-cost assignment where cost = times a player has already
+ * played that sub-position (from positionHistory), with primary position match
+ * as a tiebreaker. The first rotation (empty history) naturally respects
+ * player preferences; subsequent rotations prioritize diversity.
+ *
+ * Uses exhaustive search with pruning, matching the pattern used by
+ * generateBenchPatterns. Costs are pre-computed and slots are tried in
+ * cheapest-first order so optimal solutions are found early.
  */
 export function autoAssignPositions(
   fieldPlayerIds: PlayerId[],
   formation: FormationSlot[],
   playerMap: Map<PlayerId, Player>,
+  positionHistory?: Map<PlayerId, Map<SubPosition, number>>,
 ): Record<PlayerId, SubPosition> {
-  const availableSlots = deriveSubPositions(formation);
-  const result: Record<PlayerId, SubPosition> = {};
-  const assignedPlayers = new Set<PlayerId>();
-  const usedSlots = new Set<number>(); // indices into availableSlots
+  const slots = deriveSubPositions(formation);
+  const count = Math.min(fieldPlayerIds.length, slots.length);
+  if (count === 0) return {};
 
-  // Pass 1: match primaryPosition to compatible slots
-  for (const playerId of fieldPlayerIds) {
-    const player = playerMap.get(playerId);
-    if (!player?.primaryPosition || player.primaryPosition === 'GK') continue;
+  // Pre-compute cost matrix and per-player slot order (cheapest first)
+  const costs: number[][] = [];
+  const slotOrder: number[][] = [];
+  let lowerBound = 0;
 
-    for (let i = 0; i < availableSlots.length; i++) {
-      if (usedSlots.has(i)) continue;
-      if (SUB_POSITION_GROUP[availableSlots[i]] === player.primaryPosition) {
-        result[playerId] = availableSlots[i];
-        assignedPlayers.add(playerId);
-        usedSlots.add(i);
-        break;
-      }
+  for (let p = 0; p < count; p++) {
+    const id = fieldPlayerIds[p];
+    const player = playerMap.get(id);
+    const playerHist = positionHistory?.get(id);
+
+    const playerCosts = slots.map((subPos) => {
+      const timesPlayed = playerHist?.get(subPos) ?? 0;
+      const matchesPrimary = !!player?.primaryPosition
+        && player.primaryPosition !== 'GK'
+        && SUB_POSITION_GROUP[subPos] === player.primaryPosition;
+      return timesPlayed * 2 + (matchesPrimary ? 0 : 1);
+    });
+
+    costs.push(playerCosts);
+    slotOrder.push(
+      Array.from({ length: slots.length }, (_, s) => s)
+        .sort((a, b) => playerCosts[a] - playerCosts[b]),
+    );
+    lowerBound += Math.min(...playerCosts);
+  }
+
+  let best: Record<PlayerId, SubPosition> = {};
+  let bestCost = Infinity;
+  const picked = new Array<number>(count);
+
+  function search(depth: number, usedSlots: Set<number>, cost: number) {
+    if (cost >= bestCost) return;
+    if (depth === count) {
+      bestCost = cost;
+      best = {};
+      for (let i = 0; i < count; i++) best[fieldPlayerIds[i]] = slots[picked[i]];
+      return;
+    }
+    for (const s of slotOrder[depth]) {
+      if (usedSlots.has(s)) continue;
+      picked[depth] = s;
+      usedSlots.add(s);
+      search(depth + 1, usedSlots, cost + costs[depth][s]);
+      usedSlots.delete(s);
+      if (bestCost <= lowerBound) return;
     }
   }
 
-  // Pass 2: fill remaining slots with unassigned players
-  const remainingPlayers = fieldPlayerIds.filter((id) => !assignedPlayers.has(id));
-  const remainingSlotIndices = availableSlots
-    .map((_, i) => i)
-    .filter((i) => !usedSlots.has(i));
-
-  for (let i = 0; i < Math.min(remainingPlayers.length, remainingSlotIndices.length); i++) {
-    result[remainingPlayers[i]] = availableSlots[remainingSlotIndices[i]];
-  }
-
-  return result;
+  search(0, new Set(), 0);
+  return best;
 }
 
 /** Badge display info for a rotation cell */

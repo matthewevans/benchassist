@@ -214,11 +214,7 @@ export function Dashboard() {
               return (
                 <Link
                   key={game.id}
-                  to={
-                    game.status === 'in-progress'
-                      ? `/games/${game.id}/live`
-                      : `/games/${game.id}/rotations`
-                  }
+                  to={`/games/${game.id}/rotations`}
                 >
                   <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
                     <CardContent className="py-3 flex items-center justify-between">
