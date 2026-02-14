@@ -1,0 +1,112 @@
+import { PlayIcon, PauseIcon, RotateCcwIcon, XIcon, ChevronRightIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button.tsx';
+import { cn } from '@/lib/utils.ts';
+import type { UsePeriodTimerResult } from '@/hooks/usePeriodTimer.ts';
+
+interface LiveBottomBarProps {
+  timer: UsePeriodTimerResult;
+  onAdvance: () => void;
+  isLastRotation: boolean;
+  isCrossingPeriod: boolean;
+  swapPlayerName: string | null;
+  onCancelSwap: () => void;
+}
+
+export function LiveBottomBar({
+  timer,
+  onAdvance,
+  isLastRotation,
+  isCrossingPeriod,
+  swapPlayerName,
+  onCancelSwap,
+}: LiveBottomBarProps) {
+  const nextMarker = timer.markers.find((m) => timer.elapsedMs < m.timeMs);
+  const nextSubMin = nextMarker ? Math.ceil((nextMarker.timeMs - timer.elapsedMs) / 60000) : null;
+
+  const advanceLabel = isLastRotation
+    ? 'End Game'
+    : isCrossingPeriod
+      ? 'Next Period'
+      : 'Next';
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg animate-in slide-in-from-bottom duration-300">
+      {/* Progress strip along top edge */}
+      <div className="relative h-1 bg-secondary">
+        <div
+          className={cn(
+            "absolute inset-y-0 left-0 transition-all duration-1000",
+            timer.isOvertime ? "bg-destructive" : "bg-primary",
+          )}
+          style={{ width: `${timer.progress * 100}%` }}
+        />
+        {timer.markers.map((marker, i) => (
+          <div
+            key={i}
+            className="absolute top-0 bottom-0 w-0.5 bg-foreground/40"
+            style={{ left: `${marker.progress * 100}%` }}
+          />
+        ))}
+      </div>
+
+      <div className="flex items-center gap-3 px-4 py-3">
+        {/* Left: Timer + controls */}
+        <div className="flex items-center gap-2">
+          <span className={cn(
+            "font-mono font-bold tabular-nums text-lg",
+            timer.isOvertime && "text-destructive",
+          )}>
+            {timer.formattedElapsed}
+          </span>
+          <span className="text-sm text-muted-foreground">/ {timer.formattedDuration}</span>
+          {timer.isRunning ? (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={timer.pause} aria-label="Pause timer">
+              <PauseIcon className="size-4" />
+            </Button>
+          ) : (
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={timer.play} aria-label="Start timer">
+              <PlayIcon className="size-4" />
+            </Button>
+          )}
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={timer.reset} aria-label="Reset timer">
+            <RotateCcwIcon className="size-4" />
+          </Button>
+        </div>
+
+        {/* Center: swap mode indicator OR next sub hint */}
+        <div className="flex-1 text-center text-sm">
+          {swapPlayerName ? (
+            <div className="flex items-center justify-center gap-2">
+              <span className="font-medium text-primary">
+                Swapping {swapPlayerName}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs"
+                onClick={onCancelSwap}
+                aria-label="Cancel swap"
+              >
+                <XIcon className="size-3 mr-1" />
+                Cancel
+              </Button>
+            </div>
+          ) : nextSubMin != null && !timer.isOvertime ? (
+            <span className="text-muted-foreground">Next sub ~{nextSubMin} min</span>
+          ) : null}
+        </div>
+
+        {/* Right: Advance button */}
+        <Button
+          size="lg"
+          className="px-6"
+          onClick={onAdvance}
+          aria-label={advanceLabel}
+        >
+          {advanceLabel}
+          {!isLastRotation && <ChevronRightIcon className="size-4 ml-1" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
