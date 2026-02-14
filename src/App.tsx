@@ -11,7 +11,7 @@ import { GameHistory } from '@/pages/GameHistory.tsx';
 export default function App() {
   return (
     <AppProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/benchassist">
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<Dashboard />} />
