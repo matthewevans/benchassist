@@ -36,7 +36,6 @@ export function RotationGrid() {
   const config = team?.gameConfigs.find((c) => c.id === game?.gameConfigId);
   const schedule = game?.schedule;
 
-  // Task 5: Derived live mode values
   const isLive = game?.status === 'in-progress';
   const isCompleted = game?.status === 'completed';
   const currentRotationIndex = game?.currentRotationIndex ?? 0;
@@ -44,7 +43,7 @@ export function RotationGrid() {
   const nextRotation = schedule?.rotations[currentRotationIndex + 1];
   const currentPeriodIndex = currentRotation?.periodIndex ?? 0;
 
-  // Task 5: Hooks (must be called before any early returns)
+  // Hooks must be called before any early returns
   const timer = usePeriodTimer(
     isLive ? game : undefined,
     config,
@@ -62,7 +61,7 @@ export function RotationGrid() {
 
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // Task 7: Auto-scroll to current rotation column
+  // Auto-scroll to current rotation column in live mode
   useEffect(() => {
     if (!isLive || !gridRef.current) return;
     const table = gridRef.current;
@@ -86,7 +85,7 @@ export function RotationGrid() {
     }
   }, [solver.result, game, dispatch, solver]);
 
-  // Task 7: Period groups for collapse rendering
+  // Group rotations by period for collapse rendering
   const periodGroups = useMemo(() => {
     if (!schedule) return [];
     const groups: { periodIndex: number; rotations: typeof schedule.rotations }[] = [];
@@ -101,7 +100,7 @@ export function RotationGrid() {
     return groups;
   }, [schedule]);
 
-  // Task 7: Changing player IDs for sub highlighting
+  // Players whose assignment changes in the next rotation (for sub highlighting)
   const changingPlayerIds = useMemo(() => {
     if (!isLive || !currentRotation || !nextRotation) return new Set<PlayerId>();
     const changing = new Set<PlayerId>();
@@ -123,7 +122,6 @@ export function RotationGrid() {
     );
   }
 
-  // Task 5: Filter out removed players
   const activePlayers = roster.players.filter(
     (p) => !game.absentPlayerIds.includes(p.id) && !game.removedPlayerIds.includes(p.id),
   );
@@ -133,7 +131,6 @@ export function RotationGrid() {
   const isCrossingPeriod = nextRotation ? nextRotation.periodIndex !== currentPeriodIndex : false;
   const removingPlayer = removingPlayerId ? (playerMap.get(removingPlayerId) ?? roster.players.find((p) => p.id === removingPlayerId)) : undefined;
 
-  // Task 5: Handlers ported from GameDay.tsx
   function handleCellClick(rotationIndex: number, playerId: PlayerId) {
     // Block interaction in completed mode
     if (isCompleted) return;
@@ -298,7 +295,7 @@ export function RotationGrid() {
 
   return (
     <div className="space-y-4">
-      {/* Task 6: Adaptive header */}
+      {/* Header — adapts to game state */}
       {isCompleted ? (
         <div>
           <h1 className="text-xl font-bold">{game.name}</h1>
@@ -365,7 +362,7 @@ export function RotationGrid() {
         </Card>
       )}
 
-      {/* Task 8: Hide overall stats in live/completed mode */}
+      {/* Overall stats — setup mode only */}
       {!isLive && !isCompleted && (
         <div className="grid grid-cols-3 gap-3">
           <Card>
@@ -391,7 +388,7 @@ export function RotationGrid() {
         </div>
       )}
 
-      {/* Task 7: Grid with period-aware rendering */}
+      {/* Rotation grid */}
       <div className="overflow-x-auto" ref={gridRef}>
         <table className="w-full text-sm">
           <thead>
@@ -584,7 +581,7 @@ export function RotationGrid() {
         </p>
       )}
 
-      {/* Task 8: Hide player statistics in live/completed mode */}
+      {/* Player statistics — setup mode only */}
       {!isLive && !isCompleted && (
         <Card>
           <CardHeader>
@@ -620,7 +617,7 @@ export function RotationGrid() {
         </Card>
       )}
 
-      {/* Task 8: LiveBottomBar spacer + component */}
+      {/* Live bottom bar */}
       {isLive && <div className="h-20" />}
       {isLive && (
         <LiveBottomBar
@@ -633,7 +630,7 @@ export function RotationGrid() {
         />
       )}
 
-      {/* Task 8: ConfirmDialog for player removal */}
+      {/* Player removal confirmation */}
       <ConfirmDialog
         open={removingPlayerId !== null}
         onConfirm={handleConfirmRemovePlayer}
