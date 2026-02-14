@@ -58,12 +58,9 @@ export function GameSetup() {
     return `${playerCount} players · ${selectedConfig.fieldSize}v${selectedConfig.fieldSize} · ${totalRotations} rotations · ~${benchPerRotation} benched per rotation`;
   }, [selectedRoster, selectedConfig, activePlayers]);
 
-  const [configCollapsed, setConfigCollapsed] = useState(false);
+  const [configExpanded, setConfigExpanded] = useState(false);
   const configComplete = !!(teamId && rosterId && configId);
-
-  useEffect(() => {
-    if (configComplete) setConfigCollapsed(true);
-  }, [configComplete]);
+  const showConfigCollapsed = configComplete && !configExpanded && !!summaryText;
 
   function handleToggleAbsent(playerId: PlayerId) {
     setAbsentPlayerIds((prev) => {
@@ -147,13 +144,13 @@ export function GameSetup() {
 
       {/* Step 1: Select Team */}
       <Card>
-        {configCollapsed && summaryText ? (
+        {showConfigCollapsed ? (
           <CardContent className="py-3 flex items-center justify-between">
             <div>
               <p className="font-medium text-sm">{selectedTeam?.name} · {selectedRoster?.name}</p>
               <p className="text-xs text-muted-foreground">{summaryText}</p>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => setConfigCollapsed(false)}>
+            <Button variant="ghost" size="sm" onClick={() => setConfigExpanded(true)}>
               Edit
             </Button>
           </CardContent>
