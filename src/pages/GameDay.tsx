@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
@@ -99,13 +99,15 @@ export function GameDay() {
   }
 
   // Handle solver result for re-solve
-  if (solver.result && gameId) {
-    dispatch({
-      type: 'SET_GAME_SCHEDULE',
-      payload: { gameId, schedule: solver.result },
-    });
-    solver.reset();
-  }
+  useEffect(() => {
+    if (solver.result && gameId) {
+      dispatch({
+        type: 'SET_GAME_SCHEDULE',
+        payload: { gameId, schedule: solver.result },
+      });
+      solver.reset();
+    }
+  }, [solver.result, gameId, dispatch, solver]);
 
   if (isCompleted) {
     return (

@@ -33,12 +33,15 @@ export function useSolver(): UseSolverReturn {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isActive = true;
+
     workerRef.current = new Worker(
       new URL('../workers/rotation-solver.worker.ts', import.meta.url),
       { type: 'module' },
     );
 
     workerRef.current.onmessage = (e: MessageEvent<SolverResponse>) => {
+      if (!isActive) return;
       const response = e.data;
       switch (response.type) {
         case 'PROGRESS':
@@ -67,6 +70,7 @@ export function useSolver(): UseSolverReturn {
     };
 
     return () => {
+      isActive = false;
       workerRef.current?.terminate();
     };
   }, []);

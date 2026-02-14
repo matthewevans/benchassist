@@ -1,5 +1,6 @@
 import { RotationAssignment } from '@/types/domain.ts';
-import type { Player, GoalieAssignment, RotationSchedule, Rotation, PlayerStats } from '@/types/domain.ts';
+import type { Player, GoalieAssignment, RotationSchedule, Rotation } from '@/types/domain.ts';
+import { calculatePlayerStats, calculateRotationStrength } from '@/utils/stats.ts';
 import type { SolverContext, BenchPattern } from './types.ts';
 
 let cancelled = false;
@@ -476,7 +477,6 @@ function buildSchedule(
   totalRotations: number,
 ): RotationSchedule {
   const rotations: Rotation[] = [];
-  const playerMap = new Map(allPlayers.map((p) => [p.id, p]));
 
   for (let r = 0; r < totalRotations; r++) {
     const assignments: Record<string, RotationAssignment> = {};
@@ -495,49 +495,12 @@ function buildSchedule(
       }
     }
 
-    let teamStrength = 0;
-    for (const [playerId, assignment] of Object.entries(assignments)) {
-      if (assignment === RotationAssignment.Field || assignment === RotationAssignment.Goalie) {
-        const player = playerMap.get(playerId);
-        if (player) teamStrength += player.skillRanking;
-      }
-    }
-
-    rotations.push({ index: r, periodIndex, assignments, teamStrength, violations: [] });
+    const rotation: Rotation = { index: r, periodIndex, assignments, teamStrength: 0, violations: [] };
+    rotation.teamStrength = calculateRotationStrength(rotation, allPlayers);
+    rotations.push(rotation);
   }
 
-  const playerStats: Record<string, PlayerStats> = {};
-  for (const player of allPlayers) {
-    let played = 0;
-    let benched = 0;
-    let goalie = 0;
-    let currentStreak = 0;
-    let maxStreak = 0;
-
-    for (const rotation of rotations) {
-      const a = rotation.assignments[player.id];
-      if (a === RotationAssignment.Bench) {
-        benched++;
-        currentStreak++;
-        maxStreak = Math.max(maxStreak, currentStreak);
-      } else {
-        currentStreak = 0;
-        if (a === RotationAssignment.Goalie) { goalie++; played++; }
-        else if (a === RotationAssignment.Field) { played++; }
-      }
-    }
-
-    playerStats[player.id] = {
-      playerId: player.id,
-      playerName: player.name,
-      rotationsPlayed: played,
-      rotationsBenched: benched,
-      rotationsGoalie: goalie,
-      totalRotations,
-      playPercentage: totalRotations > 0 ? Math.round((played / totalRotations) * 100) : 0,
-      maxConsecutiveBench: maxStreak,
-    };
-  }
+  const playerStats = calculatePlayerStats(rotations, allPlayers);
 
   const strengths = rotations.map((r) => r.teamStrength);
   const avg = strengths.reduce((s, v) => s + v, 0) / strengths.length;

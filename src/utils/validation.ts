@@ -62,8 +62,13 @@ export function validateSchedule(
   if (config.goalieRestAfterPeriod) {
     const rotationsPerPeriod = config.rotationsPerPeriod;
     for (const player of players) {
+      const checkedPeriods = new Set<number>();
       for (const rotation of schedule.rotations) {
-        if (rotation.assignments[player.id] === RotationAssignment.Goalie) {
+        if (
+          rotation.assignments[player.id] === RotationAssignment.Goalie &&
+          !checkedPeriods.has(rotation.periodIndex)
+        ) {
+          checkedPeriods.add(rotation.periodIndex);
           const periodEnd = (rotation.periodIndex + 1) * rotationsPerPeriod;
           if (periodEnd < schedule.rotations.length) {
             const nextPeriodFirst = schedule.rotations[periodEnd];
@@ -73,7 +78,6 @@ export function validateSchedule(
               );
             }
           }
-          break;
         }
       }
     }

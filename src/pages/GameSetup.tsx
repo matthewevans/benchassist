@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
@@ -20,6 +20,7 @@ export function GameSetup() {
   const solver = useSolver();
 
   const preselectedTeamId = searchParams.get('teamId') ?? '';
+  const pendingGameIdRef = useRef<string | null>(null);
 
   const [teamId, setTeamId] = useState(preselectedTeamId);
   const [rosterId, setRosterId] = useState('');
@@ -90,6 +91,8 @@ export function GameSetup() {
 
     dispatch({ type: 'CREATE_GAME', payload: game });
 
+    pendingGameIdRef.current = gameId;
+
     solver.solve({
       players: selectedRoster.players,
       config: selectedConfig,
@@ -97,22 +100,26 @@ export function GameSetup() {
       goalieAssignments,
       manualOverrides: [],
     });
-
-    // Watch for solver result
-    const checkResult = setInterval(() => {
-      if (solver.result) {
-        dispatch({
-          type: 'SET_GAME_SCHEDULE',
-          payload: { gameId, schedule: solver.result },
-        });
-        navigate(`/games/${gameId}/rotations`);
-        clearInterval(checkResult);
-      }
-      if (solver.error) {
-        clearInterval(checkResult);
-      }
-    }, 100);
   }
+
+  // Navigate when solver completes
+  useEffect(() => {
+    const gameId = pendingGameIdRef.current;
+    if (!gameId) return;
+
+    if (solver.result) {
+      dispatch({
+        type: 'SET_GAME_SCHEDULE',
+        payload: { gameId, schedule: solver.result },
+      });
+      pendingGameIdRef.current = null;
+      navigate(`/games/${gameId}/rotations`);
+    }
+
+    if (solver.error) {
+      pendingGameIdRef.current = null;
+    }
+  }, [solver.result, solver.error, dispatch, navigate]);
 
   return (
     <div className="space-y-6">

@@ -103,7 +103,7 @@ export function previewSwap(
       strengthVariance: variance,
       minStrength: Math.min(...strengths),
       maxStrength: Math.max(...strengths),
-      avgStrength: avg,
+      avgStrength: Math.round(avg * 10) / 10,
       violations: [],
     },
     generatedAt: schedule.generatedAt,
