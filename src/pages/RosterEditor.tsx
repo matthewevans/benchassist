@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label.tsx';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
+import { Switch } from '@/components/ui/switch.tsx';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
 import { generateId } from '@/utils/id.ts';
 import { parsePlayerImport } from '@/utils/parsePlayerImport.ts';
 import { POSITION_LABELS } from '@/types/domain.ts';
@@ -268,11 +270,9 @@ export function RosterEditor() {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={row.canPlayGoalie}
-                              onChange={(e) => updateImportRow(i, { canPlayGoalie: e.target.checked })}
-                              className="h-4 w-4"
+                              onCheckedChange={(checked) => updateImportRow(i, { canPlayGoalie: checked as boolean })}
                               aria-label="Can play goalie"
                             />
                             {row.existingPlayerId ? (
@@ -387,12 +387,10 @@ export function RosterEditor() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                  <Switch
                     id="can-play-goalie"
                     checked={form.canPlayGoalie}
-                    onChange={(e) => setForm({ ...form, canPlayGoalie: e.target.checked })}
-                    className="h-4 w-4"
+                    onCheckedChange={(checked) => setForm({ ...form, canPlayGoalie: checked as boolean })}
                   />
                   <Label htmlFor="can-play-goalie">Can play goalkeeper</Label>
                 </div>
@@ -417,14 +415,52 @@ export function RosterEditor() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-2">
-          {sortedPlayers.map((player) => (
-            <Card key={player.id}>
-              <CardContent className="py-3 flex items-center justify-between">
+        <Card>
+          <CardContent className="p-0">
+            {sortedPlayers.map((player, index) => (
+              <div
+                key={player.id}
+                className={cn(
+                  "flex items-center justify-between px-4 py-3",
+                  index < sortedPlayers.length - 1 && "border-b"
+                )}
+              >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold">
-                    {player.skillRanking}
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button
+                        className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold hover:bg-primary/20 transition-colors cursor-pointer"
+                        aria-label={`Skill ${player.skillRanking}, click to change`}
+                      >
+                        {player.skillRanking}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-1" align="start">
+                      <div className="flex flex-col">
+                        {([1, 2, 3, 4, 5] as const).map((rank) => (
+                          <button
+                            key={rank}
+                            className={cn(
+                              "px-3 py-1.5 text-sm text-left rounded hover:bg-accent transition-colors",
+                              rank === player.skillRanking && "bg-accent font-medium"
+                            )}
+                            onClick={() => {
+                              dispatch({
+                                type: 'UPDATE_PLAYER',
+                                payload: {
+                                  teamId: teamId!,
+                                  rosterId: rosterId!,
+                                  player: { ...player, skillRanking: rank },
+                                },
+                              });
+                            }}
+                          >
+                            {SKILL_LABELS[rank]}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                   <div>
                     <p className="font-medium">{player.name}</p>
                     <div className="flex gap-1 mt-0.5">
@@ -454,10 +490,10 @@ export function RosterEditor() {
                     Remove
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
     </div>
   );
