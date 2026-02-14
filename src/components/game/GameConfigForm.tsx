@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
+import { Switch } from '@/components/ui/switch.tsx';
 import { generateId } from '@/utils/id.ts';
 import { GAME_CONFIG_TEMPLATES } from '@/types/domain.ts';
 import type { GameConfig, GameConfigTemplate } from '@/types/domain.ts';
@@ -157,12 +158,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
             <Label className="text-sm">No consecutive benching</Label>
             <p className="text-xs text-muted-foreground">Prevent back-to-back bench rotations</p>
           </div>
-          <input
-            type="checkbox"
-            checked={noConsecutiveBench}
-            onChange={(e) => setNoConsecutiveBench(e.target.checked)}
-            className="h-4 w-4"
-          />
+          <Switch checked={noConsecutiveBench} onCheckedChange={setNoConsecutiveBench} />
         </div>
         {noConsecutiveBench && (
           <div className="pl-4 space-y-2">
@@ -184,12 +180,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
             <Label className="text-sm">Minimum play time</Label>
             <p className="text-xs text-muted-foreground">Every player plays at least this %</p>
           </div>
-          <input
-            type="checkbox"
-            checked={enforceMinPlayTime}
-            onChange={(e) => setEnforceMinPlayTime(e.target.checked)}
-            className="h-4 w-4"
-          />
+          <Switch checked={enforceMinPlayTime} onCheckedChange={setEnforceMinPlayTime} />
         </div>
         {enforceMinPlayTime && (
           <div className="pl-4 space-y-2">
@@ -211,12 +202,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
             <Label className="text-sm">Uses goalkeeper</Label>
             <p className="text-xs text-muted-foreground">Format includes a dedicated goalkeeper</p>
           </div>
-          <input
-            type="checkbox"
-            checked={useGoalie}
-            onChange={(e) => setUseGoalie(e.target.checked)}
-            className="h-4 w-4"
-          />
+          <Switch checked={useGoalie} onCheckedChange={setUseGoalie} />
         </div>
 
         {useGoalie && (
@@ -226,12 +212,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
                 <Label className="text-sm">Goalie plays full period</Label>
                 <p className="text-xs text-muted-foreground">No mid-period goalie swaps</p>
               </div>
-              <input
-                type="checkbox"
-                checked={goaliePlayFullPeriod}
-                onChange={(e) => setGoaliePlayFullPeriod(e.target.checked)}
-                className="h-4 w-4"
-              />
+              <Switch checked={goaliePlayFullPeriod} onCheckedChange={setGoaliePlayFullPeriod} />
             </div>
 
             <div className="flex items-center justify-between pl-4">
@@ -239,12 +220,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
                 <Label className="text-sm">Goalie rests after period</Label>
                 <p className="text-xs text-muted-foreground">Goalie must bench first rotation of next period</p>
               </div>
-              <input
-                type="checkbox"
-                checked={goalieRestAfterPeriod}
-                onChange={(e) => setGoalieRestAfterPeriod(e.target.checked)}
-                className="h-4 w-4"
-              />
+              <Switch checked={goalieRestAfterPeriod} onCheckedChange={setGoalieRestAfterPeriod} />
             </div>
           </>
         )}
