@@ -58,13 +58,43 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   // For each player, determine how many rotations they should bench
   const benchCounts = calculateBenchCounts(players, totalRotations, benchSlotsPerRotation, config);
 
-  // Generate valid bench patterns for each player
-  const playerPatterns: { player: Player; patterns: BenchPattern[] }[] = [];
-
+  // Ensure bench counts accommodate forced bench rotations (e.g. goalie rest)
   for (const player of players) {
-    const targetBenchCount = benchCounts.get(player.id) ?? 0;
+    const fb = forcedBench.get(player.id);
+    const current = benchCounts.get(player.id) ?? 0;
+    if (fb && fb.size > current) {
+      const increase = fb.size - current;
+      benchCounts.set(player.id, fb.size);
 
-    // Rotations where this player CANNOT bench (goalie duty, forced field)
+      // Redistribute: reduce bench from other players (most benched first)
+      let remaining = increase;
+      const others = [...benchCounts.entries()]
+        .filter(([id]) => id !== player.id)
+        .sort(([, a], [, b]) => b - a);
+
+      for (const [otherId, otherCount] of others) {
+        if (remaining <= 0) break;
+        const minBench = (forcedBench.get(otherId)?.size) ?? 0;
+        const reducible = otherCount - minBench;
+        if (reducible > 0) {
+          const reduction = Math.min(remaining, reducible);
+          benchCounts.set(otherId, otherCount - reduction);
+          remaining -= reduction;
+        }
+      }
+    }
+  }
+
+  // Build per-player constraint maps
+  const maxConsecutive = config.noConsecutiveBench ? config.maxConsecutiveBench : totalRotations;
+
+  type PlayerConstraints = {
+    player: Player;
+    cannotBench: Set<number>;
+    mustBench: Set<number>;
+  };
+
+  const constraintsPerPlayer: PlayerConstraints[] = players.map((player) => {
     const cannotBench = new Set<number>();
     for (const [rotIndex, goalieId] of goalieMap.entries()) {
       if (goalieId === player.id) cannotBench.add(rotIndex);
@@ -78,7 +108,6 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       }
     }
 
-    // Rotations where this player MUST bench
     const mustBench = new Set<number>();
     const fb = forcedBench.get(player.id);
     if (fb) {
@@ -90,21 +119,85 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       }
     }
 
-    const patterns = generateBenchPatterns(
-      totalRotations,
-      targetBenchCount,
-      cannotBench,
-      mustBench,
-      config.noConsecutiveBench ? config.maxConsecutiveBench : totalRotations,
+    return { player, cannotBench, mustBench };
+  });
+
+  // Generate valid bench patterns, reducing counts where constraints are too tight
+  function generatePatternsForPlayer(
+    { cannotBench, mustBench, player }: PlayerConstraints,
+  ): { patterns: BenchPattern[]; benchCount: number } {
+    let targetBenchCount = benchCounts.get(player.id) ?? 0;
+    const availableSlots = totalRotations - cannotBench.size;
+    targetBenchCount = Math.min(targetBenchCount, availableSlots);
+    targetBenchCount = Math.max(targetBenchCount, mustBench.size);
+
+    let patterns = generateBenchPatterns(
+      totalRotations, targetBenchCount, cannotBench, mustBench, maxConsecutive,
     );
 
-    if (patterns.length === 0) {
-      throw new Error(
-        `No valid bench patterns for ${player.name}. Constraints may be too restrictive.`,
+    while (patterns.length === 0 && targetBenchCount > mustBench.size) {
+      targetBenchCount--;
+      patterns = generateBenchPatterns(
+        totalRotations, targetBenchCount, cannotBench, mustBench, maxConsecutive,
       );
     }
 
-    playerPatterns.push({ player, patterns });
+    return { patterns, benchCount: targetBenchCount };
+  }
+
+  // First pass: generate patterns, adjusting counts down where needed
+  const playerPatterns: { player: Player; patterns: BenchPattern[] }[] = [];
+
+  for (const constraints of constraintsPerPlayer) {
+    const { patterns, benchCount } = generatePatternsForPlayer(constraints);
+    if (patterns.length === 0) {
+      throw new Error(
+        `No valid bench patterns for ${constraints.player.name}. Constraints may be too restrictive.`,
+      );
+    }
+    benchCounts.set(constraints.player.id, benchCount);
+    playerPatterns.push({ player: constraints.player, patterns });
+  }
+
+  // Redistribute deficit: if some players had their bench count reduced,
+  // increase bench for players who can absorb more
+  const totalBenchSlots = totalRotations * benchSlotsPerRotation;
+  let currentTotal = [...benchCounts.values()].reduce((sum, c) => sum + c, 0);
+  let deficit = totalBenchSlots - currentTotal;
+
+  if (deficit > 0) {
+    // Sort by skill ascending (weaker players absorb more bench first)
+    const sortedBySkill = [...constraintsPerPlayer].sort(
+      (a, b) => a.player.skillRanking - b.player.skillRanking,
+    );
+
+    let safetyCounter = 0;
+    while (deficit > 0 && safetyCounter < players.length * totalRotations) {
+      safetyCounter++;
+      let progressed = false;
+
+      for (const constraints of sortedBySkill) {
+        if (deficit <= 0) break;
+        const current = benchCounts.get(constraints.player.id) ?? 0;
+        const maxAvailable = totalRotations - constraints.cannotBench.size;
+
+        if (current < maxAvailable) {
+          const newCount = current + 1;
+          const patterns = generateBenchPatterns(
+            totalRotations, newCount, constraints.cannotBench, constraints.mustBench, maxConsecutive,
+          );
+          if (patterns.length > 0) {
+            benchCounts.set(constraints.player.id, newCount);
+            const idx = playerPatterns.findIndex((pp) => pp.player.id === constraints.player.id);
+            playerPatterns[idx].patterns = patterns;
+            deficit--;
+            progressed = true;
+          }
+        }
+      }
+
+      if (!progressed) break;
+    }
   }
 
   const totalCombinations = playerPatterns.reduce((p, c) => p * c.patterns.length, 1);
