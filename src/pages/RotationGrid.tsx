@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -9,6 +9,7 @@ import { RotationAssignment, SUB_POSITION_LABELS } from '@/types/domain.ts';
 import type { PlayerId, Player, Game } from '@/types/domain.ts';
 import { previewSwap } from '@/utils/stats.ts';
 import { getAssignmentDisplay } from '@/utils/positions.ts';
+import { useSolver } from '@/hooks/useSolver.ts';
 
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -16,12 +17,23 @@ export function RotationGrid() {
   const navigate = useNavigate();
   const [view, setView] = useState<'grid' | 'cards'>('grid');
   const [swapSource, setSwapSource] = useState<{ rotationIndex: number; playerId: PlayerId } | null>(null);
+  const solver = useSolver();
 
   const game = gameId ? state.games[gameId] : undefined;
   const team = game ? state.teams[game.teamId] : undefined;
   const roster = team?.rosters.find((r) => r.id === game?.rosterId);
   const config = team?.gameConfigs.find((c) => c.id === game?.gameConfigId);
   const schedule = game?.schedule;
+
+  useEffect(() => {
+    if (solver.result && game) {
+      dispatch({
+        type: 'SET_GAME_SCHEDULE',
+        payload: { gameId: game.id, schedule: solver.result },
+      });
+      solver.reset();
+    }
+  }, [solver.result, game, dispatch, solver]);
 
   if (!game || !schedule || !roster) {
     return (
@@ -77,6 +89,17 @@ export function RotationGrid() {
     navigate(`/games/${game.id}/live`);
   }
 
+  function handleRegenerate() {
+    if (!roster || !config || !game) return;
+    solver.solve({
+      players: roster.players,
+      config,
+      absentPlayerIds: game.absentPlayerIds,
+      goalieAssignments: game.goalieAssignments,
+      manualOverrides: game.manualOverrides,
+    });
+  }
+
   const sortedPlayers = [...activePlayers].sort((a, b) => b.skillRanking - a.skillRanking);
 
   return (
@@ -87,14 +110,39 @@ export function RotationGrid() {
           <p className="text-sm text-muted-foreground">{team?.name}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => navigate(`/games/new?teamId=${game.teamId}`)}>
-            Regenerate
+          <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={solver.isRunning}>
+            {solver.isRunning ? 'Solving...' : 'Regenerate'}
           </Button>
           <Button size="sm" onClick={handleStartGame}>
             Start Game
           </Button>
         </div>
       </div>
+
+      {solver.isRunning && (
+        <Card>
+          <CardContent className="py-3">
+            <div className="flex justify-between text-sm mb-1">
+              <span>{solver.message}</span>
+              <span>{solver.progress}%</span>
+            </div>
+            <div className="w-full bg-secondary rounded-full h-1.5">
+              <div
+                className="bg-primary h-1.5 rounded-full transition-all"
+                style={{ width: `${solver.progress}%` }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {solver.error && (
+        <Card className="border-destructive">
+          <CardContent className="py-3">
+            <p className="text-sm text-destructive">{solver.error}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Overall stats */}
       <div className="grid grid-cols-3 gap-3">
