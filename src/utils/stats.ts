@@ -81,7 +81,29 @@ export function previewSwap(
     const temp = newAssignments[playerAId];
     newAssignments[playerAId] = newAssignments[playerBId];
     newAssignments[playerBId] = temp;
-    return { ...r, assignments: newAssignments };
+
+    // Also swap field positions (handles field↔field and field↔bench)
+    let newFieldPositions = r.fieldPositions;
+    if (newFieldPositions) {
+      newFieldPositions = { ...newFieldPositions };
+      const posA = newFieldPositions[playerAId];
+      const posB = newFieldPositions[playerBId];
+      if (posA && posB) {
+        // Both on field: swap positions
+        newFieldPositions[playerAId] = posB;
+        newFieldPositions[playerBId] = posA;
+      } else if (posA) {
+        // A on field, B off: B inherits A's position
+        newFieldPositions[playerBId] = posA;
+        delete newFieldPositions[playerAId];
+      } else if (posB) {
+        // B on field, A off: A inherits B's position
+        newFieldPositions[playerAId] = posB;
+        delete newFieldPositions[playerBId];
+      }
+    }
+
+    return { ...r, assignments: newAssignments, fieldPositions: newFieldPositions };
   });
 
   const recalculated = newRotations.map((r) => ({

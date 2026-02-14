@@ -1,6 +1,7 @@
 import { RotationAssignment } from '@/types/domain.ts';
-import type { Player, GoalieAssignment, RotationSchedule, Rotation } from '@/types/domain.ts';
+import type { Player, GoalieAssignment, RotationSchedule, Rotation, FormationSlot } from '@/types/domain.ts';
 import { calculatePlayerStats, calculateRotationStrength } from '@/utils/stats.ts';
+import { autoAssignPositions } from '@/utils/positions.ts';
 import type { SolverContext, BenchPattern } from './types.ts';
 
 let cancelled = false;
@@ -476,10 +477,11 @@ function buildSchedule(
   benchSets: BenchPattern[],
   goalieMap: Map<number, string>,
   allPlayers: Player[],
-  config: { rotationsPerPeriod: number; periods: number },
+  config: { rotationsPerPeriod: number; periods: number; usePositions: boolean; formation: FormationSlot[] },
   totalRotations: number,
 ): RotationSchedule {
   const rotations: Rotation[] = [];
+  const playerMap = config.usePositions ? new Map(allPlayers.map((p) => [p.id, p])) : undefined;
 
   for (let r = 0; r < totalRotations; r++) {
     const assignments: Record<string, RotationAssignment> = {};
@@ -500,6 +502,15 @@ function buildSchedule(
 
     const rotation: Rotation = { index: r, periodIndex, assignments, teamStrength: 0, violations: [] };
     rotation.teamStrength = calculateRotationStrength(rotation, allPlayers);
+
+    // Auto-assign field positions when usePositions is enabled
+    if (config.usePositions && config.formation.length > 0 && playerMap) {
+      const fieldPlayerIds = Object.entries(assignments)
+        .filter(([, a]) => a === RotationAssignment.Field)
+        .map(([id]) => id);
+      rotation.fieldPositions = autoAssignPositions(fieldPlayerIds, config.formation, playerMap);
+    }
+
     rotations.push(rotation);
   }
 

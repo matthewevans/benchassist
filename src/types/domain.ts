@@ -15,6 +15,23 @@ export const POSITION_LABELS: Record<Position, string> = {
   FWD: 'Forward',
 };
 
+export type SubPosition =
+  // Defenders
+  | 'LB' | 'CB' | 'RB' | 'LCB' | 'RCB'
+  // Midfielders
+  | 'LM' | 'CM' | 'RM' | 'LCM' | 'RCM'
+  // Forwards
+  | 'LW' | 'RW' | 'ST' | 'CF';
+
+export const SUB_POSITION_LABELS: Record<SubPosition, string> = {
+  LB: 'Left Back', CB: 'Center Back', RB: 'Right Back',
+  LCB: 'Left Center Back', RCB: 'Right Center Back',
+  LM: 'Left Mid', CM: 'Center Mid', RM: 'Right Mid',
+  LCM: 'Left Center Mid', RCM: 'Right Center Mid',
+  LW: 'Left Wing', RW: 'Right Wing',
+  ST: 'Striker', CF: 'Center Forward',
+};
+
 export interface Player {
   id: PlayerId;
   name: string;
@@ -97,6 +114,7 @@ export interface Rotation {
   index: number;
   periodIndex: number;
   assignments: Record<PlayerId, RotationAssignment>;
+  fieldPositions?: Record<PlayerId, SubPosition>;
   teamStrength: number;
   violations: string[];
 }

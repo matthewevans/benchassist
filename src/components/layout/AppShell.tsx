@@ -17,7 +17,9 @@ export function AppShell() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-card sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link to="/" className="font-bold text-lg tracking-tight">
+          <Link to="/" className="flex items-center gap-1.5 font-bold text-lg tracking-tight">
+            <img src="/small_logo_light.png" alt="" className="h-9 dark:hidden" />
+            <img src="/small_logo.png" alt="" className="h-9 hidden dark:block" />
             BenchAssist
           </Link>
           <nav className="flex gap-1 items-center">

@@ -127,6 +127,11 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-center py-2">
+        <img src="/full_logo_light.png" alt="BenchAssist" className="h-40 dark:hidden" />
+        <img src="/full_logo_dark.png" alt="BenchAssist" className="h-40 hidden dark:block" />
+      </div>
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Teams</h1>
         <Dialog open={isCreating} onOpenChange={setIsCreating}>

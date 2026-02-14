@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { PeriodTimer } from '@/components/game/PeriodTimer.tsx';
-import { RotationAssignment } from '@/types/domain.ts';
+import { RotationAssignment, SUB_POSITION_LABELS } from '@/types/domain.ts';
 import type { Player, PlayerId, Game } from '@/types/domain.ts';
 
 export function GameDay() {
@@ -225,19 +225,24 @@ export function GameDay() {
           <div>
             <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">ON FIELD</p>
             <div className="flex flex-wrap gap-2">
-              {onField.map((p) => (
-                <div key={p.id} className="flex items-center gap-1">
-                  <Badge variant="secondary" className="text-base py-1 px-3">{p.name}</Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 text-xs text-destructive"
-                    onClick={() => setRemovingPlayerId(p.id)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ))}
+              {onField.map((p) => {
+                const pos = config.usePositions ? currentRotation.fieldPositions?.[p.id] : undefined;
+                return (
+                  <div key={p.id} className="flex items-center gap-1">
+                    <Badge variant="secondary" className="text-base py-1 px-3" title={pos ? SUB_POSITION_LABELS[pos] : undefined}>
+                      {pos ? `${pos} ${p.name}` : p.name}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-xs text-destructive"
+                      onClick={() => setRemovingPlayerId(p.id)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </div>
           {onBench.length > 0 && (
@@ -302,9 +307,14 @@ export function GameDay() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-green-600">IN:</span>
                   <div className="flex flex-wrap gap-1">
-                    {subs.goingIn.map((p) => (
-                      <Badge key={p.id} variant="secondary" className="text-xs">{p.name}</Badge>
-                    ))}
+                    {subs.goingIn.map((p) => {
+                      const pos = config.usePositions ? nextRotation.fieldPositions?.[p.id] : undefined;
+                      return (
+                        <Badge key={p.id} variant="secondary" className="text-xs">
+                          {pos ? `${pos} ${p.name}` : p.name}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}

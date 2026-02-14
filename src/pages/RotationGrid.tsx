@@ -5,15 +5,10 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
-import { RotationAssignment } from '@/types/domain.ts';
+import { RotationAssignment, SUB_POSITION_LABELS } from '@/types/domain.ts';
 import type { PlayerId, Player, Game } from '@/types/domain.ts';
 import { previewSwap } from '@/utils/stats.ts';
-
-const ASSIGNMENT_DISPLAY: Record<RotationAssignment, { label: string; className: string }> = {
-  [RotationAssignment.Field]: { label: 'Field', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  [RotationAssignment.Bench]: { label: 'Bench', className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
-  [RotationAssignment.Goalie]: { label: 'GK', className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-};
+import { getAssignmentDisplay } from '@/utils/positions.ts';
 
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -163,7 +158,10 @@ export function RotationGrid() {
                       </td>
                       {schedule.rotations.map((rotation) => {
                         const assignment = rotation.assignments[player.id];
-                        const display = assignment ? ASSIGNMENT_DISPLAY[assignment] : null;
+                        if (!assignment) return <td key={rotation.index} />;
+                        const usePositions = config?.usePositions ?? false;
+                        const fieldPosition = rotation.fieldPositions?.[player.id];
+                        const display = getAssignmentDisplay(assignment, fieldPosition, usePositions);
                         const isSelected =
                           swapSource?.rotationIndex === rotation.index &&
                           swapSource?.playerId === player.id;
@@ -173,15 +171,14 @@ export function RotationGrid() {
                             className="text-center py-1.5 px-1"
                             onClick={() => handleCellClick(rotation.index, player.id)}
                           >
-                            {display && (
-                              <span
-                                className={`inline-block px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${display.className} ${
-                                  isSelected ? 'ring-2 ring-primary ring-offset-1' : ''
-                                } ${swapSource && !isSelected ? 'opacity-70 hover:opacity-100' : ''}`}
-                              >
-                                {display.label}
-                              </span>
-                            )}
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${display.className} ${
+                                isSelected ? 'ring-2 ring-primary ring-offset-1' : ''
+                              } ${swapSource && !isSelected ? 'opacity-70 hover:opacity-100' : ''}`}
+                              title={fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined}
+                            >
+                              {display.label}
+                            </span>
                           </td>
                         );
                       })}
@@ -268,9 +265,14 @@ export function RotationGrid() {
                     <div>
                       <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">ON FIELD</p>
                       <div className="flex flex-wrap gap-1">
-                        {onField.map((p) => (
-                          <Badge key={p.id} variant="secondary">{p.name}</Badge>
-                        ))}
+                        {onField.map((p) => {
+                          const pos = config?.usePositions ? rotation.fieldPositions?.[p.id] : undefined;
+                          return (
+                            <Badge key={p.id} variant="secondary" title={pos ? SUB_POSITION_LABELS[pos] : undefined}>
+                              {pos ? `${pos} ${p.name}` : p.name}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     </div>
                     {onBench.length > 0 && (

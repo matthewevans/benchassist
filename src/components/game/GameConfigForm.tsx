@@ -8,8 +8,11 @@ import { Switch } from '@/components/ui/switch.tsx';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
 import { ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
+import { Badge } from '@/components/ui/badge.tsx';
 import { generateId } from '@/utils/id.ts';
-import type { GameConfig } from '@/types/domain.ts';
+import { POSITION_LABELS } from '@/types/domain.ts';
+import type { GameConfig, FormationSlot, Position } from '@/types/domain.ts';
+import { deriveSubPositions } from '@/utils/positions.ts';
 
 interface GameConfigFormProps {
   teamId: string;
@@ -32,8 +35,21 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
   const [goaliePlayFullPeriod, setGoaliePlayFullPeriod] = useState(initialConfig?.goaliePlayFullPeriod ?? true);
   const [goalieRestAfterPeriod, setGoalieRestAfterPeriod] = useState(initialConfig?.goalieRestAfterPeriod ?? true);
   const [balancePriority, setBalancePriority] = useState<GameConfig['balancePriority']>(initialConfig?.balancePriority ?? 'balanced');
+  const [usePositions, setUsePositions] = useState(initialConfig?.usePositions ?? false);
+  const [formation, setFormation] = useState<FormationSlot[]>(initialConfig?.formation ?? []);
 
   const [rulesOpen, setRulesOpen] = useState(!!initialConfig);
+
+  const fieldPlayerSlots = fieldSize - (useGoalie ? 1 : 0);
+  const formationTotal = formation.reduce((sum, s) => sum + s.count, 0);
+  const derivedPositions = usePositions ? deriveSubPositions(formation) : [];
+
+  function updateFormationSlot(position: Position, count: number) {
+    setFormation((prev) => {
+      const filtered = prev.filter((s) => s.position !== position);
+      return count > 0 ? [...filtered, { position, count }] : filtered;
+    });
+  }
 
   function handleSave() {
     if (!name.trim()) return;
@@ -46,8 +62,8 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
       periods,
       periodDurationMinutes: periodDuration,
       rotationsPerPeriod,
-      usePositions: false,
-      formation: [],
+      usePositions,
+      formation: usePositions ? formation : [],
       useGoalie,
       noConsecutiveBench,
       maxConsecutiveBench,
@@ -203,6 +219,52 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
               </>
             )}
 
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm">Use positions</Label>
+                <p className="text-xs text-muted-foreground">Assign field positions (DEF, MID, FWD)</p>
+              </div>
+              <Switch checked={usePositions} onCheckedChange={setUsePositions} />
+            </div>
+
+            {usePositions && (
+              <div className="pl-4 space-y-3">
+                {(['DEF', 'MID', 'FWD'] as const).map((pos) => {
+                  const count = formation.find((s) => s.position === pos)?.count ?? 0;
+                  return (
+                    <div key={pos} className="flex items-center justify-between">
+                      <Label className="text-sm">{POSITION_LABELS[pos]}s</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={fieldPlayerSlots}
+                        value={count}
+                        onChange={(e) => updateFormationSlot(pos, Number(e.target.value))}
+                        className="w-20"
+                      />
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    Total: {formationTotal} / {fieldPlayerSlots} field players
+                    {formationTotal !== fieldPlayerSlots && (
+                      <span className="text-destructive ml-1">
+                        ({formationTotal < fieldPlayerSlots ? 'need more' : 'too many'})
+                      </span>
+                    )}
+                  </span>
+                </div>
+                {derivedPositions.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {derivedPositions.map((pos, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs">{pos}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Balance Priority</Label>
               <Select value={balancePriority} onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}>
@@ -223,7 +285,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
       <Separator />
 
       <div className="flex gap-2">
-        <Button onClick={handleSave} className="flex-1" disabled={!name.trim()}>
+        <Button onClick={handleSave} className="flex-1" disabled={!name.trim() || (usePositions && formationTotal !== fieldPlayerSlots)}>
           {initialConfig ? 'Save Changes' : 'Create Configuration'}
         </Button>
         <Button variant="outline" onClick={onCancel}>
