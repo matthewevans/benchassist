@@ -1,9 +1,10 @@
 import type { SolverRequest, SolverResponse } from '@/types/solver.ts';
 import type { Rotation, RotationSchedule, Player } from '@/types/domain.ts';
-import { exhaustiveSearch, setCancelled } from './solver/exhaustive.ts';
+import { exhaustiveSearch } from './solver/exhaustive.ts';
 import { calculatePlayerStats } from '@/utils/stats.ts';
 
 let currentRequestId: string | null = null;
+let currentCancellation: { cancelled: boolean } | null = null;
 
 export function mergeSchedules(
   existingRotations: Rotation[],
@@ -45,7 +46,8 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
   switch (request.type) {
     case 'SOLVE': {
       currentRequestId = request.payload.requestId;
-      setCancelled(false);
+      const cancellation = { cancelled: false };
+      currentCancellation = cancellation;
 
       try {
         const { players, config, absentPlayerIds, goalieAssignments, manualOverrides, startFromRotation, existingRotations } = request.payload;
@@ -76,6 +78,7 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           totalRotations,
           benchSlotsPerRotation,
           onProgress,
+          cancellation,
         });
 
         const schedule = startFromRotation && startFromRotation > 0 && existingRotations
@@ -101,12 +104,13 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
       }
 
       currentRequestId = null;
+      currentCancellation = null;
       break;
     }
 
     case 'CANCEL': {
-      if (request.payload.requestId === currentRequestId) {
-        setCancelled(true);
+      if (request.payload.requestId === currentRequestId && currentCancellation) {
+        currentCancellation.cancelled = true;
       }
       break;
     }

@@ -9,8 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { generateId } from '@/utils/id.ts';
+import { downloadJSON, readJSONFile } from '@/storage/exportImport.ts';
+import type { StorageData } from '@/storage/localStorage.ts';
 import type { Player, Team } from '@/types/domain.ts';
-import type { AppState } from '@/context/AppContext.tsx';
 
 const AVATAR_COLORS = [
   'bg-red-200 text-red-800',
@@ -67,44 +68,30 @@ export function Dashboard() {
     .slice(0, 5);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importData, setImportData] = useState<AppState | null>(null);
+  const [importData, setImportData] = useState<StorageData | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
   function handleExport() {
-    const data = { version: 1, ...state };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `benchassist-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const data: StorageData = { version: 1, teams: state.teams, games: state.games };
+    downloadJSON(data, `benchassist-backup-${new Date().toISOString().slice(0, 10)}.json`);
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(reader.result as string);
-        if (!parsed.teams || typeof parsed.teams !== 'object') {
-          setImportError('Invalid backup file: missing teams data.');
-          return;
-        }
-        setImportData({ teams: parsed.teams, games: parsed.games ?? {} });
-      } catch {
-        setImportError('Could not read file. Make sure it\'s a valid BenchAssist backup.');
-      }
-    };
-    reader.readAsText(file);
+    try {
+      const data = await readJSONFile(file);
+      setImportData(data);
+    } catch {
+      setImportError('Could not read file. Make sure it\'s a valid BenchAssist export.');
+    }
   }
 
   function handleConfirmImport() {
     if (!importData) return;
-    dispatch({ type: 'IMPORT_DATA', payload: importData });
+    dispatch({ type: 'IMPORT_DATA', payload: { teams: importData.teams, games: importData.games } });
     setImportData(null);
   }
 

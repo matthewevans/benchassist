@@ -4,20 +4,13 @@ import { calculatePlayerStats, calculateRotationStrength } from '@/utils/stats.t
 import { autoAssignPositions } from '@/utils/positions.ts';
 import type { SolverContext, BenchPattern } from './types.ts';
 
-let cancelled = false;
-
-export function setCancelled(val: boolean) {
-  cancelled = val;
-}
-
 export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
-  cancelled = false;
-  const { players, config, goalieAssignments, manualOverrides, totalRotations, benchSlotsPerRotation } = ctx;
+  const { players, config, goalieAssignments, manualOverrides, totalRotations, benchSlotsPerRotation, cancellation } = ctx;
 
   const goalieMap = new Map<number, string>();
   const forcedBench = new Map<string, Set<number>>();
 
-  if (config.useGoalie !== false) {
+  if (config.useGoalie) {
     ctx.onProgress(5, 'Calculating goalie assignments...');
 
     // Resolve goalie assignments per period
@@ -167,7 +160,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   // Redistribute deficit: if some players had their bench count reduced,
   // increase bench for players who can absorb more
   const totalBenchSlots = totalRotations * benchSlotsPerRotation;
-  let currentTotal = [...benchCounts.values()].reduce((sum, c) => sum + c, 0);
+  const currentTotal = [...benchCounts.values()].reduce((sum, c) => sum + c, 0);
   let deficit = totalBenchSlots - currentTotal;
 
   if (deficit > 0) {
@@ -219,8 +212,12 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   const currentBenchSets: BenchPattern[] = new Array<BenchPattern>(players.length);
   const benchCountPerRotation = new Array<number>(totalRotations).fill(0);
 
+  const searchStartTime = Date.now();
+  const SEARCH_TIMEOUT_MS = 10_000;
+
   function search(depth: number) {
-    if (cancelled) throw new Error('Cancelled');
+    if (cancellation.cancelled) throw new Error('Cancelled');
+    if (Date.now() - searchStartTime > SEARCH_TIMEOUT_MS && bestBenchSets) return;
 
     if (depth === playerPatterns.length) {
       // Validate: each rotation must have exactly benchSlotsPerRotation benched
@@ -456,12 +453,12 @@ function scoreSolution(
   benchSets: BenchPattern[],
   totalRotations: number,
 ): number {
+  const benchSetLookups = benchSets.map((pattern) => new Set(pattern));
   const strengths: number[] = [];
   for (let r = 0; r < totalRotations; r++) {
     let strength = 0;
     for (let p = 0; p < playerPatterns.length; p++) {
-      const isBenched = benchSets[p].includes(r);
-      if (!isBenched) {
+      if (!benchSetLookups[p].has(r)) {
         strength += playerPatterns[p].player.skillRanking;
       }
     }

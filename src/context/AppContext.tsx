@@ -1,4 +1,4 @@
-import { createContext, useReducer, useEffect, type ReactNode } from 'react';
+import { createContext, useReducer, useEffect, useRef, type ReactNode } from 'react';
 import type { Team, Game, Roster, Player, GameConfig, RotationSchedule, TeamId, RosterId, PlayerId, GameConfigId, GameId } from '@/types/domain.ts';
 import { produce } from 'immer';
 import { loadData, saveData, type StorageData } from '@/storage/localStorage.ts';
@@ -194,17 +194,17 @@ function appReducer(state: AppState, action: AppAction): AppState {
       case 'ADVANCE_ROTATION':
         if (draft.games[action.payload]) {
           const game = draft.games[action.payload];
+          if (game.schedule && game.currentRotationIndex >= game.schedule.rotations.length - 1) {
+            game.status = 'completed';
+            game.completedAt = Date.now();
+            break;
+          }
           const prevPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
           game.currentRotationIndex += 1;
           const nextPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
-          // Reset period timer when entering a new period
           if (prevPeriod !== nextPeriod) {
             game.periodTimerStartedAt = null;
             game.periodTimerPausedElapsed = 0;
-          }
-          if (game.schedule && game.currentRotationIndex >= game.schedule.rotations.length) {
-            game.status = 'completed';
-            game.completedAt = Date.now();
           }
         }
         break;
@@ -246,6 +246,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
           game.periodTimerPausedElapsed = 0;
         }
         break;
+
+      default: {
+        const _exhaustive: never = action;
+        return _exhaustive;
+      }
     }
   });
 }
@@ -257,6 +262,7 @@ export interface AppContextValue {
   dispatch: React.Dispatch<AppAction>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -268,13 +274,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return INITIAL_STATE;
   });
 
+  const saveTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
-    const data: StorageData = {
-      version: 1,
-      teams: state.teams,
-      games: state.games,
-    };
-    saveData(data);
+    clearTimeout(saveTimeout.current);
+    saveTimeout.current = setTimeout(() => {
+      const data: StorageData = {
+        version: 1,
+        teams: state.teams,
+        games: state.games,
+      };
+      saveData(data);
+    }, 500);
+    return () => clearTimeout(saveTimeout.current);
   }, [state]);
 
   return (

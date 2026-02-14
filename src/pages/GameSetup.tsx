@@ -85,7 +85,7 @@ export function GameSetup() {
     if (!selectedRoster || !selectedConfig || !teamId) return;
 
     const gameId = generateId();
-    const effectiveGoalieAssignments = selectedConfig.useGoalie !== false ? goalieAssignments : [];
+    const effectiveGoalieAssignments = selectedConfig.useGoalie ? goalieAssignments : [];
 
     const game: Game = {
       id: gameId,

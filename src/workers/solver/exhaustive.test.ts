@@ -17,6 +17,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: players.length - config.fieldSize,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     for (const rotation of schedule.rotations) {
@@ -40,6 +41,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: players.length - config.fieldSize,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     for (const rotation of schedule.rotations) {
@@ -67,6 +69,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: players.length - config.fieldSize,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     for (const player of players) {
@@ -99,6 +102,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: players.length - config.fieldSize,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     for (const player of players) {
@@ -126,6 +130,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: players.length - config.fieldSize,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     const period1Goalie = Object.entries(schedule.rotations[0].assignments).find(
@@ -150,6 +155,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: players.length - config.fieldSize,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     const strengths = schedule.rotations.map((r) => r.teamStrength);
@@ -172,6 +178,7 @@ describe('exhaustiveSearch', () => {
         totalRotations,
         benchSlotsPerRotation: players.length - config.fieldSize,
         onProgress: () => {},
+        cancellation: { cancelled: false },
       }),
     ).toThrow();
   });
@@ -194,6 +201,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: 0,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     for (const player of players) {
@@ -219,6 +227,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: players.length - config.fieldSize,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     for (const rotation of schedule.rotations) {
@@ -244,6 +253,7 @@ describe('exhaustiveSearch', () => {
       totalRotations,
       benchSlotsPerRotation: players.length - config.fieldSize,
       onProgress: () => {},
+      cancellation: { cancelled: false },
     });
 
     const period1Rotations = schedule.rotations.filter((r) => r.periodIndex === 0);

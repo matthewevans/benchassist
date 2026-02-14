@@ -19,7 +19,7 @@ export function validateSchedule(
       );
     }
 
-    if (config.useGoalie !== false) {
+    if (config.useGoalie) {
       const goalies = Object.values(rotation.assignments).filter(
         (a) => a === RotationAssignment.Goalie,
       );
@@ -61,7 +61,7 @@ export function validateSchedule(
     }
   }
 
-  if (config.useGoalie !== false && config.goalieRestAfterPeriod) {
+  if (config.useGoalie && config.goalieRestAfterPeriod) {
     const rotationsPerPeriod = config.rotationsPerPeriod;
     for (const player of players) {
       const checkedPeriods = new Set<number>();
@@ -108,7 +108,7 @@ export function validateRosterForGame(
     );
   }
 
-  if (config.useGoalie !== false) {
+  if (config.useGoalie) {
     const goalieEligible = activePlayers.filter((p) => p.canPlayGoalie);
     if (goalieEligible.length === 0) {
       errors.push('No players are marked as goalie-eligible');

@@ -74,6 +74,7 @@ export function RosterEditor() {
     );
   }
 
+  /* eslint-disable react-hooks/purity -- event handler, not called during render */
   function handleSavePlayer() {
     if (!form.name.trim() || !teamId || !rosterId) return;
 
@@ -105,6 +106,7 @@ export function RosterEditor() {
     setEditingPlayerId(null);
     setIsAdding(false);
   }
+  /* eslint-enable react-hooks/purity */
 
   function handleEditPlayer(player: Player) {
     setForm({
@@ -144,6 +146,7 @@ export function RosterEditor() {
     setImportStep('preview');
   }
 
+  /* eslint-disable react-hooks/purity -- event handler, not called during render */
   function handleImportSave() {
     if (!teamId || !rosterId) return;
     const validRows = importRows.filter((r) => !r.error);
@@ -175,6 +178,7 @@ export function RosterEditor() {
     }
     handleImportClose();
   }
+  /* eslint-enable react-hooks/purity */
 
   function handleImportClose() {
     setIsImporting(false);

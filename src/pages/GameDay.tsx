@@ -24,31 +24,27 @@ export function GameDay() {
   const config = team?.gameConfigs.find((c) => c.id === game?.gameConfigId);
   const schedule = game?.schedule;
   const currentRotation = schedule?.rotations[game?.currentRotationIndex ?? 0];
+  const nextRotation = schedule?.rotations[(game?.currentRotationIndex ?? 0) + 1];
 
-  // Hook must be called before any early returns (rules of hooks)
+  // All hooks must be called before any early returns (rules of hooks)
   const timer = usePeriodTimer(game, config, currentRotation, dispatch);
+  const [removingPlayerId, setRemovingPlayerId] = useState<PlayerId | null>(null);
 
-  if (!game || !schedule || !roster || !config || !currentRotation) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Game not found</p>
-        <Link to="/" className="text-primary underline mt-2 inline-block">Back to teams</Link>
-      </div>
-    );
-  }
-
-  const nextRotation = schedule.rotations[game.currentRotationIndex + 1];
-  const isLastRotation = game.currentRotationIndex >= schedule.rotations.length - 1;
-  const isCompleted = game.status === 'completed';
-
-  const activePlayers = roster.players.filter(
-    (p) =>
-      !game.absentPlayerIds.includes(p.id) &&
-      !game.removedPlayerIds.includes(p.id),
+  const activePlayers = useMemo(
+    () =>
+      roster?.players.filter(
+        (p) =>
+          !game?.absentPlayerIds.includes(p.id) &&
+          !game?.removedPlayerIds.includes(p.id),
+      ) ?? [],
+    [roster?.players, game?.absentPlayerIds, game?.removedPlayerIds],
   );
-  const playerMap = new Map(activePlayers.map((p) => [p.id, p]));
 
-  // Compute substitutions happening this rotation
+  const playerMap = useMemo(
+    () => new Map(activePlayers.map((p) => [p.id, p])),
+    [activePlayers],
+  );
+
   const subs = useMemo(() => {
     if (!nextRotation || !currentRotation) return { goingIn: [] as Player[], goingOut: [] as Player[] };
 
@@ -70,16 +66,37 @@ export function GameDay() {
     return { goingIn, goingOut };
   }, [currentRotation, nextRotation, playerMap]);
 
+  useEffect(() => {
+    if (solver.result && gameId) {
+      dispatch({
+        type: 'SET_GAME_SCHEDULE',
+        payload: { gameId, schedule: solver.result },
+      });
+      solver.reset();
+    }
+  }, [solver.result, gameId, dispatch, solver]);
+
+  if (!game || !schedule || !roster || !config || !currentRotation) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Game not found</p>
+        <Link to="/" className="text-primary underline mt-2 inline-block">Back to teams</Link>
+      </div>
+    );
+  }
+
+  const isLastRotation = game.currentRotationIndex >= schedule.rotations.length - 1;
+  const isCompleted = game.status === 'completed';
+  const removingPlayer = removingPlayerId ? playerMap.get(removingPlayerId) : undefined;
+  const removedPlayers = roster.players.filter((p) => game.removedPlayerIds.includes(p.id));
+
   function handleAdvance() {
     if (!gameId) return;
     dispatch({ type: 'ADVANCE_ROTATION', payload: gameId });
   }
 
-  const [removingPlayerId, setRemovingPlayerId] = useState<PlayerId | null>(null);
-  const removingPlayer = removingPlayerId ? playerMap.get(removingPlayerId) : undefined;
-
   function handleConfirmRemovePlayer() {
-    if (!gameId || !game || !roster || !config || !schedule || !removingPlayerId) return;
+    if (!gameId || !game || !config || !schedule || !removingPlayerId) return;
 
     dispatch({ type: 'REMOVE_PLAYER_FROM_GAME', payload: { gameId, playerId: removingPlayerId } });
 
@@ -117,8 +134,6 @@ export function GameDay() {
     });
   }
 
-  const removedPlayers = roster.players.filter((p) => game.removedPlayerIds.includes(p.id));
-
   function handleEndGame() {
     if (!gameId || !game) return;
     const updatedGame: Game = {
@@ -129,17 +144,6 @@ export function GameDay() {
     dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
     navigate(`/games/${gameId}/rotations`);
   }
-
-  // Handle solver result for re-solve
-  useEffect(() => {
-    if (solver.result && gameId) {
-      dispatch({
-        type: 'SET_GAME_SCHEDULE',
-        payload: { gameId, schedule: solver.result },
-      });
-      solver.reset();
-    }
-  }, [solver.result, gameId, dispatch, solver]);
 
   if (isCompleted) {
     return (
@@ -157,8 +161,6 @@ export function GameDay() {
       </div>
     );
   }
-
-  if (!currentRotation) return null;
 
   const onField = Object.entries(currentRotation.assignments)
     .filter(([, a]) => a === RotationAssignment.Field)

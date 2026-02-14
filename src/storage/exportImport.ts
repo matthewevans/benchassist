@@ -22,7 +22,17 @@ export function importFromJSON(json: string): StorageData {
   if (parsed.app !== 'benchassist' || !parsed.data) {
     throw new Error('Invalid BenchAssist export file');
   }
-  return parsed.data;
+  const { data } = parsed;
+  if (!data.teams || typeof data.teams !== 'object') {
+    throw new Error('Invalid export: missing teams data');
+  }
+  if (!data.version || typeof data.version !== 'number') {
+    throw new Error('Invalid export: missing version');
+  }
+  if (data.games && typeof data.games !== 'object') {
+    throw new Error('Invalid export: malformed games data');
+  }
+  return { ...data, games: data.games ?? {} };
 }
 
 export function downloadJSON(data: StorageData, filename?: string): void {
