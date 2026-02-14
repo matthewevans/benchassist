@@ -67,6 +67,10 @@ export function AppShell() {
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
         <Outlet />
       </main>
+
+      <footer className="py-2 text-center text-[10px] text-muted-foreground/40">
+        build {__BUILD_HASH__}
+      </footer>
     </div>
   );
 }
