@@ -149,12 +149,7 @@ export function RotationGrid() {
                   return (
                     <tr key={player.id} className="border-b">
                       <td className="py-1.5 pr-3 sticky left-0 bg-background">
-                        <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">
-                            {player.skillRanking}
-                          </span>
-                          <span className="whitespace-nowrap">{player.name}</span>
-                        </div>
+                        <span className="whitespace-nowrap">{player.name}</span>
                       </td>
                       {schedule.rotations.map((rotation) => {
                         const assignment = rotation.assignments[player.id];
@@ -305,12 +300,7 @@ export function RotationGrid() {
               if (!stats) return null;
               return (
                 <div key={player.id} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold">
-                      {player.skillRanking}
-                    </span>
-                    <span>{player.name}</span>
-                  </div>
+                  <span>{player.name}</span>
                   <div className="flex items-center gap-3 text-muted-foreground">
                     <span>{stats.rotationsPlayed} played</span>
                     <span>{stats.rotationsBenched} bench</span>
