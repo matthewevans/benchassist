@@ -18,8 +18,16 @@ export function AppShell() {
       <header className="border-b bg-card sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-1.5 font-bold text-lg tracking-tight">
-            <img src="/small_logo_light.png" alt="" className="h-9 dark:hidden" />
-            <img src="/small_logo.png" alt="" className="h-9 hidden dark:block" />
+            <img
+              src={`${import.meta.env.BASE_URL}small_logo_light.png`}
+              alt=""
+              className="h-9 dark:hidden"
+            />
+            <img
+              src={`${import.meta.env.BASE_URL}small_logo.png`}
+              alt=""
+              className="h-9 hidden dark:block"
+            />
             BenchAssist
           </Link>
           <nav className="flex gap-1 items-center">
@@ -30,9 +38,13 @@ export function AppShell() {
               aria-label={`Theme: ${preference}`}
               className="h-8 w-8 p-0"
             >
-              {preference === 'system' ? <MonitorIcon className="h-4 w-4" /> :
-               preference === 'light' ? <SunIcon className="h-4 w-4" /> :
-               <MoonIcon className="h-4 w-4" />}
+              {preference === 'system' ? (
+                <MonitorIcon className="h-4 w-4" />
+              ) : preference === 'light' ? (
+                <SunIcon className="h-4 w-4" />
+              ) : (
+                <MoonIcon className="h-4 w-4" />
+              )}
             </Button>
             {NAV_ITEMS.map((item) => (
               <Link

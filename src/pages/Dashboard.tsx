@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { generateId } from '@/utils/id.ts';
@@ -59,9 +65,7 @@ export function Dashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
 
-  const teams = Object.values(state.teams).sort(
-    (a, b) => b.updatedAt - a.updatedAt,
-  );
+  const teams = Object.values(state.teams).sort((a, b) => b.updatedAt - a.updatedAt);
 
   const recentGames = Object.values(state.games)
     .sort((a, b) => b.createdAt - a.createdAt)
@@ -85,13 +89,16 @@ export function Dashboard() {
       const data = await readJSONFile(file);
       setImportData(data);
     } catch {
-      setImportError('Could not read file. Make sure it\'s a valid BenchAssist export.');
+      setImportError("Could not read file. Make sure it's a valid BenchAssist export.");
     }
   }
 
   function handleConfirmImport() {
     if (!importData) return;
-    dispatch({ type: 'IMPORT_DATA', payload: { teams: importData.teams, games: importData.games } });
+    dispatch({
+      type: 'IMPORT_DATA',
+      payload: { teams: importData.teams, games: importData.games },
+    });
     setImportData(null);
   }
 
@@ -115,8 +122,16 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex justify-center py-2">
-        <img src="/full_logo_light.png" alt="BenchAssist" className="h-40 dark:hidden" />
-        <img src="/full_logo_dark.png" alt="BenchAssist" className="h-40 hidden dark:block" />
+        <img
+          src={`${import.meta.env.BASE_URL}full_logo_light.png`}
+          alt="BenchAssist"
+          className="h-40 dark:hidden"
+        />
+        <img
+          src={`${import.meta.env.BASE_URL}full_logo_dark.png`}
+          alt="BenchAssist"
+          className="h-40 hidden dark:block"
+        />
       </div>
 
       <div className="flex items-center justify-between">
@@ -212,10 +227,7 @@ export function Dashboard() {
             {recentGames.map((game) => {
               const team = state.teams[game.teamId];
               return (
-                <Link
-                  key={game.id}
-                  to={`/games/${game.id}/rotations`}
-                >
+                <Link key={game.id} to={`/games/${game.id}/rotations`}>
                   <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
                     <CardContent className="py-3 flex items-center justify-between">
                       <div>
