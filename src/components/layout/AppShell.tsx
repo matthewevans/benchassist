@@ -1,5 +1,8 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils.ts';
+import { useTheme } from '@/hooks/useTheme.ts';
+import { SunIcon, MoonIcon, MonitorIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button.tsx';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Teams' },
@@ -8,6 +11,7 @@ const NAV_ITEMS = [
 
 export function AppShell() {
   const location = useLocation();
+  const { preference, cycle } = useTheme();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -16,7 +20,18 @@ export function AppShell() {
           <Link to="/" className="font-bold text-lg tracking-tight">
             BenchAssist
           </Link>
-          <nav className="flex gap-1">
+          <nav className="flex gap-1 items-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={cycle}
+              aria-label={`Theme: ${preference}`}
+              className="h-8 w-8 p-0"
+            >
+              {preference === 'system' ? <MonitorIcon className="h-4 w-4" /> :
+               preference === 'light' ? <SunIcon className="h-4 w-4" /> :
+               <MoonIcon className="h-4 w-4" />}
+            </Button>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.path}
