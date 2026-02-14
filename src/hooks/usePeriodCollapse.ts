@@ -6,7 +6,7 @@ interface UsePeriodCollapseParams {
   isLive: boolean;
 }
 
-export function usePeriodCollapse({ totalPeriods, currentPeriodIndex, isLive }: UsePeriodCollapseParams) {
+export function usePeriodCollapse({ currentPeriodIndex, isLive }: UsePeriodCollapseParams) {
   const [collapsedPeriods, setCollapsedPeriods] = useState<Set<number>>(() => {
     if (!isLive) return new Set();
     const initial = new Set<number>();
