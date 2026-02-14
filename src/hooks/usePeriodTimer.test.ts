@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { usePeriodTimer } from './usePeriodTimer.ts';
+import { usePeriodTimer, formatTime } from './usePeriodTimer.ts';
 import { gameFactory, gameConfigFactory } from '@/test/factories.ts';
 import { resetFactories } from '@/test/factories.ts';
 import type { Rotation } from '@/types/domain.ts';
@@ -8,6 +7,28 @@ import type { Rotation } from '@/types/domain.ts';
 function buildRotation(index: number, periodIndex: number): Rotation {
   return { index, periodIndex, assignments: {}, teamStrength: 0, violations: [] };
 }
+
+describe('formatTime', () => {
+  it('formats 0ms as 0:00', () => {
+    expect(formatTime(0)).toBe('0:00');
+  });
+
+  it('formats NaN as 0:00', () => {
+    expect(formatTime(NaN)).toBe('0:00');
+  });
+
+  it('formats negative values as 0:00', () => {
+    expect(formatTime(-1000)).toBe('0:00');
+  });
+
+  it('formats normal time correctly', () => {
+    expect(formatTime(90000)).toBe('1:30');
+  });
+
+  it('formats with leading zero on seconds', () => {
+    expect(formatTime(65000)).toBe('1:05');
+  });
+});
 
 describe('usePeriodTimer', () => {
   const dispatch = vi.fn();

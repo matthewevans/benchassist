@@ -39,10 +39,7 @@ export function GameHistory() {
         <div className="grid gap-2">
           {games.map((game) => {
             const team = state.teams[game.teamId];
-            const linkPath =
-              game.status === 'in-progress'
-                ? `/games/${game.id}/live`
-                : `/games/${game.id}/rotations`;
+            const linkPath = `/games/${game.id}/rotations`;
 
             return (
               <Card key={game.id} className="hover:bg-accent/50 transition-colors">

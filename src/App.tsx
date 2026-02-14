@@ -6,7 +6,6 @@ import { TeamManagement } from '@/pages/TeamManagement.tsx';
 import { RosterEditor } from '@/pages/RosterEditor.tsx';
 import { GameSetup } from '@/pages/GameSetup.tsx';
 import { RotationGrid } from '@/pages/RotationGrid.tsx';
-import { GameDay } from '@/pages/GameDay.tsx';
 import { GameHistory } from '@/pages/GameHistory.tsx';
 
 export default function App() {
@@ -20,7 +19,7 @@ export default function App() {
             <Route path="teams/:teamId/rosters/:rosterId" element={<RosterEditor />} />
             <Route path="games/new" element={<GameSetup />} />
             <Route path="games/:gameId/rotations" element={<RotationGrid />} />
-            <Route path="games/:gameId/live" element={<GameDay />} />
+            <Route path="games/:gameId/live" element={<Navigate to="../rotations" replace />} />
             <Route path="games" element={<GameHistory />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
