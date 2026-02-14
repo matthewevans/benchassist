@@ -148,7 +148,7 @@ export function RosterEditor() {
         const existing = roster?.players.find((p) => p.id === row.existingPlayerId);
         const player: Player = {
           id: row.existingPlayerId,
-          name: row.name,
+          name: row.name.trim(),
           skillRanking: row.skillRanking,
           canPlayGoalie: row.canPlayGoalie,
           primaryPosition: existing?.primaryPosition ?? null,
@@ -159,7 +159,7 @@ export function RosterEditor() {
       } else {
         const player: Player = {
           id: generateId(),
-          name: row.name,
+          name: row.name.trim(),
           skillRanking: row.skillRanking,
           canPlayGoalie: row.canPlayGoalie,
           primaryPosition: null,
@@ -218,8 +218,9 @@ export function RosterEditor() {
               {importStep === 'paste' ? (
                 <div className="space-y-4 pt-2">
                   <div className="space-y-2">
-                    <Label>Paste player list (Name: Skill per line)</Label>
+                    <Label htmlFor="import-text">Paste player list (Name: Skill per line)</Label>
                     <textarea
+                      id="import-text"
                       className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
                       value={importText}
                       onChange={(e) => setImportText(e.target.value)}
@@ -272,7 +273,7 @@ export function RosterEditor() {
                               checked={row.canPlayGoalie}
                               onChange={(e) => updateImportRow(i, { canPlayGoalie: e.target.checked })}
                               className="h-4 w-4"
-                              title="Can play goalie"
+                              aria-label="Can play goalie"
                             />
                             {row.existingPlayerId ? (
                               <Badge variant="secondary" className="text-xs shrink-0">Update</Badge>
@@ -286,6 +287,7 @@ export function RosterEditor() {
                           size="sm"
                           className="h-6 px-1 text-xs text-destructive shrink-0"
                           onClick={() => removeImportRow(i)}
+                          aria-label="Remove player"
                         >
                           X
                         </Button>
