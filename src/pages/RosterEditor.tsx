@@ -5,8 +5,20 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog.tsx';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
@@ -129,11 +141,15 @@ export function RosterEditor() {
     const parsed = parsePlayerImport(importText);
     const rows: ImportRow[] = parsed.map((p) => {
       if ('error' in p) {
-        return { name: p.name, skillRanking: 3, canPlayGoalie: false, existingPlayerId: null, error: p.error };
+        return {
+          name: p.name,
+          skillRanking: 3,
+          canPlayGoalie: false,
+          existingPlayerId: null,
+          error: p.error,
+        };
       }
-      const existing = roster?.players.find(
-        (rp) => rp.name.toLowerCase() === p.name.toLowerCase(),
-      );
+      const existing = roster?.players.find((rp) => rp.name.toLowerCase() === p.name.toLowerCase());
       return {
         name: p.name,
         skillRanking: p.skillRanking,
@@ -200,7 +216,10 @@ export function RosterEditor() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to={`/teams/${teamId}`} className="text-muted-foreground hover:text-foreground text-sm">
+        <Link
+          to={`/teams/${teamId}`}
+          className="text-muted-foreground hover:text-foreground text-sm"
+        >
           {team.name}
         </Link>
         <span className="text-muted-foreground">/</span>
@@ -212,9 +231,17 @@ export function RosterEditor() {
           {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
         </p>
         <div className="flex gap-2">
-          <Dialog open={isImporting} onOpenChange={(open) => { if (!open) handleImportClose(); else setIsImporting(true); }}>
+          <Dialog
+            open={isImporting}
+            onOpenChange={(open) => {
+              if (!open) handleImportClose();
+              else setIsImporting(true);
+            }}
+          >
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">Import Players</Button>
+              <Button variant="outline" size="sm">
+                Import Players
+              </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -263,7 +290,9 @@ export function RosterEditor() {
                             />
                             <Select
                               value={String(row.skillRanking)}
-                              onValueChange={(v) => updateImportRow(i, { skillRanking: Number(v) as SkillRanking })}
+                              onValueChange={(v) =>
+                                updateImportRow(i, { skillRanking: Number(v) as SkillRanking })
+                              }
                             >
                               <SelectTrigger className="w-16 h-8 text-sm">
                                 <SelectValue />
@@ -278,11 +307,15 @@ export function RosterEditor() {
                             </Select>
                             <Checkbox
                               checked={row.canPlayGoalie}
-                              onCheckedChange={(checked) => updateImportRow(i, { canPlayGoalie: checked as boolean })}
+                              onCheckedChange={(checked) =>
+                                updateImportRow(i, { canPlayGoalie: checked as boolean })
+                              }
                               aria-label="Can play goalie"
                             />
                             {row.existingPlayerId ? (
-                              <Badge variant="secondary" className="text-xs shrink-0">Update</Badge>
+                              <Badge variant="secondary" className="text-xs shrink-0">
+                                Update
+                              </Badge>
                             ) : (
                               <Badge className="text-xs shrink-0">New</Badge>
                             )}
@@ -355,7 +388,9 @@ export function RosterEditor() {
                   <Label>Skill Ranking</Label>
                   <Select
                     value={String(form.skillRanking)}
-                    onValueChange={(v) => setForm({ ...form, skillRanking: Number(v) as SkillRanking })}
+                    onValueChange={(v) =>
+                      setForm({ ...form, skillRanking: Number(v) as SkillRanking })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -396,16 +431,14 @@ export function RosterEditor() {
                   <Switch
                     id="can-play-goalie"
                     checked={form.canPlayGoalie}
-                    onCheckedChange={(checked) => setForm({ ...form, canPlayGoalie: checked as boolean })}
+                    onCheckedChange={(checked) =>
+                      setForm({ ...form, canPlayGoalie: checked as boolean })
+                    }
                   />
                   <Label htmlFor="can-play-goalie">Can play goalkeeper</Label>
                 </div>
 
-                <Button
-                  onClick={handleSavePlayer}
-                  className="w-full"
-                  disabled={!form.name.trim()}
-                >
+                <Button onClick={handleSavePlayer} className="w-full" disabled={!form.name.trim()}>
                   {editingPlayerId ? 'Save Changes' : 'Add Player'}
                 </Button>
               </div>
@@ -427,8 +460,8 @@ export function RosterEditor() {
               <div
                 key={player.id}
                 className={cn(
-                  "flex items-center justify-between px-4 py-3",
-                  index < sortedPlayers.length - 1 && "border-b"
+                  'flex items-center justify-between px-4 py-3',
+                  index < sortedPlayers.length - 1 && 'border-b',
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -447,8 +480,8 @@ export function RosterEditor() {
                           <button
                             key={rank}
                             className={cn(
-                              "px-3 py-1.5 text-sm text-left rounded hover:bg-accent transition-colors",
-                              rank === player.skillRanking && "bg-accent font-medium"
+                              'px-3 py-1.5 text-sm text-left rounded hover:bg-accent transition-colors',
+                              rank === player.skillRanking && 'bg-accent font-medium',
                             )}
                             onClick={() => {
                               dispatch({

@@ -25,7 +25,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.getByText('75%')).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.getByText(/1 GK/)).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.queryByText(/GK/)).not.toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     await userEvent.click(screen.getByRole('button', { name: /remove/i }));
@@ -113,7 +113,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.getByRole('button', { name: /add back/i })).toBeInTheDocument();
@@ -130,7 +130,7 @@ describe('PlayerPopover', () => {
         onAddBack={onAddBack}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     await userEvent.click(screen.getByRole('button', { name: /add back/i }));
@@ -147,7 +147,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();

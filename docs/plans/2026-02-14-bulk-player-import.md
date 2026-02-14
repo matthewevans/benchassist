@@ -13,6 +13,7 @@
 ### Task 1: Parse function — tests
 
 **Files:**
+
 - Create: `src/utils/parsePlayerImport.test.ts`
 
 **Step 1: Write the failing tests**
@@ -84,6 +85,7 @@ git commit -m "test: add parsePlayerImport tests"
 ### Task 2: Parse function — implementation
 
 **Files:**
+
 - Create: `src/utils/parsePlayerImport.ts`
 
 **Step 1: Implement the parser**
@@ -137,6 +139,7 @@ git commit -m "feat: add parsePlayerImport function"
 ### Task 3: Import dialog UI in RosterEditor
 
 **Files:**
+
 - Modify: `src/pages/RosterEditor.tsx`
 
 This is the main UI task. Add an "Import Players" button and a two-step dialog.
@@ -173,11 +176,15 @@ function handleImportParse() {
   const parsed = parsePlayerImport(importText);
   const rows: ImportRow[] = parsed.map((p) => {
     if ('error' in p) {
-      return { name: p.name, skillRanking: 3, canPlayGoalie: false, existingPlayerId: null, error: p.error };
+      return {
+        name: p.name,
+        skillRanking: 3,
+        canPlayGoalie: false,
+        existingPlayerId: null,
+        error: p.error,
+      };
     }
-    const existing = roster?.players.find(
-      (rp) => rp.name.toLowerCase() === p.name.toLowerCase(),
-    );
+    const existing = roster?.players.find((rp) => rp.name.toLowerCase() === p.name.toLowerCase());
     return {
       name: p.name,
       skillRanking: p.skillRanking,

@@ -9,6 +9,7 @@ The roster/game-config setup flows work but feel clunky. Root causes: visual noi
 ### 1. Switch/Checkbox component swap
 
 Replace all raw `<input type="checkbox">` with shadcn components:
+
 - **Settings toggles** (GameConfigForm rules, player "can play goalkeeper"): use `<Switch>`
 - **Selection lists** (attendance, import review goalie checkbox): use shadcn `<Checkbox>`
 

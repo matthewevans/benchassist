@@ -3,9 +3,20 @@ import type { FormationSlot, Position, SubPosition, Player, PlayerId } from '@/t
 
 /** Which broad position each sub-position belongs to */
 const SUB_POSITION_GROUP: Record<SubPosition, Position> = {
-  LB: 'DEF', CB: 'DEF', RB: 'DEF', LCB: 'DEF', RCB: 'DEF',
-  LM: 'MID', CM: 'MID', RM: 'MID', LCM: 'MID', RCM: 'MID',
-  LW: 'FWD', RW: 'FWD', ST: 'FWD', CF: 'FWD',
+  LB: 'DEF',
+  CB: 'DEF',
+  RB: 'DEF',
+  LCB: 'DEF',
+  RCB: 'DEF',
+  LM: 'MID',
+  CM: 'MID',
+  RM: 'MID',
+  LCM: 'MID',
+  RCM: 'MID',
+  LW: 'FWD',
+  RW: 'FWD',
+  ST: 'FWD',
+  CF: 'FWD',
 };
 
 /**
@@ -38,7 +49,12 @@ function getSubPositionsForCount(position: Position, count: number): SubPosition
     },
   };
 
-  return mappings[position]?.[count] ?? Array(count).fill(position === 'DEF' ? 'CB' : position === 'MID' ? 'CM' : 'ST') as SubPosition[];
+  return (
+    mappings[position]?.[count] ??
+    (Array(count).fill(
+      position === 'DEF' ? 'CB' : position === 'MID' ? 'CM' : 'ST',
+    ) as SubPosition[])
+  );
 }
 
 /**
@@ -82,16 +98,18 @@ export function autoAssignPositions(
 
     const playerCosts = slots.map((subPos) => {
       const timesPlayed = playerHist?.get(subPos) ?? 0;
-      const matchesPrimary = !!player?.primaryPosition
-        && player.primaryPosition !== 'GK'
-        && SUB_POSITION_GROUP[subPos] === player.primaryPosition;
+      const matchesPrimary =
+        !!player?.primaryPosition &&
+        player.primaryPosition !== 'GK' &&
+        SUB_POSITION_GROUP[subPos] === player.primaryPosition;
       return timesPlayed * 2 + (matchesPrimary ? 0 : 1);
     });
 
     costs.push(playerCosts);
     slotOrder.push(
-      Array.from({ length: slots.length }, (_, s) => s)
-        .sort((a, b) => playerCosts[a] - playerCosts[b]),
+      Array.from({ length: slots.length }, (_, s) => s).sort(
+        (a, b) => playerCosts[a] - playerCosts[b],
+      ),
     );
     lowerBound += Math.min(...playerCosts);
   }

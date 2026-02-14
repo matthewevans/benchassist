@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculatePlayerStats, previewSwap } from './stats.ts';
+import { calculatePlayerStats, computeStrengthStats, previewSwap } from './stats.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { Rotation, Player, RotationSchedule } from '@/types/domain.ts';
 import { playerFactory, buildRotation } from '@/test/factories.ts';
@@ -40,6 +40,32 @@ describe('calculatePlayerStats', () => {
   });
 });
 
+describe('computeStrengthStats', () => {
+  it('computes avg, variance, min, max for a set of strengths', () => {
+    const result = computeStrengthStats([10, 20, 30]);
+    expect(result.avg).toBeCloseTo(20);
+    expect(result.min).toBe(10);
+    expect(result.max).toBe(30);
+    expect(result.variance).toBeCloseTo(66.667, 2);
+  });
+
+  it('returns zeros for empty array', () => {
+    const result = computeStrengthStats([]);
+    expect(result.avg).toBe(0);
+    expect(result.variance).toBe(0);
+    expect(result.min).toBe(0);
+    expect(result.max).toBe(0);
+  });
+
+  it('returns zero variance for identical values', () => {
+    const result = computeStrengthStats([5, 5, 5]);
+    expect(result.avg).toBe(5);
+    expect(result.variance).toBe(0);
+    expect(result.min).toBe(5);
+    expect(result.max).toBe(5);
+  });
+});
+
 describe('previewSwap', () => {
   it('swaps two players and recalculates stats', () => {
     const p1 = playerFactory.build({ name: 'Strong', skillRanking: 5 });
@@ -59,10 +85,35 @@ describe('previewSwap', () => {
         },
       ],
       playerStats: {
-        [p1.id]: { playerId: p1.id, playerName: 'Strong', rotationsPlayed: 1, rotationsBenched: 0, rotationsGoalie: 0, totalRotations: 1, playPercentage: 100, maxConsecutiveBench: 0 },
-        [p2.id]: { playerId: p2.id, playerName: 'Weak', rotationsPlayed: 0, rotationsBenched: 1, rotationsGoalie: 0, totalRotations: 1, playPercentage: 0, maxConsecutiveBench: 1 },
+        [p1.id]: {
+          playerId: p1.id,
+          playerName: 'Strong',
+          rotationsPlayed: 1,
+          rotationsBenched: 0,
+          rotationsGoalie: 0,
+          totalRotations: 1,
+          playPercentage: 100,
+          maxConsecutiveBench: 0,
+        },
+        [p2.id]: {
+          playerId: p2.id,
+          playerName: 'Weak',
+          rotationsPlayed: 0,
+          rotationsBenched: 1,
+          rotationsGoalie: 0,
+          totalRotations: 1,
+          playPercentage: 0,
+          maxConsecutiveBench: 1,
+        },
       },
-      overallStats: { strengthVariance: 0, minStrength: 5, maxStrength: 5, avgStrength: 5, violations: [], isValid: true },
+      overallStats: {
+        strengthVariance: 0,
+        minStrength: 5,
+        maxStrength: 5,
+        avgStrength: 5,
+        violations: [],
+        isValid: true,
+      },
       generatedAt: Date.now(),
     };
 

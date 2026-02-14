@@ -4,9 +4,22 @@ import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet.tsx';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { cn } from '@/lib/utils.ts';
 import { Settings2, ChevronRightIcon } from 'lucide-react';
@@ -24,8 +37,13 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
   const { state, dispatch } = useAppContext();
-  const [swapSource, setSwapSource] = useState<{ rotationIndex: number; playerId: PlayerId } | null>(null);
+  const [swapSource, setSwapSource] = useState<{
+    rotationIndex: number;
+    playerId: PlayerId;
+  } | null>(null);
   const solver = useSolver();
+  const solverResult = solver.result;
+  const solverReset = solver.reset;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editAbsent, setEditAbsent] = useState<Set<PlayerId>>(new Set());
   const [editGoalies, setEditGoalies] = useState<GoalieAssignment[]>([]);
@@ -44,15 +62,9 @@ export function RotationGrid() {
   const currentPeriodIndex = currentRotation?.periodIndex ?? 0;
 
   // Hooks must be called before any early returns
-  const timer = usePeriodTimer(
-    isLive ? game : undefined,
-    config,
-    currentRotation,
-    dispatch,
-  );
+  const timer = usePeriodTimer(isLive ? game : undefined, config, currentRotation, dispatch);
 
   const { collapsedPeriods, togglePeriod } = usePeriodCollapse({
-    totalPeriods: config?.periods ?? 1,
     currentPeriodIndex,
     isLive,
   });
@@ -76,14 +88,14 @@ export function RotationGrid() {
 
   // Solver result effect
   useEffect(() => {
-    if (solver.result && game) {
+    if (solverResult && game) {
       dispatch({
         type: 'SET_GAME_SCHEDULE',
-        payload: { gameId: game.id, schedule: solver.result },
+        payload: { gameId: game.id, schedule: solverResult },
       });
-      solver.reset();
+      solverReset();
     }
-  }, [solver.result, game, dispatch, solver]);
+  }, [solverResult, game, dispatch, solverReset]);
 
   // Group rotations by period for collapse rendering
   const periodGroups = useMemo(() => {
@@ -113,23 +125,15 @@ export function RotationGrid() {
     return changing;
   }, [isLive, currentRotation, nextRotation]);
 
-  if (!game || !schedule || !roster) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Game or schedule not found</p>
-        <Link to="/" className="text-primary underline mt-2 inline-block">Back to teams</Link>
-      </div>
+  // All hooks must be above early returns (Rules of Hooks)
+  const activePlayers = useMemo(() => {
+    if (!game || !roster) return [];
+    return roster.players.filter(
+      (p) => !game.absentPlayerIds.includes(p.id) && !game.removedPlayerIds.includes(p.id),
     );
-  }
+  }, [game, roster]);
 
-  const activePlayers = roster.players.filter(
-    (p) => !game.absentPlayerIds.includes(p.id) && !game.removedPlayerIds.includes(p.id),
-  );
-  const playerMap = new Map(activePlayers.map((p) => [p.id, p]));
-  const removedPlayers = roster.players.filter((p) => game.removedPlayerIds.includes(p.id));
-  const isLastRotation = currentRotationIndex >= schedule.rotations.length - 1;
-  const isCrossingPeriod = nextRotation ? nextRotation.periodIndex !== currentPeriodIndex : false;
-  const removingPlayer = removingPlayerId ? (playerMap.get(removingPlayerId) ?? roster.players.find((p) => p.id === removingPlayerId)) : undefined;
+  const playerMap = useMemo(() => new Map(activePlayers.map((p) => [p.id, p])), [activePlayers]);
 
   // Tooltip map: for changing cells in next rotation, show who they're replacing
   const subTooltipMap = useMemo(() => {
@@ -185,6 +189,24 @@ export function RotationGrid() {
     return tips;
   }, [isLive, currentRotation, nextRotation, changingPlayerIds, playerMap]);
 
+  if (!game || !schedule || !roster) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Game or schedule not found</p>
+        <Link to="/" className="text-primary underline mt-2 inline-block">
+          Back to teams
+        </Link>
+      </div>
+    );
+  }
+
+  const removedPlayers = roster.players.filter((p) => game.removedPlayerIds.includes(p.id));
+  const isLastRotation = currentRotationIndex >= schedule.rotations.length - 1;
+  const isCrossingPeriod = nextRotation ? nextRotation.periodIndex !== currentPeriodIndex : false;
+  const removingPlayer = removingPlayerId
+    ? (playerMap.get(removingPlayerId) ?? roster.players.find((p) => p.id === removingPlayerId))
+    : undefined;
+
   function handleCellClick(rotationIndex: number, playerId: PlayerId) {
     // Block interaction in completed mode
     if (isCompleted) return;
@@ -206,7 +228,10 @@ export function RotationGrid() {
       if (isLive && rotationIndex === currentRotationIndex) {
         const sourceAssignment = schedule.rotations[rotationIndex].assignments[swapSource.playerId];
         const targetAssignment = schedule.rotations[rotationIndex].assignments[playerId];
-        if (sourceAssignment !== RotationAssignment.Bench && targetAssignment !== RotationAssignment.Bench) {
+        if (
+          sourceAssignment !== RotationAssignment.Bench &&
+          targetAssignment !== RotationAssignment.Bench
+        ) {
           setSwapSource({ rotationIndex, playerId });
           return;
         }
@@ -266,9 +291,13 @@ export function RotationGrid() {
   function handleConfirmRemovePlayer() {
     if (!gameId || !game || !config || !schedule || !removingPlayerId) return;
 
-    dispatch({ type: 'REMOVE_PLAYER_FROM_GAME', payload: { gameId, playerId: removingPlayerId } });
-
     const remainingPlayers = activePlayers.filter((p) => p.id !== removingPlayerId);
+    if (remainingPlayers.length < config.fieldSize) {
+      setRemovingPlayerId(null);
+      return;
+    }
+
+    dispatch({ type: 'REMOVE_PLAYER_FROM_GAME', payload: { gameId, playerId: removingPlayerId } });
     solver.solve({
       players: remainingPlayers,
       config,
@@ -393,7 +422,12 @@ export function RotationGrid() {
             <p className="text-sm text-muted-foreground">{game.name}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={solver.isRunning}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRegenerate}
+              disabled={solver.isRunning}
+            >
               {solver.isRunning ? 'Solving...' : 'Regenerate'}
             </Button>
             <Button variant="outline" size="sm" onClick={handleEndGame}>
@@ -408,10 +442,20 @@ export function RotationGrid() {
             <p className="text-sm text-muted-foreground">{team?.name}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={handleOpenSettings} title="Edit game settings">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleOpenSettings}
+              title="Edit game settings"
+            >
               <Settings2 className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={solver.isRunning}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRegenerate}
+              disabled={solver.isRunning}
+            >
               {solver.isRunning ? 'Solving...' : 'Regenerate'}
             </Button>
             <Button size="sm" onClick={handleStartGame}>
@@ -466,7 +510,9 @@ export function RotationGrid() {
           </Card>
           <Card>
             <CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold">{schedule.overallStats.strengthVariance.toFixed(1)}</p>
+              <p className="text-2xl font-bold">
+                {schedule.overallStats.strengthVariance.toFixed(1)}
+              </p>
               <p className="text-xs text-muted-foreground">Variance</p>
             </CardContent>
           </Card>
@@ -478,7 +524,9 @@ export function RotationGrid() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-2 pr-3 sticky left-0 bg-background font-medium z-10">Player</th>
+              <th className="text-left py-2 pr-3 sticky left-0 bg-background font-medium z-10">
+                Player
+              </th>
               {periodGroups.map((group) => {
                 if (collapsedPeriods.has(group.periodIndex)) {
                   return (
@@ -514,11 +562,13 @@ export function RotationGrid() {
                         <span>R{r.index + 1}</span>
                       </div>
                       {(isCurrent || isNext) && (
-                        <span className={cn(
-                          'text-[10px] font-semibold uppercase tracking-wide',
-                          isCurrent && 'text-primary',
-                          isNext && 'text-muted-foreground',
-                        )}>
+                        <span
+                          className={cn(
+                            'text-[10px] font-semibold uppercase tracking-wide',
+                            isCurrent && 'text-primary',
+                            isNext && 'text-muted-foreground',
+                          )}
+                        >
                           {isCurrent ? 'Now' : 'Next'}
                         </span>
                       )}
@@ -552,7 +602,12 @@ export function RotationGrid() {
               );
               return (
                 <tr key={player.id} className={cn('border-b', isRemoved && 'opacity-60')}>
-                  <td className={cn('pr-3 sticky left-0 bg-background z-10', isLive ? 'py-2.5' : 'py-1.5')}>
+                  <td
+                    className={cn(
+                      'pr-3 sticky left-0 bg-background z-10',
+                      isLive ? 'py-2.5' : 'py-1.5',
+                    )}
+                  >
                     {isLive ? (
                       <PlayerPopover
                         playerName={player.name}
@@ -597,7 +652,8 @@ export function RotationGrid() {
                         !isPast &&
                         !isCompleted;
                       const subTip = isChanging ? subTooltipMap.get(player.id) : undefined;
-                      const cellTitle = subTip ?? (fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined);
+                      const cellTitle =
+                        subTip ?? (fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined);
                       return (
                         <td
                           key={rotation.index}
@@ -609,7 +665,9 @@ export function RotationGrid() {
                             isPast && 'opacity-40',
                           )}
                           {...(isCurrent ? { 'data-current-rotation': '' } : {})}
-                          onClick={() => !isPast && !isCompleted && handleCellClick(rotation.index, player.id)}
+                          onClick={() =>
+                            !isPast && !isCompleted && handleCellClick(rotation.index, player.id)
+                          }
                         >
                           <span
                             className={cn(
@@ -617,10 +675,14 @@ export function RotationGrid() {
                               isLive ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs',
                               display.className,
                               isSelected && 'ring-2 ring-primary ring-offset-1 animate-pulse',
-                              isValidTarget && 'ring-1 ring-primary/50 hover:ring-2 hover:ring-primary',
+                              isValidTarget &&
+                                'ring-1 ring-primary/50 hover:ring-2 hover:ring-primary',
                               isChanging && 'ring-2 ring-dashed ring-accent-foreground/40',
                               !isPast && !isCompleted && 'cursor-pointer',
-                              swapSource && !isSelected && !isValidTarget && 'opacity-70 hover:opacity-100',
+                              swapSource &&
+                                !isSelected &&
+                                !isValidTarget &&
+                                'opacity-70 hover:opacity-100',
                             )}
                             title={cellTitle}
                           >
@@ -759,7 +821,8 @@ export function RotationGrid() {
             {/* Absent players */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                Attendance ({roster.players.filter((p) => !editAbsent.has(p.id)).length} / {roster.players.length})
+                Attendance ({roster.players.filter((p) => !editAbsent.has(p.id)).length} /{' '}
+                {roster.players.length})
               </Label>
               <div className="grid gap-1.5">
                 {roster.players.map((player) => {
@@ -773,9 +836,16 @@ export function RotationGrid() {
                       )}
                       onClick={() => handleToggleAbsent(player.id)}
                     >
-                      <Checkbox checked={!isAbsent} onCheckedChange={() => handleToggleAbsent(player.id)} />
-                      <span className={cn('text-sm flex-1', isAbsent && 'line-through')}>{player.name}</span>
-                      <Badge variant="secondary" className="text-xs">{player.skillRanking}</Badge>
+                      <Checkbox
+                        checked={!isAbsent}
+                        onCheckedChange={() => handleToggleAbsent(player.id)}
+                      />
+                      <span className={cn('text-sm flex-1', isAbsent && 'line-through')}>
+                        {player.name}
+                      </span>
+                      <Badge variant="secondary" className="text-xs">
+                        {player.skillRanking}
+                      </Badge>
                     </div>
                   );
                 })}
@@ -804,7 +874,9 @@ export function RotationGrid() {
                           <SelectContent>
                             <SelectItem value="auto">Auto-assign</SelectItem>
                             {availableGoalies.map((player) => (
-                              <SelectItem key={player.id} value={player.id}>{player.name}</SelectItem>
+                              <SelectItem key={player.id} value={player.id}>
+                                {player.name}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

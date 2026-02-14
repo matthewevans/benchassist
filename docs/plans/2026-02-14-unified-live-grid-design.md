@@ -39,15 +39,16 @@ Progress bar with substitution markers runs as a thin strip along the top edge o
 
 ### Grid Cells (by game state)
 
-| State | Past Rotations | Current Rotation | Future Rotations |
-|-------|---------------|-----------------|-----------------|
-| Setup | Full interactive | Full interactive | Full interactive |
-| Live | Dimmed, locked | Swappable | Swappable |
-| Completed | Read-only | Read-only | Read-only |
+| State     | Past Rotations   | Current Rotation | Future Rotations |
+| --------- | ---------------- | ---------------- | ---------------- |
+| Setup     | Full interactive | Full interactive | Full interactive |
+| Live      | Dimmed, locked   | Swappable        | Swappable        |
+| Completed | Read-only        | Read-only        | Read-only        |
 
 ### Swap Mode
 
 When a cell is tapped to start a swap:
+
 1. **Selected cell:** Bold ring border (2px primary) + pulsing background
 2. **Valid targets:** Other cells in same rotation get subtle highlight
 3. **Bottom bar transforms:** Center text becomes "Swapping [Name] — tap target or cancel" with [Cancel ✕] button
@@ -56,6 +57,7 @@ When a cell is tapped to start a swap:
 ### Player Name Column (Sticky Left)
 
 Tapping a player name opens a popover with:
+
 - Player stats (play %, bench count, goalie count)
 - "Remove from game" action (destructive, with confirmation dialog)
 - "Add back" action (if previously removed)
@@ -63,21 +65,23 @@ Tapping a player name opens a popover with:
 
 ## Bottom Bar Details
 
-| Zone | Content |
-|------|---------|
-| Left | Timer: `5:30 / 25:00` + ▶/⏸ + ↻ reset |
-| Center | "Next sub ~3 min" hint (disappears on last rotation of period) |
-| Right | Large NEXT button. Shows "NEXT PERIOD" at period boundary, "END GAME" on final rotation |
+| Zone   | Content                                                                                 |
+| ------ | --------------------------------------------------------------------------------------- |
+| Left   | Timer: `5:30 / 25:00` + ▶/⏸ + ↻ reset                                                   |
+| Center | "Next sub ~3 min" hint (disappears on last rotation of period)                          |
+| Right  | Large NEXT button. Shows "NEXT PERIOD" at period boundary, "END GAME" on final rotation |
 
 Top edge: thin progress strip with substitution marker ticks.
 
 ## Transitions
 
 ### Starting a Game
+
 - Same page, no navigation. Bottom bar animates in from below.
 - Grid auto-scrolls to rotation 1. Game status → `in-progress`.
 
 ### Advancing Rotations
+
 - Current column border shifts right
 - Previous column dims
 - If crossing period boundary: elapsed period auto-collapses (brief animation)

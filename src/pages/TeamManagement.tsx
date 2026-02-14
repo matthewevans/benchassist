@@ -5,12 +5,18 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog.tsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { generateId } from '@/utils/id.ts';
-import { GAME_CONFIG_TEMPLATES } from '@/types/domain.ts';
+import { GAME_CONFIG_TEMPLATES, DEFAULT_GAME_RULES } from '@/types/domain.ts';
 import type { Roster, GameConfig, GameConfigId } from '@/types/domain.ts';
 
 export function TeamManagement() {
@@ -101,7 +107,9 @@ export function TeamManagement() {
                 autoFocus
                 className="h-8 w-48"
               />
-              <Button size="sm" onClick={handleRenameTeam}>Save</Button>
+              <Button size="sm" onClick={handleRenameTeam}>
+                Save
+              </Button>
             </div>
           ) : (
             <h1
@@ -131,7 +139,9 @@ export function TeamManagement() {
           <h2 className="text-lg font-semibold">Rosters</h2>
           <Dialog open={isAddingRoster} onOpenChange={setIsAddingRoster}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">Add Roster</Button>
+              <Button variant="outline" size="sm">
+                Add Roster
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -151,7 +161,11 @@ export function TeamManagement() {
                     autoFocus
                   />
                 </div>
-                <Button onClick={handleAddRoster} className="w-full" disabled={!newRosterName.trim()}>
+                <Button
+                  onClick={handleAddRoster}
+                  className="w-full"
+                  disabled={!newRosterName.trim()}
+                >
                   Create Roster
                 </Button>
               </div>
@@ -193,7 +207,9 @@ export function TeamManagement() {
           <h2 className="text-lg font-semibold">Game Configurations</h2>
           <Dialog open={isAddingConfig} onOpenChange={setIsAddingConfig}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">Custom...</Button>
+              <Button variant="outline" size="sm">
+                Custom...
+              </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -227,13 +243,7 @@ export function TeamManagement() {
                   usePositions: template.usePositions,
                   formation: template.formation,
                   useGoalie: template.useGoalie,
-                  noConsecutiveBench: true,
-                  maxConsecutiveBench: 1,
-                  enforceMinPlayTime: true,
-                  minPlayPercentage: 50,
-                  goaliePlayFullPeriod: true,
-                  goalieRestAfterPeriod: true,
-                  balancePriority: 'balanced',
+                  ...DEFAULT_GAME_RULES,
                   createdAt: Date.now(),
                   updatedAt: Date.now(),
                 };
@@ -264,9 +274,8 @@ export function TeamManagement() {
                     <div>
                       <p className="font-medium">{config.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {config.fieldSize}v{config.fieldSize} &middot;{' '}
-                        {config.periods} periods &middot;{' '}
-                        {config.rotationsPerPeriod} rotations/period
+                        {config.fieldSize}v{config.fieldSize} &middot; {config.periods} periods
+                        &middot; {config.rotationsPerPeriod} rotations/period
                       </p>
                     </div>
                     <Button
@@ -287,7 +296,12 @@ export function TeamManagement() {
         )}
 
         {/* Edit config dialog */}
-        <Dialog open={!!editingConfig} onOpenChange={(open) => { if (!open) setEditingConfig(null); }}>
+        <Dialog
+          open={!!editingConfig}
+          onOpenChange={(open) => {
+            if (!open) setEditingConfig(null);
+          }}
+        >
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Configuration</DialogTitle>
@@ -321,7 +335,10 @@ export function TeamManagement() {
         open={deletingConfigId !== null}
         onConfirm={() => {
           if (teamId && deletingConfigId) {
-            dispatch({ type: 'DELETE_GAME_CONFIG', payload: { teamId, configId: deletingConfigId } });
+            dispatch({
+              type: 'DELETE_GAME_CONFIG',
+              payload: { teamId, configId: deletingConfigId },
+            });
           }
           setDeletingConfigId(null);
         }}

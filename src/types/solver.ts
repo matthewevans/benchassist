@@ -1,4 +1,11 @@
-import type { Player, GameConfig, GoalieAssignment, ManualOverride, Rotation, RotationSchedule } from './domain.ts';
+import type {
+  Player,
+  GameConfig,
+  GoalieAssignment,
+  ManualOverride,
+  Rotation,
+  RotationSchedule,
+} from './domain.ts';
 
 export type SolverRequest =
   | {

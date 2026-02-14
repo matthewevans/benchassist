@@ -54,9 +54,7 @@ export function GameHistory() {
                       </div>
                     </Link>
                     <div className="flex items-center gap-2">
-                      <Badge className={STATUS_STYLES[game.status] ?? ''}>
-                        {game.status}
-                      </Badge>
+                      <Badge className={STATUS_STYLES[game.status] ?? ''}>{game.status}</Badge>
                       <Button
                         variant="ghost"
                         size="sm"

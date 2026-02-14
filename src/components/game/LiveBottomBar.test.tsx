@@ -71,7 +71,7 @@ describe('LiveBottomBar', () => {
       <LiveBottomBar
         {...defaultProps}
         timer={buildTimer({ elapsedMs: 330000, markers: [{ progress: 0.5, timeMs: 750000 }] })}
-      />
+      />,
     );
     expect(screen.getByText(/Next sub ~7 min/)).toBeInTheDocument();
   });

@@ -107,10 +107,7 @@ export function buildRotation(
   return rotationFactory.build({ index, assignments });
 }
 
-export function buildRoster(
-  playerCount: number,
-  options?: { goalieCount?: number },
-): Player[] {
+export function buildRoster(playerCount: number, options?: { goalieCount?: number }): Player[] {
   const goalieCount = options?.goalieCount ?? 2;
   return playerFactory.buildList(playerCount).map((p, i) => ({
     ...p,
@@ -121,9 +118,7 @@ export function buildRoster(
 export function buildSchedule(rotations: Rotation[], players: Player[]): RotationSchedule {
   const playerStats = calculatePlayerStats(rotations, players);
   const strengths = rotations.map((r) => r.teamStrength);
-  const avg = strengths.length > 0
-    ? strengths.reduce((s, v) => s + v, 0) / strengths.length
-    : 0;
+  const avg = strengths.length > 0 ? strengths.reduce((s, v) => s + v, 0) / strengths.length : 0;
 
   return {
     rotations,

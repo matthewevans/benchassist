@@ -1,11 +1,30 @@
 import { RotationAssignment } from '@/types/domain.ts';
-import type { Player, GoalieAssignment, RotationSchedule, Rotation, FormationSlot, SubPosition } from '@/types/domain.ts';
-import { calculatePlayerStats, calculateRotationStrength } from '@/utils/stats.ts';
+import type {
+  Player,
+  GoalieAssignment,
+  RotationSchedule,
+  Rotation,
+  FormationSlot,
+  SubPosition,
+} from '@/types/domain.ts';
+import {
+  calculatePlayerStats,
+  calculateRotationStrength,
+  computeStrengthStats,
+} from '@/utils/stats.ts';
 import { autoAssignPositions } from '@/utils/positions.ts';
 import type { SolverContext, BenchPattern } from './types.ts';
 
 export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
-  const { players, config, goalieAssignments, manualOverrides, totalRotations, benchSlotsPerRotation, cancellation } = ctx;
+  const {
+    players,
+    config,
+    goalieAssignments,
+    manualOverrides,
+    totalRotations,
+    benchSlotsPerRotation,
+    cancellation,
+  } = ctx;
 
   const goalieMap = new Map<number, string>();
   const forcedBench = new Map<string, Set<number>>();
@@ -72,7 +91,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
 
       for (const [otherId, otherCount] of others) {
         if (remaining <= 0) break;
-        const minBench = (forcedBench.get(otherId)?.size) ?? 0;
+        const minBench = forcedBench.get(otherId)?.size ?? 0;
         const reducible = otherCount - minBench;
         if (reducible > 0) {
           const reduction = Math.min(remaining, reducible);
@@ -121,22 +140,31 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   });
 
   // Generate valid bench patterns, reducing counts where constraints are too tight
-  function generatePatternsForPlayer(
-    { cannotBench, mustBench, player }: PlayerConstraints,
-  ): { patterns: BenchPattern[]; benchCount: number } {
+  function generatePatternsForPlayer({ cannotBench, mustBench, player }: PlayerConstraints): {
+    patterns: BenchPattern[];
+    benchCount: number;
+  } {
     let targetBenchCount = benchCounts.get(player.id) ?? 0;
     const availableSlots = totalRotations - cannotBench.size;
     targetBenchCount = Math.min(targetBenchCount, availableSlots);
     targetBenchCount = Math.max(targetBenchCount, mustBench.size);
 
     let patterns = generateBenchPatterns(
-      totalRotations, targetBenchCount, cannotBench, mustBench, maxConsecutive,
+      totalRotations,
+      targetBenchCount,
+      cannotBench,
+      mustBench,
+      maxConsecutive,
     );
 
     while (patterns.length === 0 && targetBenchCount > mustBench.size) {
       targetBenchCount--;
       patterns = generateBenchPatterns(
-        totalRotations, targetBenchCount, cannotBench, mustBench, maxConsecutive,
+        totalRotations,
+        targetBenchCount,
+        cannotBench,
+        mustBench,
+        maxConsecutive,
       );
     }
 
@@ -182,7 +210,11 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
         if (current < maxAvailable) {
           const newCount = current + 1;
           const patterns = generateBenchPatterns(
-            totalRotations, newCount, constraints.cannotBench, constraints.mustBench, maxConsecutive,
+            totalRotations,
+            newCount,
+            constraints.cannotBench,
+            constraints.mustBench,
+            maxConsecutive,
           );
           if (patterns.length > 0) {
             benchCounts.set(constraints.player.id, newCount);
@@ -364,9 +396,10 @@ function calculateBenchCounts(
 
     // Adjust if total doesn't match
     let diff = totalBenchSlots - assigned;
-    const adjustOrder = diff > 0
-      ? [...weighted].sort((a, b) => b.weight - a.weight)
-      : [...weighted].sort((a, b) => a.weight - b.weight);
+    const adjustOrder =
+      diff > 0
+        ? [...weighted].sort((a, b) => b.weight - a.weight)
+        : [...weighted].sort((a, b) => a.weight - b.weight);
 
     let idx = 0;
     while (diff !== 0) {
@@ -474,12 +507,19 @@ function buildSchedule(
   benchSets: BenchPattern[],
   goalieMap: Map<number, string>,
   allPlayers: Player[],
-  config: { rotationsPerPeriod: number; periods: number; usePositions: boolean; formation: FormationSlot[] },
+  config: {
+    rotationsPerPeriod: number;
+    periods: number;
+    usePositions: boolean;
+    formation: FormationSlot[];
+  },
   totalRotations: number,
 ): RotationSchedule {
   const rotations: Rotation[] = [];
   const playerMap = config.usePositions ? new Map(allPlayers.map((p) => [p.id, p])) : undefined;
-  const positionHistory = config.usePositions ? new Map<string, Map<SubPosition, number>>() : undefined;
+  const positionHistory = config.usePositions
+    ? new Map<string, Map<SubPosition, number>>()
+    : undefined;
 
   for (let r = 0; r < totalRotations; r++) {
     const assignments: Record<string, RotationAssignment> = {};
@@ -498,7 +538,13 @@ function buildSchedule(
       }
     }
 
-    const rotation: Rotation = { index: r, periodIndex, assignments, teamStrength: 0, violations: [] };
+    const rotation: Rotation = {
+      index: r,
+      periodIndex,
+      assignments,
+      teamStrength: 0,
+      violations: [],
+    };
     rotation.teamStrength = calculateRotationStrength(rotation, allPlayers);
 
     // Auto-assign field positions when usePositions is enabled
@@ -506,7 +552,12 @@ function buildSchedule(
       const fieldPlayerIds = Object.entries(assignments)
         .filter(([, a]) => a === RotationAssignment.Field)
         .map(([id]) => id);
-      rotation.fieldPositions = autoAssignPositions(fieldPlayerIds, config.formation, playerMap, positionHistory);
+      rotation.fieldPositions = autoAssignPositions(
+        fieldPlayerIds,
+        config.formation,
+        playerMap,
+        positionHistory,
+      );
 
       // Track position history for diversity in subsequent rotations
       for (const [playerId, subPos] of Object.entries(rotation.fieldPositions)) {
@@ -522,16 +573,15 @@ function buildSchedule(
   const playerStats = calculatePlayerStats(rotations, allPlayers);
 
   const strengths = rotations.map((r) => r.teamStrength);
-  const avg = strengths.reduce((s, v) => s + v, 0) / strengths.length;
-  const variance = strengths.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / strengths.length;
+  const { avg, variance, min, max } = computeStrengthStats(strengths);
 
   return {
     rotations,
     playerStats,
     overallStats: {
       strengthVariance: variance,
-      minStrength: Math.min(...strengths),
-      maxStrength: Math.max(...strengths),
+      minStrength: min,
+      maxStrength: max,
       avgStrength: Math.round(avg * 10) / 10,
       violations: [],
       isValid: true,

@@ -17,19 +17,38 @@ export const POSITION_LABELS: Record<Position, string> = {
 
 export type SubPosition =
   // Defenders
-  | 'LB' | 'CB' | 'RB' | 'LCB' | 'RCB'
+  | 'LB'
+  | 'CB'
+  | 'RB'
+  | 'LCB'
+  | 'RCB'
   // Midfielders
-  | 'LM' | 'CM' | 'RM' | 'LCM' | 'RCM'
+  | 'LM'
+  | 'CM'
+  | 'RM'
+  | 'LCM'
+  | 'RCM'
   // Forwards
-  | 'LW' | 'RW' | 'ST' | 'CF';
+  | 'LW'
+  | 'RW'
+  | 'ST'
+  | 'CF';
 
 export const SUB_POSITION_LABELS: Record<SubPosition, string> = {
-  LB: 'Left Back', CB: 'Center Back', RB: 'Right Back',
-  LCB: 'Left Center Back', RCB: 'Right Center Back',
-  LM: 'Left Mid', CM: 'Center Mid', RM: 'Right Mid',
-  LCM: 'Left Center Mid', RCM: 'Right Center Mid',
-  LW: 'Left Wing', RW: 'Right Wing',
-  ST: 'Striker', CF: 'Center Forward',
+  LB: 'Left Back',
+  CB: 'Center Back',
+  RB: 'Right Back',
+  LCB: 'Left Center Back',
+  RCB: 'Right Center Back',
+  LM: 'Left Mid',
+  CM: 'Center Mid',
+  RM: 'Right Mid',
+  LCM: 'Left Center Mid',
+  RCM: 'Right Center Mid',
+  LW: 'Left Wing',
+  RW: 'Right Wing',
+  ST: 'Striker',
+  CF: 'Center Forward',
 };
 
 export interface Player {
@@ -97,7 +116,6 @@ export enum RotationAssignment {
   Bench = 'BENCH',
   Goalie = 'GOALIE',
 }
-
 
 export interface ManualOverride {
   playerId: PlayerId;
@@ -182,6 +200,25 @@ export interface GameConfigTemplate {
   formation: FormationSlot[];
   useGoalie: boolean;
 }
+
+export const DEFAULT_GAME_RULES = {
+  noConsecutiveBench: true,
+  maxConsecutiveBench: 1,
+  enforceMinPlayTime: true,
+  minPlayPercentage: 50,
+  goaliePlayFullPeriod: true,
+  goalieRestAfterPeriod: true,
+  balancePriority: 'balanced' as const,
+} satisfies Pick<
+  GameConfig,
+  | 'noConsecutiveBench'
+  | 'maxConsecutiveBench'
+  | 'enforceMinPlayTime'
+  | 'minPlayPercentage'
+  | 'goaliePlayFullPeriod'
+  | 'goalieRestAfterPeriod'
+  | 'balancePriority'
+>;
 
 export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
   {

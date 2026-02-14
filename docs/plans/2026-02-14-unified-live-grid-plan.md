@@ -15,6 +15,7 @@
 ### Task 1: Fix Timer NaN Bug
 
 **Files:**
+
 - Modify: `src/hooks/usePeriodTimer.ts:37-42`
 
 **Step 1: Write the failing test**
@@ -75,6 +76,7 @@ git commit -m "fix: guard formatTime against NaN input"
 ### Task 2: Create LiveBottomBar Component
 
 **Files:**
+
 - Create: `src/components/game/LiveBottomBar.tsx`
 - Test: `src/components/game/LiveBottomBar.test.tsx`
 
@@ -115,7 +117,7 @@ describe('LiveBottomBar', () => {
         isCrossingPeriod={false}
         swapPlayerName={null}
         onCancelSwap={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText(/5:30/)).toBeInTheDocument();
     expect(screen.getByText(/25:00/)).toBeInTheDocument();
@@ -130,7 +132,7 @@ describe('LiveBottomBar', () => {
         isCrossingPeriod={false}
         swapPlayerName={null}
         onCancelSwap={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByRole('button', { name: /next/i })).toBeInTheDocument();
   });
@@ -144,7 +146,7 @@ describe('LiveBottomBar', () => {
         isCrossingPeriod={false}
         swapPlayerName={null}
         onCancelSwap={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByRole('button', { name: /end game/i })).toBeInTheDocument();
   });
@@ -158,7 +160,7 @@ describe('LiveBottomBar', () => {
         isCrossingPeriod={false}
         swapPlayerName="Alex"
         onCancelSwap={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByText(/swapping alex/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
@@ -174,7 +176,7 @@ describe('LiveBottomBar', () => {
         isCrossingPeriod={false}
         swapPlayerName="Alex"
         onCancelSwap={onCancelSwap}
-      />
+      />,
     );
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
     expect(onCancelSwap).toHaveBeenCalled();
@@ -189,7 +191,7 @@ describe('LiveBottomBar', () => {
         isCrossingPeriod={true}
         swapPlayerName={null}
         onCancelSwap={vi.fn()}
-      />
+      />,
     );
     expect(screen.getByRole('button', { name: /next period/i })).toBeInTheDocument();
   });
@@ -231,11 +233,7 @@ export function LiveBottomBar({
   const nextMarker = timer.markers.find((m) => timer.elapsedMs < m.timeMs);
   const nextSubMin = nextMarker ? Math.ceil((nextMarker.timeMs - timer.elapsedMs) / 60000) : null;
 
-  const advanceLabel = isLastRotation
-    ? 'End Game'
-    : isCrossingPeriod
-      ? 'Next Period'
-      : 'Next';
+  const advanceLabel = isLastRotation ? 'End Game' : isCrossingPeriod ? 'Next Period' : 'Next';
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg animate-in slide-in-from-bottom duration-300">
@@ -243,8 +241,8 @@ export function LiveBottomBar({
       <div className="relative h-1 bg-secondary">
         <div
           className={cn(
-            "absolute inset-y-0 left-0 transition-all duration-1000",
-            timer.isOvertime ? "bg-destructive" : "bg-primary",
+            'absolute inset-y-0 left-0 transition-all duration-1000',
+            timer.isOvertime ? 'bg-destructive' : 'bg-primary',
           )}
           style={{ width: `${timer.progress * 100}%` }}
         />
@@ -260,23 +258,43 @@ export function LiveBottomBar({
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Left: Timer + controls */}
         <div className="flex items-center gap-2">
-          <span className={cn(
-            "font-mono font-bold tabular-nums text-lg",
-            timer.isOvertime && "text-destructive",
-          )}>
+          <span
+            className={cn(
+              'font-mono font-bold tabular-nums text-lg',
+              timer.isOvertime && 'text-destructive',
+            )}
+          >
             {timer.formattedElapsed}
           </span>
           <span className="text-sm text-muted-foreground">/ {timer.formattedDuration}</span>
           {timer.isRunning ? (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={timer.pause} aria-label="Pause timer">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={timer.pause}
+              aria-label="Pause timer"
+            >
               <PauseIcon className="size-4" />
             </Button>
           ) : (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={timer.play} aria-label="Start timer">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={timer.play}
+              aria-label="Start timer"
+            >
               <PlayIcon className="size-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={timer.reset} aria-label="Reset timer">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={timer.reset}
+            aria-label="Reset timer"
+          >
             <RotateCcwIcon className="size-4" />
           </Button>
         </div>
@@ -285,9 +303,7 @@ export function LiveBottomBar({
         <div className="flex-1 text-center text-sm">
           {swapPlayerName ? (
             <div className="flex items-center justify-center gap-2">
-              <span className="font-medium text-primary">
-                Swapping {swapPlayerName}
-              </span>
+              <span className="font-medium text-primary">Swapping {swapPlayerName}</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -305,12 +321,7 @@ export function LiveBottomBar({
         </div>
 
         {/* Right: Advance button */}
-        <Button
-          size="lg"
-          className="px-6"
-          onClick={onAdvance}
-          aria-label={advanceLabel}
-        >
+        <Button size="lg" className="px-6" onClick={onAdvance} aria-label={advanceLabel}>
           {advanceLabel}
           {!isLastRotation && <ChevronRightIcon className="size-4 ml-1" />}
         </Button>
@@ -337,6 +348,7 @@ git commit -m "feat: add LiveBottomBar component for game-day controls"
 ### Task 3: Create PlayerPopover Component
 
 **Files:**
+
 - Create: `src/components/game/PlayerPopover.tsx`
 - Test: `src/components/game/PlayerPopover.test.tsx`
 
@@ -369,7 +381,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.getByText('75%')).toBeInTheDocument();
@@ -387,7 +399,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.getByRole('button', { name: /remove/i })).toBeInTheDocument();
@@ -403,7 +415,7 @@ describe('PlayerPopover', () => {
         onAddBack={vi.fn()}
       >
         <button>Alex</button>
-      </PlayerPopover>
+      </PlayerPopover>,
     );
     await userEvent.click(screen.getByText('Alex'));
     expect(screen.getByRole('button', { name: /add back/i })).toBeInTheDocument();
@@ -444,34 +456,25 @@ export function PlayerPopover({
 }: PlayerPopoverProps) {
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        {children}
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-56 p-3" align="start">
         <div className="space-y-2">
           <p className="font-medium text-sm">{playerName}</p>
           {stats && (
             <div className="text-xs text-muted-foreground space-y-0.5">
-              <p>{stats.rotationsPlayed} played &middot; {stats.rotationsBenched} bench{stats.rotationsGoalie > 0 ? ` · ${stats.rotationsGoalie} GK` : ''}</p>
+              <p>
+                {stats.rotationsPlayed} played &middot; {stats.rotationsBenched} bench
+                {stats.rotationsGoalie > 0 ? ` · ${stats.rotationsGoalie} GK` : ''}
+              </p>
               <p className="font-medium text-foreground text-sm">{stats.playPercentage}%</p>
             </div>
           )}
           {isRemoved ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs"
-              onClick={onAddBack}
-            >
+            <Button variant="outline" size="sm" className="w-full text-xs" onClick={onAddBack}>
               Add back
             </Button>
           ) : (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="w-full text-xs"
-              onClick={onRemove}
-            >
+            <Button variant="destructive" size="sm" className="w-full text-xs" onClick={onRemove}>
               Remove from game
             </Button>
           )}
@@ -501,6 +504,7 @@ git commit -m "feat: add PlayerPopover for in-grid player management"
 This is a helper hook that manages which periods are collapsed. It computes the rotation-to-period mapping from the schedule and handles auto-collapsing elapsed periods.
 
 **Files:**
+
 - Create: `src/hooks/usePeriodCollapse.ts`
 - Test: `src/hooks/usePeriodCollapse.test.ts`
 
@@ -515,14 +519,14 @@ import { usePeriodCollapse } from './usePeriodCollapse.ts';
 describe('usePeriodCollapse', () => {
   it('starts with no periods collapsed in setup mode', () => {
     const { result } = renderHook(() =>
-      usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex: 0, isLive: false })
+      usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex: 0, isLive: false }),
     );
     expect(result.current.collapsedPeriods.size).toBe(0);
   });
 
   it('auto-collapses elapsed periods on initial load in live mode', () => {
     const { result } = renderHook(() =>
-      usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex: 2, isLive: true })
+      usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex: 2, isLive: true }),
     );
     expect(result.current.collapsedPeriods.has(0)).toBe(true);
     expect(result.current.collapsedPeriods.has(1)).toBe(true);
@@ -533,7 +537,7 @@ describe('usePeriodCollapse', () => {
     const { result, rerender } = renderHook(
       ({ currentPeriodIndex }) =>
         usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex, isLive: true }),
-      { initialProps: { currentPeriodIndex: 0 } }
+      { initialProps: { currentPeriodIndex: 0 } },
     );
     expect(result.current.collapsedPeriods.size).toBe(0);
 
@@ -544,7 +548,7 @@ describe('usePeriodCollapse', () => {
 
   it('toggles a period collapsed state', () => {
     const { result } = renderHook(() =>
-      usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex: 2, isLive: true })
+      usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex: 2, isLive: true }),
     );
     // Period 0 is auto-collapsed; toggle it open
     act(() => result.current.togglePeriod(0));
@@ -557,7 +561,7 @@ describe('usePeriodCollapse', () => {
 
   it('never auto-collapses the current period', () => {
     const { result } = renderHook(() =>
-      usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex: 1, isLive: true })
+      usePeriodCollapse({ totalPeriods: 4, currentPeriodIndex: 1, isLive: true }),
     );
     expect(result.current.collapsedPeriods.has(1)).toBe(false);
   });
@@ -582,7 +586,11 @@ interface UsePeriodCollapseParams {
   isLive: boolean;
 }
 
-export function usePeriodCollapse({ totalPeriods, currentPeriodIndex, isLive }: UsePeriodCollapseParams) {
+export function usePeriodCollapse({
+  totalPeriods,
+  currentPeriodIndex,
+  isLive,
+}: UsePeriodCollapseParams) {
   const [collapsedPeriods, setCollapsedPeriods] = useState<Set<number>>(() => {
     if (!isLive) return new Set();
     // On initial load in live mode, collapse all elapsed periods
@@ -597,7 +605,10 @@ export function usePeriodCollapse({ totalPeriods, currentPeriodIndex, isLive }: 
 
   useEffect(() => {
     if (!isLive) return;
-    if (prevPeriodRef.current !== currentPeriodIndex && currentPeriodIndex > prevPeriodRef.current) {
+    if (
+      prevPeriodRef.current !== currentPeriodIndex &&
+      currentPeriodIndex > prevPeriodRef.current
+    ) {
       // Auto-collapse all periods before the current one
       setCollapsedPeriods((prev) => {
         const next = new Set(prev);
@@ -645,6 +656,7 @@ git commit -m "feat: add usePeriodCollapse hook for period collapse state"
 This is the core refactor. The RotationGrid component gains awareness of game status and wires up all the new hooks (timer, period collapse, player management).
 
 **Files:**
+
 - Modify: `src/pages/RotationGrid.tsx`
 
 **Step 1: Add live mode state and hooks to RotationGrid**
@@ -671,12 +683,7 @@ const currentRotation = schedule?.rotations[currentRotationIndex];
 const nextRotation = schedule?.rotations[currentRotationIndex + 1];
 const currentPeriodIndex = currentRotation?.periodIndex ?? 0;
 
-const timer = usePeriodTimer(
-  isLive ? game : undefined,
-  config,
-  currentRotation,
-  dispatch,
-);
+const timer = usePeriodTimer(isLive ? game : undefined, config, currentRotation, dispatch);
 
 const { collapsedPeriods, togglePeriod } = usePeriodCollapse({
   totalPeriods: config?.periods ?? 1,
@@ -730,7 +737,10 @@ function handleEndGame() {
 
 function handleConfirmRemovePlayer() {
   if (!game || !config || !schedule || !removingPlayerId) return;
-  dispatch({ type: 'REMOVE_PLAYER_FROM_GAME', payload: { gameId: game.id, playerId: removingPlayerId } });
+  dispatch({
+    type: 'REMOVE_PLAYER_FROM_GAME',
+    payload: { gameId: game.id, playerId: removingPlayerId },
+  });
 
   const remainingPlayers = activePlayers.filter((p) => p.id !== removingPlayerId);
   solver.solve({
@@ -818,6 +828,7 @@ git commit -m "feat: add live mode state, hooks, and handlers to RotationGrid"
 ### Task 6: Refactor RotationGrid — Update Header for Live Mode
 
 **Files:**
+
 - Modify: `src/pages/RotationGrid.tsx` (header section, ~lines 157-173)
 
 **Step 1: Replace the header to adapt based on game state**
@@ -830,7 +841,10 @@ The header should show different buttons in setup vs live vs completed mode:
     <h1 className="text-xl font-bold">{game.name}</h1>
     <p className="text-sm text-muted-foreground">
       {isLive ? (
-        <>Rotation {currentRotationIndex + 1} of {schedule.rotations.length} &middot; Period {currentPeriodIndex + 1}</>
+        <>
+          Rotation {currentRotationIndex + 1} of {schedule.rotations.length} &middot; Period{' '}
+          {currentPeriodIndex + 1}
+        </>
       ) : (
         team?.name
       )}
@@ -873,6 +887,7 @@ git commit -m "feat: adapt RotationGrid header for live/setup/completed modes"
 This is the core grid rendering change. The grid table gets period collapsing, column highlighting, dimming, and sub change indicators.
 
 **Files:**
+
 - Modify: `src/pages/RotationGrid.tsx` (grid table section, ~lines 232-316)
 
 **Step 1: Add auto-scroll ref and effect**
@@ -935,14 +950,14 @@ const changingPlayerIds = useMemo(() => {
 Remove the `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` wrapper entirely (no more grid/cards toggle). Replace with the live-aware grid:
 
 ```tsx
-{/* Grid — remove the Tabs wrapper, just render the grid directly */}
+{
+  /* Grid — remove the Tabs wrapper, just render the grid directly */
+}
 <div ref={gridRef} className="overflow-x-auto">
   <table className="w-full text-sm">
     <thead>
       <tr className="border-b">
-        <th className="text-left py-2 pr-3 sticky left-0 bg-background z-10 font-medium">
-          Player
-        </th>
+        <th className="text-left py-2 pr-3 sticky left-0 bg-background z-10 font-medium">Player</th>
         {periodGroups.map((group) => {
           const isCollapsed = collapsedPeriods.has(group.periodIndex);
           if (isCollapsed) {
@@ -964,8 +979,8 @@ Remove the `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` wrapper entirely (no mo
               <th
                 key={r.index}
                 className={cn(
-                  "text-center py-2 px-1 font-medium min-w-[60px]",
-                  isCurrent && "bg-primary/10",
+                  'text-center py-2 px-1 font-medium min-w-[60px]',
+                  isCurrent && 'bg-primary/10',
                 )}
                 data-current-rotation={isCurrent ? '' : undefined}
               >
@@ -975,7 +990,8 @@ Remove the `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` wrapper entirely (no mo
                     className="text-xs text-muted-foreground font-normal cursor-pointer hover:text-foreground"
                     onClick={() => isLive && togglePeriod(group.periodIndex)}
                   >
-                    P{r.periodIndex + 1}{isLive ? ' ▾' : ''}
+                    P{r.periodIndex + 1}
+                    {isLive ? ' ▾' : ''}
                   </div>
                 )}
                 {i > 0 && <div className="text-xs invisible">P</div>}
@@ -991,7 +1007,7 @@ Remove the `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` wrapper entirely (no mo
         const stats = schedule.playerStats[player.id];
         const isRemoved = game.removedPlayerIds.includes(player.id);
         return (
-          <tr key={player.id} className={cn("border-b", isRemoved && "opacity-40")}>
+          <tr key={player.id} className={cn('border-b', isRemoved && 'opacity-40')}>
             <td className="py-1.5 pr-3 sticky left-0 bg-background z-10">
               {isLive ? (
                 <PlayerPopover
@@ -1001,10 +1017,12 @@ Remove the `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` wrapper entirely (no mo
                   onRemove={() => setRemovingPlayerId(player.id)}
                   onAddBack={() => handleAddPlayerBack(player.id)}
                 >
-                  <button className={cn(
-                    "whitespace-nowrap text-left hover:text-primary transition-colors",
-                    isRemoved && "line-through",
-                  )}>
+                  <button
+                    className={cn(
+                      'whitespace-nowrap text-left hover:text-primary transition-colors',
+                      isRemoved && 'line-through',
+                    )}
+                  >
                     {player.name}
                   </button>
                 </PlayerPopover>
@@ -1039,22 +1057,26 @@ Remove the `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` wrapper entirely (no mo
                   <td
                     key={rotation.index}
                     className={cn(
-                      "text-center py-1.5 px-1",
-                      isCurrent && "bg-primary/10",
-                      isCurrent && "border-l-2 border-r-2 border-primary/30",
-                      isPast && "opacity-40",
+                      'text-center py-1.5 px-1',
+                      isCurrent && 'bg-primary/10',
+                      isCurrent && 'border-l-2 border-r-2 border-primary/30',
+                      isPast && 'opacity-40',
                     )}
-                    onClick={isPast || isCompleted ? undefined : () => handleCellClick(rotation.index, player.id)}
+                    onClick={
+                      isPast || isCompleted
+                        ? undefined
+                        : () => handleCellClick(rotation.index, player.id)
+                    }
                   >
                     <span
                       className={cn(
-                        "inline-block px-2 py-0.5 rounded text-xs font-medium transition-all",
+                        'inline-block px-2 py-0.5 rounded text-xs font-medium transition-all',
                         display.className,
-                        isPast ? "cursor-default" : "cursor-pointer",
-                        isSelected && "ring-2 ring-primary ring-offset-1 animate-pulse",
-                        isSwapTarget && "ring-1 ring-primary/50 hover:ring-2 hover:ring-primary",
-                        swapSource && !isSelected && !isSwapTarget && "opacity-70",
-                        isChanging && "ring-2 ring-dashed ring-accent-foreground/40",
+                        isPast ? 'cursor-default' : 'cursor-pointer',
+                        isSelected && 'ring-2 ring-primary ring-offset-1 animate-pulse',
+                        isSwapTarget && 'ring-1 ring-primary/50 hover:ring-2 hover:ring-primary',
+                        swapSource && !isSelected && !isSwapTarget && 'opacity-70',
+                        isChanging && 'ring-2 ring-dashed ring-accent-foreground/40',
                       )}
                       title={fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined}
                     >
@@ -1092,9 +1114,9 @@ Remove the `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` wrapper entirely (no mo
               <td
                 key={rotation.index}
                 className={cn(
-                  "text-center py-2 px-1 text-sm",
-                  isCurrent && "bg-primary/10 border-l-2 border-r-2 border-primary/30",
-                  isPast && "opacity-40",
+                  'text-center py-2 px-1 text-sm',
+                  isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
+                  isPast && 'opacity-40',
                 )}
               >
                 {rotation.teamStrength}
@@ -1106,15 +1128,19 @@ Remove the `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` wrapper entirely (no mo
       </tr>
     </tfoot>
   </table>
-</div>
+</div>;
 
-{/* Swap instruction (non-live mode only, since bottom bar handles it in live mode) */}
-{swapSource && !isLive && (
-  <p className="text-sm text-muted-foreground mt-2">
-    Selected {playerMap.get(swapSource.playerId)?.name} in R{swapSource.rotationIndex + 1}.
-    Click another player in the same rotation to swap, or click again to deselect.
-  </p>
-)}
+{
+  /* Swap instruction (non-live mode only, since bottom bar handles it in live mode) */
+}
+{
+  swapSource && !isLive && (
+    <p className="text-sm text-muted-foreground mt-2">
+      Selected {playerMap.get(swapSource.playerId)?.name} in R{swapSource.rotationIndex + 1}. Click
+      another player in the same rotation to swap, or click again to deselect.
+    </p>
+  );
+}
 ```
 
 **Step 4: Commit**
@@ -1129,6 +1155,7 @@ git commit -m "feat: add period collapsing, column highlighting, and sub change 
 ### Task 8: Wire Up LiveBottomBar and ConfirmDialog in RotationGrid
 
 **Files:**
+
 - Modify: `src/pages/RotationGrid.tsx` (bottom of the component's return JSX)
 
 **Step 1: Add LiveBottomBar and ConfirmDialog to the page**
@@ -1136,35 +1163,40 @@ git commit -m "feat: add period collapsing, column highlighting, and sub change 
 After the grid and before the closing `</div>`, add:
 
 ```tsx
-{/* Live bottom bar */}
-{isLive && schedule && (
-  <>
-    {/* Spacer so grid content isn't hidden behind fixed bottom bar */}
-    <div className="h-20" />
-    <LiveBottomBar
-      timer={timer}
-      onAdvance={handleAdvance}
-      isLastRotation={currentRotationIndex >= schedule.rotations.length - 1}
-      isCrossingPeriod={
-        nextRotation != null &&
-        nextRotation.periodIndex !== currentRotation?.periodIndex
-      }
-      swapPlayerName={swapSource ? playerMap.get(swapSource.playerId)?.name ?? null : null}
-      onCancelSwap={() => setSwapSource(null)}
-    />
-  </>
-)}
+{
+  /* Live bottom bar */
+}
+{
+  isLive && schedule && (
+    <>
+      {/* Spacer so grid content isn't hidden behind fixed bottom bar */}
+      <div className="h-20" />
+      <LiveBottomBar
+        timer={timer}
+        onAdvance={handleAdvance}
+        isLastRotation={currentRotationIndex >= schedule.rotations.length - 1}
+        isCrossingPeriod={
+          nextRotation != null && nextRotation.periodIndex !== currentRotation?.periodIndex
+        }
+        swapPlayerName={swapSource ? (playerMap.get(swapSource.playerId)?.name ?? null) : null}
+        onCancelSwap={() => setSwapSource(null)}
+      />
+    </>
+  );
+}
 
-{/* Player removal confirmation */}
+{
+  /* Player removal confirmation */
+}
 <ConfirmDialog
   open={removingPlayerId !== null}
   onConfirm={handleConfirmRemovePlayer}
   onCancel={() => setRemovingPlayerId(null)}
-  title={`Remove ${removingPlayerId ? playerMap.get(removingPlayerId)?.name ?? 'player' : 'player'}?`}
+  title={`Remove ${removingPlayerId ? (playerMap.get(removingPlayerId)?.name ?? 'player') : 'player'}?`}
   description="They will be removed from remaining rotations. The schedule will be recalculated."
   confirmLabel="Remove"
   variant="destructive"
-/>
+/>;
 ```
 
 **Step 2: Hide stats cards and settings sheet during live mode**
@@ -1172,21 +1204,21 @@ After the grid and before the closing `</div>`, add:
 Wrap the overall stats cards (lines 200-222), player statistics card (lines 392-424), and card view tab content in a condition:
 
 ```tsx
-{/* Overall stats — hide during live game */}
-{!isLive && (
-  <div className="grid grid-cols-3 gap-3">
-    {/* ... existing stats cards ... */}
-  </div>
-)}
+{
+  /* Overall stats — hide during live game */
+}
+{
+  !isLive && <div className="grid grid-cols-3 gap-3">{/* ... existing stats cards ... */}</div>;
+}
 ```
 
 ```tsx
-{/* Player Stats — hide during live game */}
-{!isLive && (
-  <Card>
-    {/* ... existing player statistics card ... */}
-  </Card>
-)}
+{
+  /* Player Stats — hide during live game */
+}
+{
+  !isLive && <Card>{/* ... existing player statistics card ... */}</Card>;
+}
 ```
 
 **Step 3: Commit**
@@ -1201,12 +1233,14 @@ git commit -m "feat: wire up LiveBottomBar and ConfirmDialog in RotationGrid"
 ### Task 9: Remove GameDay Page and /live Route
 
 **Files:**
+
 - Delete: `src/pages/GameDay.tsx`
 - Modify: `src/App.tsx` (remove /live route, add redirect)
 
 **Step 1: Update App.tsx routes**
 
 In `src/App.tsx`:
+
 - Remove the `GameDay` import (line 9)
 - Replace the `/live` route (line 23) with a redirect to `/rotations`:
 
@@ -1223,6 +1257,7 @@ Remove `src/pages/GameDay.tsx`.
 **Step 3: Clean up any remaining references to /live**
 
 Search for `'/live'` or `"/live"` or `/live` in the codebase and update:
+
 - `RotationGrid.tsx` line 98: `navigate(`/games/${game.id}/live`)` — should already be removed in Task 5
 - Any other references
 
@@ -1243,6 +1278,7 @@ git commit -m "refactor: remove GameDay page, redirect /live to /rotations"
 ### Task 10: Remove Card View Toggle
 
 **Files:**
+
 - Modify: `src/pages/RotationGrid.tsx`
 
 **Step 1: Remove card view related code**
@@ -1274,11 +1310,13 @@ git commit -m "refactor: remove card view toggle from RotationGrid"
 ### Task 11: Integration Testing
 
 **Files:**
+
 - Create: `src/pages/RotationGrid.test.tsx`
 
 **Step 1: Write integration tests for the unified view**
 
 Key scenarios to test:
+
 1. Setup mode: grid renders all rotations, Start Game button visible, no bottom bar
 2. Live mode: Start Game → bottom bar appears, past rotations are dimmed
 3. Swap mode: click a cell → bottom bar shows "Swapping [name]", click cancel → swap cancelled

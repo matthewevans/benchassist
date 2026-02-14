@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
@@ -46,7 +52,10 @@ export function GameSetup() {
     return validateRosterForGame(selectedRoster.players, selectedConfig, [...absentPlayerIds]);
   }, [selectedRoster, selectedConfig, absentPlayerIds]);
 
-  const canGenerate = selectedTeam && selectedRoster && selectedConfig &&
+  const canGenerate =
+    selectedTeam &&
+    selectedRoster &&
+    selectedConfig &&
     validationErrors.filter((e) => !e.includes('no substitutions')).length === 0;
 
   const summaryText = useMemo(() => {
@@ -149,7 +158,9 @@ export function GameSetup() {
         {showConfigCollapsed ? (
           <CardContent className="py-3 flex items-center justify-between">
             <div>
-              <p className="font-medium text-sm">{selectedTeam?.name} · {selectedRoster?.name}</p>
+              <p className="font-medium text-sm">
+                {selectedTeam?.name} · {selectedRoster?.name}
+              </p>
               <p className="text-xs text-muted-foreground">{summaryText}</p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setConfigExpanded(true)}>
@@ -164,13 +175,22 @@ export function GameSetup() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Team</Label>
-                <Select value={teamId} onValueChange={(v) => { setTeamId(v); setRosterId(''); setConfigId(''); }}>
+                <Select
+                  value={teamId}
+                  onValueChange={(v) => {
+                    setTeamId(v);
+                    setRosterId('');
+                    setConfigId('');
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select team" />
                   </SelectTrigger>
                   <SelectContent>
                     {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -245,8 +265,8 @@ export function GameSetup() {
                   <div
                     key={player.id}
                     className={cn(
-                      "flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors",
-                      isAbsent ? "bg-destructive/10 opacity-60" : "hover:bg-accent"
+                      'flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors',
+                      isAbsent ? 'bg-destructive/10 opacity-60' : 'hover:bg-accent',
                     )}
                     onClick={() => handleToggleAbsent(player.id)}
                   >
@@ -254,10 +274,12 @@ export function GameSetup() {
                       checked={!isAbsent}
                       onCheckedChange={() => handleToggleAbsent(player.id)}
                     />
-                    <span className={cn("text-sm flex-1", isAbsent && "line-through")}>
+                    <span className={cn('text-sm flex-1', isAbsent && 'line-through')}>
                       {player.name}
                     </span>
-                    <Badge variant="secondary" className="text-xs">{player.skillRanking}</Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      {player.skillRanking}
+                    </Badge>
                   </div>
                 );
               })}
@@ -277,9 +299,7 @@ export function GameSetup() {
               <div key={i} className="flex items-center gap-3">
                 <Label className="w-24 text-sm">Period {i + 1}</Label>
                 <Select
-                  value={
-                    goalieAssignments.find((a) => a.periodIndex === i)?.playerId ?? 'auto'
-                  }
+                  value={goalieAssignments.find((a) => a.periodIndex === i)?.playerId ?? 'auto'}
                   onValueChange={(v) => handleGoalieChange(i, v)}
                 >
                   <SelectTrigger className="flex-1">
@@ -307,7 +327,9 @@ export function GameSetup() {
         <Card className="border-destructive">
           <CardContent className="py-3">
             {validationErrors.map((error, i) => (
-              <p key={i} className="text-sm text-destructive">{error}</p>
+              <p key={i} className="text-sm text-destructive">
+                {error}
+              </p>
             ))}
           </CardContent>
         </Card>

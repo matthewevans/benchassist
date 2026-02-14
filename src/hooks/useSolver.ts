@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { SolverRequest, SolverResponse } from '@/types/solver.ts';
-import type { Player, GameConfig, GoalieAssignment, ManualOverride, Rotation, RotationSchedule } from '@/types/domain.ts';
+import type {
+  Player,
+  GameConfig,
+  GoalieAssignment,
+  ManualOverride,
+  Rotation,
+  RotationSchedule,
+} from '@/types/domain.ts';
 import { generateId } from '@/utils/id.ts';
 
 export interface SolverInput {

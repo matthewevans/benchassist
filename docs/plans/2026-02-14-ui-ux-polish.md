@@ -13,6 +13,7 @@
 ### Task 1: Install shadcn/ui Components
 
 **Files:**
+
 - Create: `src/components/ui/switch.tsx`
 - Create: `src/components/ui/checkbox.tsx`
 - Create: `src/components/ui/collapsible.tsx`
@@ -46,6 +47,7 @@ git commit -m "chore: add Switch, Checkbox, Collapsible, Popover shadcn componen
 ### Task 2: Dark Mode Toggle
 
 **Files:**
+
 - Create: `src/hooks/useTheme.ts`
 - Create: `src/hooks/useTheme.test.ts`
 - Modify: `src/components/layout/AppShell.tsx`
@@ -214,9 +216,13 @@ The button goes in the nav area:
     aria-label={`Theme: ${preference}`}
     className="h-8 w-8 p-0"
   >
-    {preference === 'system' ? <MonitorIcon className="h-4 w-4" /> :
-     preference === 'light' ? <SunIcon className="h-4 w-4" /> :
-     <MoonIcon className="h-4 w-4" />}
+    {preference === 'system' ? (
+      <MonitorIcon className="h-4 w-4" />
+    ) : preference === 'light' ? (
+      <SunIcon className="h-4 w-4" />
+    ) : (
+      <MoonIcon className="h-4 w-4" />
+    )}
   </Button>
   {NAV_ITEMS.map(/* existing code */)}
 </nav>
@@ -240,6 +246,7 @@ git commit -m "feat: add dark mode toggle with system detection"
 ### Task 3: Switch/Checkbox Component Swap — GameConfigForm
 
 **Files:**
+
 - Modify: `src/components/game/GameConfigForm.tsx`
 
 **Step 1: Replace raw checkboxes with Switch components**
@@ -256,7 +263,12 @@ In `src/components/game/GameConfigForm.tsx`:
 For each, the pattern changes from:
 
 ```tsx
-<input type="checkbox" checked={value} onChange={(e) => setter(e.target.checked)} className="h-4 w-4" />
+<input
+  type="checkbox"
+  checked={value}
+  onChange={(e) => setter(e.target.checked)}
+  className="h-4 w-4"
+/>
 ```
 
 to:
@@ -283,6 +295,7 @@ git commit -m "refactor: use Switch components for GameConfigForm toggles"
 ### Task 4: Switch/Checkbox Swap — RosterEditor
 
 **Files:**
+
 - Modify: `src/pages/RosterEditor.tsx`
 
 **Step 1: Replace raw checkboxes**
@@ -329,6 +342,7 @@ git commit -m "refactor: use Switch/Checkbox components in RosterEditor"
 ### Task 5: Single-Container Player List
 
 **Files:**
+
 - Modify: `src/pages/RosterEditor.tsx`
 
 **Step 1: Replace per-player Cards with a single Card container**
@@ -339,9 +353,7 @@ In `src/pages/RosterEditor.tsx`, replace the player list section (lines ~413-461
 <div className="grid gap-2">
   {sortedPlayers.map((player) => (
     <Card key={player.id}>
-      <CardContent className="py-3 flex items-center justify-between">
-        ...
-      </CardContent>
+      <CardContent className="py-3 flex items-center justify-between">...</CardContent>
     </Card>
   ))}
 </div>
@@ -356,8 +368,8 @@ to:
       <div
         key={player.id}
         className={cn(
-          "flex items-center justify-between px-4 py-3",
-          index < sortedPlayers.length - 1 && "border-b"
+          'flex items-center justify-between px-4 py-3',
+          index < sortedPlayers.length - 1 && 'border-b',
         )}
       >
         {/* Same inner content: skill badge, name, position badges, action buttons */}
@@ -387,6 +399,7 @@ git commit -m "refactor: single-container player list with row dividers"
 ### Task 6: Skill Badge Popover
 
 **Files:**
+
 - Modify: `src/pages/RosterEditor.tsx`
 
 **Step 1: Add skill popover to player rows**
@@ -422,8 +435,8 @@ To:
         <button
           key={rank}
           className={cn(
-            "px-3 py-1.5 text-sm text-left rounded hover:bg-accent transition-colors",
-            rank === player.skillRanking && "bg-accent font-medium"
+            'px-3 py-1.5 text-sm text-left rounded hover:bg-accent transition-colors',
+            rank === player.skillRanking && 'bg-accent font-medium',
           )}
           onClick={() => {
             dispatch({
@@ -460,6 +473,7 @@ git commit -m "feat: add inline skill ranking popover on player list"
 ### Task 7: One-Click Template Config Creation
 
 **Files:**
+
 - Modify: `src/pages/TeamManagement.tsx`
 - Modify: `src/components/game/GameConfigForm.tsx`
 
@@ -527,7 +541,7 @@ In `src/components/game/GameConfigForm.tsx`:
   <CollapsibleTrigger asChild>
     <button className="flex items-center justify-between w-full py-2 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground">
       Rules & Balance
-      <ChevronDownIcon className={cn("h-4 w-4 transition-transform", rulesOpen && "rotate-180")} />
+      <ChevronDownIcon className={cn('h-4 w-4 transition-transform', rulesOpen && 'rotate-180')} />
     </button>
   </CollapsibleTrigger>
   <CollapsibleContent>
@@ -556,6 +570,7 @@ git commit -m "feat: one-click template config creation, collapsible rules secti
 ### Task 8: Game Setup Summary Line
 
 **Files:**
+
 - Modify: `src/pages/GameSetup.tsx`
 
 **Step 1: Add computed summary line**
@@ -576,9 +591,9 @@ const summaryText = useMemo(() => {
 Render it inside the Team & Configuration card, after the last form field:
 
 ```tsx
-{summaryText && (
-  <p className="text-sm text-muted-foreground pt-2 border-t">{summaryText}</p>
-)}
+{
+  summaryText && <p className="text-sm text-muted-foreground pt-2 border-t">{summaryText}</p>;
+}
 ```
 
 **Step 2: Verify build passes**
@@ -597,6 +612,7 @@ git commit -m "feat: add game setup summary line"
 ### Task 9: Compact Attendance + Section Collapsing
 
 **Files:**
+
 - Modify: `src/pages/GameSetup.tsx`
 
 **Step 1: Make attendance rows more compact**
@@ -607,19 +623,16 @@ In `src/pages/GameSetup.tsx`, replace the attendance player rows. Change from `p
 <div
   key={player.id}
   className={cn(
-    "flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors",
-    isAbsent ? "bg-destructive/10 opacity-60" : "hover:bg-accent"
+    'flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors',
+    isAbsent ? 'bg-destructive/10 opacity-60' : 'hover:bg-accent',
   )}
   onClick={() => handleToggleAbsent(player.id)}
 >
-  <Checkbox
-    checked={!isAbsent}
-    onCheckedChange={() => handleToggleAbsent(player.id)}
-  />
-  <span className={cn("text-sm flex-1", isAbsent && "line-through")}>
-    {player.name}
-  </span>
-  <Badge variant="secondary" className="text-xs">{player.skillRanking}</Badge>
+  <Checkbox checked={!isAbsent} onCheckedChange={() => handleToggleAbsent(player.id)} />
+  <span className={cn('text-sm flex-1', isAbsent && 'line-through')}>{player.name}</span>
+  <Badge variant="secondary" className="text-xs">
+    {player.skillRanking}
+  </Badge>
 </div>
 ```
 
@@ -648,7 +661,9 @@ When collapsed, the Team & Configuration card renders only the summary line with
   {configCollapsed && summaryText ? (
     <CardContent className="py-3 flex items-center justify-between">
       <div>
-        <p className="font-medium text-sm">{selectedTeam?.name} · {selectedRoster?.name}</p>
+        <p className="font-medium text-sm">
+          {selectedTeam?.name} · {selectedRoster?.name}
+        </p>
         <p className="text-xs text-muted-foreground">{summaryText}</p>
       </div>
       <Button variant="ghost" size="sm" onClick={() => setConfigCollapsed(false)}>
@@ -709,6 +724,7 @@ Expected: clean build, no lint errors.
 Run: `pnpm dev`
 
 Manually verify:
+
 - Dark mode toggle cycles through system/light/dark
 - GameConfigForm shows Switch toggles, collapsible rules section
 - RosterEditor has single-container list with row dividers

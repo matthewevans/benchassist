@@ -24,9 +24,7 @@ export function validateSchedule(
         (a) => a === RotationAssignment.Goalie,
       );
       if (goalies.length !== 1) {
-        violations.push(
-          `Rotation ${rotation.index + 1}: Expected 1 goalie, got ${goalies.length}`,
-        );
+        violations.push(`Rotation ${rotation.index + 1}: Expected 1 goalie, got ${goalies.length}`);
       }
     }
   }

@@ -13,6 +13,7 @@
 ### Task 1: Replace "Regenerate" button with in-place re-solve
 
 **Files:**
+
 - Modify: `src/pages/RotationGrid.tsx`
 
 **Step 1: Add useSolver hook and solver effect**
@@ -60,6 +61,7 @@ function handleRegenerate() {
 **Step 3: Replace the Regenerate button**
 
 Change the existing button from:
+
 ```tsx
 <Button variant="outline" size="sm" onClick={() => navigate(`/games/new?teamId=${game.teamId}`)}>
   Regenerate
@@ -67,6 +69,7 @@ Change the existing button from:
 ```
 
 To:
+
 ```tsx
 <Button variant="outline" size="sm" onClick={handleRegenerate} disabled={solver.isRunning}>
   {solver.isRunning ? 'Solving...' : 'Regenerate'}
@@ -78,35 +81,40 @@ To:
 Below the header `<div>` (before the overall stats grid), add:
 
 ```tsx
-{solver.isRunning && (
-  <Card>
-    <CardContent className="py-3">
-      <div className="flex justify-between text-sm mb-1">
-        <span>{solver.message}</span>
-        <span>{solver.progress}%</span>
-      </div>
-      <div className="w-full bg-secondary rounded-full h-1.5">
-        <div
-          className="bg-primary h-1.5 rounded-full transition-all"
-          style={{ width: `${solver.progress}%` }}
-        />
-      </div>
-    </CardContent>
-  </Card>
-)}
+{
+  solver.isRunning && (
+    <Card>
+      <CardContent className="py-3">
+        <div className="flex justify-between text-sm mb-1">
+          <span>{solver.message}</span>
+          <span>{solver.progress}%</span>
+        </div>
+        <div className="w-full bg-secondary rounded-full h-1.5">
+          <div
+            className="bg-primary h-1.5 rounded-full transition-all"
+            style={{ width: `${solver.progress}%` }}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-{solver.error && (
-  <Card className="border-destructive">
-    <CardContent className="py-3">
-      <p className="text-sm text-destructive">{solver.error}</p>
-    </CardContent>
-  </Card>
-)}
+{
+  solver.error && (
+    <Card className="border-destructive">
+      <CardContent className="py-3">
+        <p className="text-sm text-destructive">{solver.error}</p>
+      </CardContent>
+    </Card>
+  );
+}
 ```
 
 **Step 5: Verify manually**
 
 Run: `pnpm dev`
+
 - Open a game's rotation grid
 - Click "Regenerate" — should re-solve in-place (grid updates, no navigation, no new game in history)
 - Verify the old game is still the same game (same ID, same name)
@@ -123,6 +131,7 @@ git commit -m "fix: regenerate rotations in-place instead of creating new game"
 ### Task 2: Add settings sheet for editing absent players and goalie assignments
 
 **Files:**
+
 - Modify: `src/pages/RotationGrid.tsx`
 
 **Step 1: Add imports and state for the settings sheet**
@@ -130,9 +139,22 @@ git commit -m "fix: regenerate rotations in-place instead of creating new game"
 Add to existing imports:
 
 ```tsx
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet.tsx';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+} from '@/components/ui/sheet.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { cn } from '@/lib/utils.ts';
 import { Settings2 } from 'lucide-react';
@@ -211,16 +233,15 @@ At the end of the JSX return (before the closing `</div>`), add:
   <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
     <SheetHeader>
       <SheetTitle>Game Settings</SheetTitle>
-      <SheetDescription>
-        Edit attendance and goalie assignments, then regenerate.
-      </SheetDescription>
+      <SheetDescription>Edit attendance and goalie assignments, then regenerate.</SheetDescription>
     </SheetHeader>
 
     <div className="space-y-6 px-4">
       {/* Absent players */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">
-          Attendance ({roster.players.filter((p) => !editAbsent.has(p.id)).length} / {roster.players.length})
+          Attendance ({roster.players.filter((p) => !editAbsent.has(p.id)).length} /{' '}
+          {roster.players.length})
         </Label>
         <div className="grid gap-1.5">
           {roster.players.map((player) => {
@@ -234,9 +255,16 @@ At the end of the JSX return (before the closing `</div>`), add:
                 )}
                 onClick={() => handleToggleAbsent(player.id)}
               >
-                <Checkbox checked={!isAbsent} onCheckedChange={() => handleToggleAbsent(player.id)} />
-                <span className={cn('text-sm flex-1', isAbsent && 'line-through')}>{player.name}</span>
-                <Badge variant="secondary" className="text-xs">{player.skillRanking}</Badge>
+                <Checkbox
+                  checked={!isAbsent}
+                  onCheckedChange={() => handleToggleAbsent(player.id)}
+                />
+                <span className={cn('text-sm flex-1', isAbsent && 'line-through')}>
+                  {player.name}
+                </span>
+                <Badge variant="secondary" className="text-xs">
+                  {player.skillRanking}
+                </Badge>
               </div>
             );
           })}
@@ -265,7 +293,9 @@ At the end of the JSX return (before the closing `</div>`), add:
                     <SelectContent>
                       <SelectItem value="auto">Auto-assign</SelectItem>
                       {availableGoalies.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>{player.name}</SelectItem>
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -289,6 +319,7 @@ At the end of the JSX return (before the closing `</div>`), add:
 **Step 5: Verify manually**
 
 Run: `pnpm dev`
+
 - Open a game's rotation grid
 - Click the gear icon — settings sheet slides up from bottom
 - Toggle some players absent, change goalie assignments

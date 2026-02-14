@@ -25,9 +25,16 @@ describe('deriveSubPositions', () => {
       { position: 'FWD', count: 2 },
     ];
     expect(deriveSubPositions(formation)).toEqual([
-      'LB', 'LCB', 'RCB', 'RB',
-      'LM', 'LCM', 'RCM', 'RM',
-      'LW', 'RW',
+      'LB',
+      'LCB',
+      'RCB',
+      'RB',
+      'LM',
+      'LCM',
+      'RCM',
+      'RM',
+      'LW',
+      'RW',
     ]);
   });
 
@@ -37,9 +44,7 @@ describe('deriveSubPositions', () => {
       { position: 'MID', count: 3 },
       { position: 'FWD', count: 2 },
     ];
-    expect(deriveSubPositions(formation)).toEqual([
-      'LB', 'CB', 'RB', 'LM', 'CM', 'RM', 'LW', 'RW',
-    ]);
+    expect(deriveSubPositions(formation)).toEqual(['LB', 'CB', 'RB', 'LM', 'CM', 'RM', 'LW', 'RW']);
   });
 
   it('handles single-player lines', () => {
@@ -62,9 +67,16 @@ describe('deriveSubPositions', () => {
       { position: 'FWD', count: 3 },
     ];
     expect(deriveSubPositions(formation)).toEqual([
-      'LB', 'LCB', 'RCB', 'RB',
-      'LM', 'CM', 'RM',
-      'LW', 'ST', 'RW',
+      'LB',
+      'LCB',
+      'RCB',
+      'RB',
+      'LM',
+      'CM',
+      'RM',
+      'LW',
+      'ST',
+      'RW',
     ]);
   });
 });
@@ -180,11 +192,21 @@ describe('autoAssignPositions', () => {
       const formation: FormationSlot[] = [{ position: 'DEF', count: 2 }];
       const history = new Map<string, Map<SubPosition, number>>();
 
-      const first = autoAssignPositions(players.map((p) => p.id), formation, playerMap, history);
+      const first = autoAssignPositions(
+        players.map((p) => p.id),
+        formation,
+        playerMap,
+        history,
+      );
       expect(Object.values(first).sort()).toEqual(['LB', 'RB']);
       trackHistory(history, first);
 
-      const second = autoAssignPositions(players.map((p) => p.id), formation, playerMap, history);
+      const second = autoAssignPositions(
+        players.map((p) => p.id),
+        formation,
+        playerMap,
+        history,
+      );
       // Players should have swapped sub-positions
       expect(second[players[0].id]).not.toBe(first[players[0].id]);
       expect(second[players[1].id]).not.toBe(first[players[1].id]);
@@ -229,7 +251,12 @@ describe('autoAssignPositions', () => {
       // Run 3 rotations — each player should get each position exactly once
       const assignments: Record<string, SubPosition>[] = [];
       for (let i = 0; i < 3; i++) {
-        const result = autoAssignPositions(players.map((p) => p.id), formation, playerMap, history);
+        const result = autoAssignPositions(
+          players.map((p) => p.id),
+          formation,
+          playerMap,
+          history,
+        );
         assignments.push(result);
         trackHistory(history, result);
       }

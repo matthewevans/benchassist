@@ -45,6 +45,7 @@ Entity IDs (`TeamId`, `PlayerId`, etc.) are string type aliases generated via `u
 The solver runs in a Web Worker (`src/workers/rotation-solver.worker.ts`) to avoid blocking the UI. Communication uses typed `SolverRequest`/`SolverResponse` messages (`src/types/solver.ts`).
 
 The core algorithm (`src/workers/solver/exhaustive.ts`) uses exhaustive search with pruning:
+
 1. Calculate bench counts per player (weighted by inverse skill ranking)
 2. Generate valid bench patterns per player respecting constraints (goalie periods, manual overrides, max consecutive bench)
 3. Search all combinations, pruning when bench slot counts exceed capacity
@@ -56,6 +57,7 @@ The `useSolver` hook (`src/hooks/useSolver.ts`) manages the worker lifecycle, pr
 ### Routing (`src/App.tsx`)
 
 All routes are nested inside `AppShell` (layout with navigation):
+
 - `/` — Dashboard (team/game management, export/import)
 - `/teams/:teamId` — Team management (rosters, configs)
 - `/teams/:teamId/rosters/:rosterId` — Roster editor (bulk import, positions)

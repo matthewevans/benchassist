@@ -1,5 +1,17 @@
 import { createContext, useReducer, useEffect, useRef, type ReactNode } from 'react';
-import type { Team, Game, Roster, Player, GameConfig, RotationSchedule, TeamId, RosterId, PlayerId, GameConfigId, GameId } from '@/types/domain.ts';
+import type {
+  Team,
+  Game,
+  Roster,
+  Player,
+  GameConfig,
+  RotationSchedule,
+  TeamId,
+  RosterId,
+  PlayerId,
+  GameConfigId,
+  GameId,
+} from '@/types/domain.ts';
 import { produce } from 'immer';
 import { loadData, saveData, type StorageData } from '@/storage/localStorage.ts';
 
@@ -51,7 +63,8 @@ export type AppAction =
 
 // --- Reducer ---
 
-function appReducer(state: AppState, action: AppAction): AppState {
+// eslint-disable-next-line react-refresh/only-export-components
+export function appReducer(state: AppState, action: AppAction): AppState {
   return produce(state, (draft) => {
     switch (action.type) {
       case 'LOAD_DATA':
@@ -195,14 +208,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
       case 'ADVANCE_ROTATION':
         if (draft.games[action.payload]) {
           const game = draft.games[action.payload];
-          if (game.schedule && game.currentRotationIndex >= game.schedule.rotations.length - 1) {
-            game.status = 'completed';
-            game.completedAt = Date.now();
-            break;
+          if (!game.schedule || game.currentRotationIndex >= game.schedule.rotations.length - 1) {
+            break; // At or past last rotation — UI handles game completion
           }
-          const prevPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
+          const prevPeriod = game.schedule.rotations[game.currentRotationIndex].periodIndex;
           game.currentRotationIndex += 1;
-          const nextPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
+          const nextPeriod = game.schedule.rotations[game.currentRotationIndex].periodIndex;
           if (prevPeriod !== nextPeriod) {
             game.periodTimerStartedAt = null;
             game.periodTimerPausedElapsed = 0;
@@ -306,9 +317,5 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(saveTimeout.current);
   }, [state]);
 
-  return (
-    <AppContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }

@@ -119,7 +119,8 @@ describe('usePeriodTimer', () => {
         pausedElapsed: expect.any(Number),
       },
     });
-    const pausedElapsed = (dispatch.mock.calls[0][0] as { payload: { pausedElapsed: number } }).payload.pausedElapsed;
+    const pausedElapsed = (dispatch.mock.calls[0][0] as { payload: { pausedElapsed: number } })
+      .payload.pausedElapsed;
     expect(pausedElapsed).toBeGreaterThanOrEqual(7900);
     expect(pausedElapsed).toBeLessThanOrEqual(8200);
   });

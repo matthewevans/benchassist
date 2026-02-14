@@ -49,10 +49,14 @@ export function calculatePlayerStats(
   return stats;
 }
 
-export function calculateRotationStrength(
-  rotation: Rotation,
-  players: Player[],
-): number {
+export function computeStrengthStats(strengths: number[]) {
+  if (strengths.length === 0) return { avg: 0, variance: 0, min: 0, max: 0 };
+  const avg = strengths.reduce((s, v) => s + v, 0) / strengths.length;
+  const variance = strengths.reduce((s, v) => s + (v - avg) ** 2, 0) / strengths.length;
+  return { avg, variance, min: Math.min(...strengths), max: Math.max(...strengths) };
+}
+
+export function calculateRotationStrength(rotation: Rotation, players: Player[]): number {
   const playerMap = new Map(players.map((p) => [p.id, p]));
   let strength = 0;
 
@@ -113,9 +117,7 @@ export function previewSwap(
 
   const newStats = calculatePlayerStats(recalculated, players);
   const strengths = recalculated.map((r) => r.teamStrength);
-  const avg = strengths.reduce((sum, s) => sum + s, 0) / strengths.length;
-  const variance =
-    strengths.reduce((sum, s) => sum + Math.pow(s - avg, 2), 0) / strengths.length;
+  const { avg, variance, min, max } = computeStrengthStats(strengths);
 
   return {
     rotations: recalculated,
@@ -123,8 +125,8 @@ export function previewSwap(
     overallStats: {
       ...schedule.overallStats,
       strengthVariance: variance,
-      minStrength: Math.min(...strengths),
-      maxStrength: Math.max(...strengths),
+      minStrength: min,
+      maxStrength: max,
       avgStrength: Math.round(avg * 10) / 10,
       violations: [],
     },

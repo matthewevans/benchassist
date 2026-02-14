@@ -11,10 +11,26 @@ describe('mergeSchedules', () => {
 
     // Existing schedule: 4 rotations, all three players
     const existingRotations = [
-      buildRotation(0, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Goalie, [p3.id]: RotationAssignment.Field }),
-      buildRotation(1, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Goalie, [p3.id]: RotationAssignment.Bench }),
-      buildRotation(2, { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Goalie, [p3.id]: RotationAssignment.Field }),
-      buildRotation(3, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Goalie, [p3.id]: RotationAssignment.Field }),
+      buildRotation(0, {
+        [p1.id]: RotationAssignment.Field,
+        [p2.id]: RotationAssignment.Goalie,
+        [p3.id]: RotationAssignment.Field,
+      }),
+      buildRotation(1, {
+        [p1.id]: RotationAssignment.Field,
+        [p2.id]: RotationAssignment.Goalie,
+        [p3.id]: RotationAssignment.Bench,
+      }),
+      buildRotation(2, {
+        [p1.id]: RotationAssignment.Bench,
+        [p2.id]: RotationAssignment.Goalie,
+        [p3.id]: RotationAssignment.Field,
+      }),
+      buildRotation(3, {
+        [p1.id]: RotationAssignment.Field,
+        [p2.id]: RotationAssignment.Goalie,
+        [p3.id]: RotationAssignment.Field,
+      }),
     ];
 
     // New schedule from solver (p3 removed, only p1 and p2)
@@ -75,12 +91,30 @@ describe('mergeSchedules', () => {
     const p2 = playerFactory.build({ name: 'B', skillRanking: 1 });
 
     const existingRotations = [
-      { index: 0, periodIndex: 0, assignments: { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }, teamStrength: 5, violations: [] as string[] },
+      {
+        index: 0,
+        periodIndex: 0,
+        assignments: { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench },
+        teamStrength: 5,
+        violations: [] as string[],
+      },
     ];
 
     const newRotations = [
-      { index: 0, periodIndex: 0, assignments: { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Field }, teamStrength: 1, violations: [] as string[] },
-      { index: 1, periodIndex: 0, assignments: { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }, teamStrength: 5, violations: [] as string[] },
+      {
+        index: 0,
+        periodIndex: 0,
+        assignments: { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Field },
+        teamStrength: 1,
+        violations: [] as string[],
+      },
+      {
+        index: 1,
+        periodIndex: 0,
+        assignments: { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench },
+        teamStrength: 5,
+        violations: [] as string[],
+      },
     ];
     const newSchedule = buildSchedule(newRotations, [p1, p2]);
 

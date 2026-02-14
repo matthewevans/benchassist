@@ -2,10 +2,20 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible.tsx';
 import { ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import { Badge } from '@/components/ui/badge.tsx';
@@ -26,15 +36,31 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
   const [fieldSize, setFieldSize] = useState(initialConfig?.fieldSize ?? 7);
   const [periods, setPeriods] = useState(initialConfig?.periods ?? 2);
   const [periodDuration, setPeriodDuration] = useState(initialConfig?.periodDurationMinutes ?? 30);
-  const [rotationsPerPeriod, setRotationsPerPeriod] = useState(initialConfig?.rotationsPerPeriod ?? 2);
-  const [noConsecutiveBench, setNoConsecutiveBench] = useState(initialConfig?.noConsecutiveBench ?? true);
-  const [maxConsecutiveBench, setMaxConsecutiveBench] = useState(initialConfig?.maxConsecutiveBench ?? 1);
-  const [enforceMinPlayTime, setEnforceMinPlayTime] = useState(initialConfig?.enforceMinPlayTime ?? true);
-  const [minPlayPercentage, setMinPlayPercentage] = useState(initialConfig?.minPlayPercentage ?? 50);
+  const [rotationsPerPeriod, setRotationsPerPeriod] = useState(
+    initialConfig?.rotationsPerPeriod ?? 2,
+  );
+  const [noConsecutiveBench, setNoConsecutiveBench] = useState(
+    initialConfig?.noConsecutiveBench ?? true,
+  );
+  const [maxConsecutiveBench, setMaxConsecutiveBench] = useState(
+    initialConfig?.maxConsecutiveBench ?? 1,
+  );
+  const [enforceMinPlayTime, setEnforceMinPlayTime] = useState(
+    initialConfig?.enforceMinPlayTime ?? true,
+  );
+  const [minPlayPercentage, setMinPlayPercentage] = useState(
+    initialConfig?.minPlayPercentage ?? 50,
+  );
   const [useGoalie, setUseGoalie] = useState(initialConfig?.useGoalie ?? true);
-  const [goaliePlayFullPeriod, setGoaliePlayFullPeriod] = useState(initialConfig?.goaliePlayFullPeriod ?? true);
-  const [goalieRestAfterPeriod, setGoalieRestAfterPeriod] = useState(initialConfig?.goalieRestAfterPeriod ?? true);
-  const [balancePriority, setBalancePriority] = useState<GameConfig['balancePriority']>(initialConfig?.balancePriority ?? 'balanced');
+  const [goaliePlayFullPeriod, setGoaliePlayFullPeriod] = useState(
+    initialConfig?.goaliePlayFullPeriod ?? true,
+  );
+  const [goalieRestAfterPeriod, setGoalieRestAfterPeriod] = useState(
+    initialConfig?.goalieRestAfterPeriod ?? true,
+  );
+  const [balancePriority, setBalancePriority] = useState<GameConfig['balancePriority']>(
+    initialConfig?.balancePriority ?? 'balanced',
+  );
   const [usePositions, setUsePositions] = useState(initialConfig?.usePositions ?? false);
   const [formation, setFormation] = useState<FormationSlot[]>(initialConfig?.formation ?? []);
 
@@ -142,7 +168,9 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
         <CollapsibleTrigger asChild>
           <button className="flex items-center justify-between w-full py-2 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground">
             Rules & Balance
-            <ChevronDownIcon className={cn("h-4 w-4 transition-transform", rulesOpen && "rotate-180")} />
+            <ChevronDownIcon
+              className={cn('h-4 w-4 transition-transform', rulesOpen && 'rotate-180')}
+            />
           </button>
         </CollapsibleTrigger>
         <CollapsibleContent>
@@ -150,7 +178,9 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-sm">No consecutive benching</Label>
-                <p className="text-xs text-muted-foreground">Prevent back-to-back bench rotations</p>
+                <p className="text-xs text-muted-foreground">
+                  Prevent back-to-back bench rotations
+                </p>
               </div>
               <Switch checked={noConsecutiveBench} onCheckedChange={setNoConsecutiveBench} />
             </div>
@@ -194,7 +224,9 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-sm">Uses goalkeeper</Label>
-                <p className="text-xs text-muted-foreground">Format includes a dedicated goalkeeper</p>
+                <p className="text-xs text-muted-foreground">
+                  Format includes a dedicated goalkeeper
+                </p>
               </div>
               <Switch checked={useGoalie} onCheckedChange={setUseGoalie} />
             </div>
@@ -206,15 +238,23 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
                     <Label className="text-sm">Goalie plays full period</Label>
                     <p className="text-xs text-muted-foreground">No mid-period goalie swaps</p>
                   </div>
-                  <Switch checked={goaliePlayFullPeriod} onCheckedChange={setGoaliePlayFullPeriod} />
+                  <Switch
+                    checked={goaliePlayFullPeriod}
+                    onCheckedChange={setGoaliePlayFullPeriod}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between pl-4">
                   <div>
                     <Label className="text-sm">Goalie rests after period</Label>
-                    <p className="text-xs text-muted-foreground">Goalie must bench first rotation of next period</p>
+                    <p className="text-xs text-muted-foreground">
+                      Goalie must bench first rotation of next period
+                    </p>
                   </div>
-                  <Switch checked={goalieRestAfterPeriod} onCheckedChange={setGoalieRestAfterPeriod} />
+                  <Switch
+                    checked={goalieRestAfterPeriod}
+                    onCheckedChange={setGoalieRestAfterPeriod}
+                  />
                 </div>
               </>
             )}
@@ -222,7 +262,9 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-sm">Use positions</Label>
-                <p className="text-xs text-muted-foreground">Assign field positions (DEF, MID, FWD)</p>
+                <p className="text-xs text-muted-foreground">
+                  Assign field positions (DEF, MID, FWD)
+                </p>
               </div>
               <Switch checked={usePositions} onCheckedChange={setUsePositions} />
             </div>
@@ -258,7 +300,9 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
                 {derivedPositions.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {derivedPositions.map((pos, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">{pos}</Badge>
+                      <Badge key={i} variant="secondary" className="text-xs">
+                        {pos}
+                      </Badge>
                     ))}
                   </div>
                 )}
@@ -267,7 +311,10 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
 
             <div className="space-y-2">
               <Label>Balance Priority</Label>
-              <Select value={balancePriority} onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}>
+              <Select
+                value={balancePriority}
+                onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -285,7 +332,11 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
       <Separator />
 
       <div className="flex gap-2">
-        <Button onClick={handleSave} className="flex-1" disabled={!name.trim() || (usePositions && formationTotal !== fieldPlayerSlots)}>
+        <Button
+          onClick={handleSave}
+          className="flex-1"
+          disabled={!name.trim() || (usePositions && formationTotal !== fieldPlayerSlots)}
+        >
           {initialConfig ? 'Save Changes' : 'Create Configuration'}
         </Button>
         <Button variant="outline" onClick={onCancel}>
