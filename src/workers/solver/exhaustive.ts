@@ -13,34 +13,37 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   cancelled = false;
   const { players, config, goalieAssignments, manualOverrides, totalRotations, benchSlotsPerRotation } = ctx;
 
-  ctx.onProgress(5, 'Calculating goalie assignments...');
-
-  // Resolve goalie assignments per period
-  const goaliePerPeriod = resolveGoalieAssignments(players, config.periods, goalieAssignments);
-
-  // Build goalie map: rotationIndex -> playerId
   const goalieMap = new Map<number, string>();
-  for (let period = 0; period < config.periods; period++) {
-    const goalieId = goaliePerPeriod[period];
-    for (let rot = 0; rot < config.rotationsPerPeriod; rot++) {
-      const rotIndex = period * config.rotationsPerPeriod + rot;
-      if (config.goaliePlayFullPeriod) {
-        goalieMap.set(rotIndex, goalieId);
-      } else if (rot === 0) {
-        goalieMap.set(rotIndex, goalieId);
-      }
-    }
-  }
-
-  // Build forced bench set from goalie rest rule
   const forcedBench = new Map<string, Set<number>>();
-  if (config.goalieRestAfterPeriod) {
+
+  if (config.useGoalie !== false) {
+    ctx.onProgress(5, 'Calculating goalie assignments...');
+
+    // Resolve goalie assignments per period
+    const goaliePerPeriod = resolveGoalieAssignments(players, config.periods, goalieAssignments);
+
+    // Build goalie map: rotationIndex -> playerId
     for (let period = 0; period < config.periods; period++) {
       const goalieId = goaliePerPeriod[period];
-      const nextPeriodFirstRot = (period + 1) * config.rotationsPerPeriod;
-      if (nextPeriodFirstRot < totalRotations) {
-        if (!forcedBench.has(goalieId)) forcedBench.set(goalieId, new Set());
-        forcedBench.get(goalieId)!.add(nextPeriodFirstRot);
+      for (let rot = 0; rot < config.rotationsPerPeriod; rot++) {
+        const rotIndex = period * config.rotationsPerPeriod + rot;
+        if (config.goaliePlayFullPeriod) {
+          goalieMap.set(rotIndex, goalieId);
+        } else if (rot === 0) {
+          goalieMap.set(rotIndex, goalieId);
+        }
+      }
+    }
+
+    // Build forced bench set from goalie rest rule
+    if (config.goalieRestAfterPeriod) {
+      for (let period = 0; period < config.periods; period++) {
+        const goalieId = goaliePerPeriod[period];
+        const nextPeriodFirstRot = (period + 1) * config.rotationsPerPeriod;
+        if (nextPeriodFirstRot < totalRotations) {
+          if (!forcedBench.has(goalieId)) forcedBench.set(goalieId, new Set());
+          forcedBench.get(goalieId)!.add(nextPeriodFirstRot);
+        }
       }
     }
   }

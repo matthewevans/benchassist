@@ -19,13 +19,15 @@ export function validateSchedule(
       );
     }
 
-    const goalies = Object.values(rotation.assignments).filter(
-      (a) => a === RotationAssignment.Goalie,
-    );
-    if (goalies.length !== 1) {
-      violations.push(
-        `Rotation ${rotation.index + 1}: Expected 1 goalie, got ${goalies.length}`,
+    if (config.useGoalie !== false) {
+      const goalies = Object.values(rotation.assignments).filter(
+        (a) => a === RotationAssignment.Goalie,
       );
+      if (goalies.length !== 1) {
+        violations.push(
+          `Rotation ${rotation.index + 1}: Expected 1 goalie, got ${goalies.length}`,
+        );
+      }
     }
   }
 
@@ -59,7 +61,7 @@ export function validateSchedule(
     }
   }
 
-  if (config.goalieRestAfterPeriod) {
+  if (config.useGoalie !== false && config.goalieRestAfterPeriod) {
     const rotationsPerPeriod = config.rotationsPerPeriod;
     for (const player of players) {
       const checkedPeriods = new Set<number>();
@@ -106,15 +108,17 @@ export function validateRosterForGame(
     );
   }
 
-  const goalieEligible = activePlayers.filter((p) => p.canPlayGoalie);
-  if (goalieEligible.length === 0) {
-    errors.push('No players are marked as goalie-eligible');
-  }
+  if (config.useGoalie !== false) {
+    const goalieEligible = activePlayers.filter((p) => p.canPlayGoalie);
+    if (goalieEligible.length === 0) {
+      errors.push('No players are marked as goalie-eligible');
+    }
 
-  if (goalieEligible.length < config.periods && config.goalieRestAfterPeriod) {
-    errors.push(
-      `Need at least ${config.periods} goalie-eligible players for goalie rest rotation (have ${goalieEligible.length})`,
-    );
+    if (goalieEligible.length < config.periods && config.goalieRestAfterPeriod) {
+      errors.push(
+        `Need at least ${config.periods} goalie-eligible players for goalie rest rotation (have ${goalieEligible.length})`,
+      );
+    }
   }
 
   return errors;

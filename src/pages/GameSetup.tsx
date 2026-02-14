@@ -70,6 +70,8 @@ export function GameSetup() {
     if (!selectedRoster || !selectedConfig || !teamId) return;
 
     const gameId = generateId();
+    const effectiveGoalieAssignments = selectedConfig.useGoalie !== false ? goalieAssignments : [];
+
     const game: Game = {
       id: gameId,
       teamId,
@@ -78,7 +80,7 @@ export function GameSetup() {
       name: gameName.trim() || `Game ${new Date().toLocaleDateString()}`,
       status: 'setup',
       absentPlayerIds: [...absentPlayerIds],
-      goalieAssignments,
+      goalieAssignments: effectiveGoalieAssignments,
       manualOverrides: [],
       schedule: null,
       currentRotationIndex: 0,
@@ -97,7 +99,7 @@ export function GameSetup() {
       players: selectedRoster.players,
       config: selectedConfig,
       absentPlayerIds: [...absentPlayerIds],
-      goalieAssignments,
+      goalieAssignments: effectiveGoalieAssignments,
       manualOverrides: [],
     });
   }
@@ -232,7 +234,7 @@ export function GameSetup() {
       )}
 
       {/* Step 3: Goalie Assignment */}
-      {selectedConfig && activePlayers.length > 0 && (
+      {selectedConfig?.useGoalie !== false && selectedConfig && activePlayers.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Goalie Assignment</CardTitle>

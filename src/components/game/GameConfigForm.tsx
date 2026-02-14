@@ -25,6 +25,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
   const [maxConsecutiveBench, setMaxConsecutiveBench] = useState(initialConfig?.maxConsecutiveBench ?? 1);
   const [enforceMinPlayTime, setEnforceMinPlayTime] = useState(initialConfig?.enforceMinPlayTime ?? true);
   const [minPlayPercentage, setMinPlayPercentage] = useState(initialConfig?.minPlayPercentage ?? 50);
+  const [useGoalie, setUseGoalie] = useState(initialConfig?.useGoalie ?? true);
   const [goaliePlayFullPeriod, setGoaliePlayFullPeriod] = useState(initialConfig?.goaliePlayFullPeriod ?? true);
   const [goalieRestAfterPeriod, setGoalieRestAfterPeriod] = useState(initialConfig?.goalieRestAfterPeriod ?? true);
   const [balancePriority, setBalancePriority] = useState<GameConfig['balancePriority']>(initialConfig?.balancePriority ?? 'balanced');
@@ -35,6 +36,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
     setPeriods(template.periods);
     setPeriodDuration(template.periodDurationMinutes);
     setRotationsPerPeriod(template.rotationsPerPeriod);
+    setUseGoalie(template.useGoalie);
   }
 
   function handleSave() {
@@ -50,12 +52,13 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
       rotationsPerPeriod,
       usePositions: false,
       formation: [],
+      useGoalie,
       noConsecutiveBench,
       maxConsecutiveBench,
       enforceMinPlayTime,
       minPlayPercentage,
-      goaliePlayFullPeriod,
-      goalieRestAfterPeriod,
+      goaliePlayFullPeriod: useGoalie ? goaliePlayFullPeriod : false,
+      goalieRestAfterPeriod: useGoalie ? goalieRestAfterPeriod : false,
       balancePriority,
       createdAt: initialConfig?.createdAt ?? Date.now(),
       updatedAt: Date.now(),
@@ -205,29 +208,46 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
 
         <div className="flex items-center justify-between">
           <div>
-            <Label className="text-sm">Goalie plays full period</Label>
-            <p className="text-xs text-muted-foreground">No mid-period goalie swaps</p>
+            <Label className="text-sm">Uses goalkeeper</Label>
+            <p className="text-xs text-muted-foreground">Format includes a dedicated goalkeeper</p>
           </div>
           <input
             type="checkbox"
-            checked={goaliePlayFullPeriod}
-            onChange={(e) => setGoaliePlayFullPeriod(e.target.checked)}
+            checked={useGoalie}
+            onChange={(e) => setUseGoalie(e.target.checked)}
             className="h-4 w-4"
           />
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <Label className="text-sm">Goalie rests after period</Label>
-            <p className="text-xs text-muted-foreground">Goalie must bench first rotation of next period</p>
-          </div>
-          <input
-            type="checkbox"
-            checked={goalieRestAfterPeriod}
-            onChange={(e) => setGoalieRestAfterPeriod(e.target.checked)}
-            className="h-4 w-4"
-          />
-        </div>
+        {useGoalie && (
+          <>
+            <div className="flex items-center justify-between pl-4">
+              <div>
+                <Label className="text-sm">Goalie plays full period</Label>
+                <p className="text-xs text-muted-foreground">No mid-period goalie swaps</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={goaliePlayFullPeriod}
+                onChange={(e) => setGoaliePlayFullPeriod(e.target.checked)}
+                className="h-4 w-4"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pl-4">
+              <div>
+                <Label className="text-sm">Goalie rests after period</Label>
+                <p className="text-xs text-muted-foreground">Goalie must bench first rotation of next period</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={goalieRestAfterPeriod}
+                onChange={(e) => setGoalieRestAfterPeriod(e.target.checked)}
+                className="h-4 w-4"
+              />
+            </div>
+          </>
+        )}
 
         <div className="space-y-2">
           <Label>Balance Priority</Label>

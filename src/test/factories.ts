@@ -31,6 +31,7 @@ export const gameConfigFactory = Factory.define<GameConfig>(() => ({
   rotationsPerPeriod: 2,
   usePositions: false,
   formation: [],
+  useGoalie: true,
   noConsecutiveBench: true,
   maxConsecutiveBench: 1,
   enforceMinPlayTime: true,

@@ -201,6 +201,35 @@ describe('exhaustiveSearch', () => {
     }
   });
 
+  it('produces a valid schedule with no goalie assignments when useGoalie is false', () => {
+    const players = buildRoster(9, { goalieCount: 0 });
+    const config = gameConfigFactory.build({
+      fieldSize: 7,
+      useGoalie: false,
+      goaliePlayFullPeriod: false,
+      goalieRestAfterPeriod: false,
+    });
+    const totalRotations = config.periods * config.rotationsPerPeriod;
+
+    const schedule = exhaustiveSearch({
+      players,
+      config,
+      goalieAssignments: [],
+      manualOverrides: [],
+      totalRotations,
+      benchSlotsPerRotation: players.length - config.fieldSize,
+      onProgress: () => {},
+    });
+
+    for (const rotation of schedule.rotations) {
+      const assignments = Object.values(rotation.assignments);
+      const goalies = assignments.filter((a) => a === RotationAssignment.Goalie);
+      const onField = assignments.filter((a) => a === RotationAssignment.Field);
+      expect(goalies).toHaveLength(0);
+      expect(onField).toHaveLength(config.fieldSize);
+    }
+  });
+
   it('respects manual goalie assignments', () => {
     const players = buildRoster(9, { goalieCount: 3 });
     const config = gameConfigFactory.build({ fieldSize: 7, periods: 2 });

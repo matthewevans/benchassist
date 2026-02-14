@@ -49,6 +49,7 @@ export interface GameConfig {
   rotationsPerPeriod: number;
   usePositions: boolean;
   formation: FormationSlot[]; // only used if usePositions is true
+  useGoalie: boolean;
 
   // Togglable rules
   noConsecutiveBench: boolean;
@@ -157,6 +158,7 @@ export interface GameConfigTemplate {
   rotationsPerPeriod: number;
   usePositions: boolean;
   formation: FormationSlot[];
+  useGoalie: boolean;
 }
 
 export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
@@ -168,6 +170,7 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
     rotationsPerPeriod: 2,
     usePositions: false,
     formation: [],
+    useGoalie: true,
   },
   {
     name: '7v7',
@@ -181,6 +184,7 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
       { position: 'MID', count: 3 },
       { position: 'FWD', count: 1 },
     ],
+    useGoalie: true,
   },
   {
     name: '9v9',
@@ -194,6 +198,7 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
       { position: 'MID', count: 3 },
       { position: 'FWD', count: 2 },
     ],
+    useGoalie: true,
   },
   {
     name: '11v11',
@@ -207,5 +212,16 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
       { position: 'MID', count: 4 },
       { position: 'FWD', count: 2 },
     ],
+    useGoalie: true,
+  },
+  {
+    name: 'GYSA 7v7',
+    fieldSize: 7,
+    periods: 4,
+    periodDurationMinutes: 12,
+    rotationsPerPeriod: 2,
+    usePositions: false,
+    formation: [],
+    useGoalie: true,
   },
 ];

@@ -222,6 +222,33 @@ describe('validateSchedule', () => {
     );
   });
 
+  it('skips goalie count check when useGoalie is false', () => {
+    const [p1, p2, p3] = [
+      playerFactory.build({ name: 'A' }),
+      playerFactory.build({ name: 'B' }),
+      playerFactory.build({ name: 'C' }),
+    ];
+    const rotations: Rotation[] = [
+      buildRotation(0, {
+        [p1.id]: RotationAssignment.Field,
+        [p2.id]: RotationAssignment.Field,
+        [p3.id]: RotationAssignment.Field,
+      }),
+    ];
+    const config = gameConfigFactory.build({
+      fieldSize: 3,
+      useGoalie: false,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: false,
+      goalieRestAfterPeriod: false,
+    });
+    const schedule = buildSchedule(rotations, [p1, p2, p3]);
+
+    const violations = validateSchedule(schedule, config, [p1, p2, p3]);
+
+    expect(violations).toHaveLength(0);
+  });
+
   it('passes goalie rest check when goalie is properly benched next period', () => {
     const [p1, p2, p3] = [
       playerFactory.build({ name: 'GoalieA' }),
@@ -315,5 +342,15 @@ describe('validateRosterForGame', () => {
     const errors = validateRosterForGame(players, config, []);
 
     expect(errors).toHaveLength(0);
+  });
+
+  it('skips goalie-eligible check when useGoalie is false', () => {
+    const players = buildRoster(9, { goalieCount: 0 });
+    const config = gameConfigFactory.build({ fieldSize: 7, useGoalie: false });
+
+    const errors = validateRosterForGame(players, config, []);
+
+    const goalieErrors = errors.filter((e) => e.includes('goalie'));
+    expect(goalieErrors).toHaveLength(0);
   });
 });
