@@ -698,12 +698,10 @@ export function RotationGrid() {
                             isLive ? 'py-2.5 px-2' : 'py-1.5 px-1',
                             isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
                             isNext && 'bg-accent/30',
-                            isPast && 'opacity-40',
+                            (isPast || isCompleted) && 'opacity-40 pointer-events-none',
                           )}
                           {...(isCurrent ? { 'data-current-rotation': '' } : {})}
-                          onClick={() =>
-                            !isPast && !isCompleted && handleCellClick(rotation.index, player.id)
-                          }
+                          onClick={() => handleCellClick(rotation.index, player.id)}
                         >
                           <span
                             className={cn(
@@ -718,6 +716,8 @@ export function RotationGrid() {
                               swapSource &&
                                 !isSelected &&
                                 !isValidTarget &&
+                                !isPast &&
+                                !isCompleted &&
                                 'opacity-70 hover:opacity-100',
                             )}
                             title={cellTitle}
