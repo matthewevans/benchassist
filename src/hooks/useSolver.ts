@@ -28,6 +28,7 @@ export interface UseSolverReturn {
   isRunning: boolean;
   result: RotationSchedule | null;
   error: string | null;
+  setError: (error: string) => void;
   reset: () => void;
 }
 
@@ -119,5 +120,5 @@ export function useSolver(): UseSolverReturn {
     setIsRunning(false);
   }, []);
 
-  return { solve, cancel, progress, message, isRunning, result, error, reset };
+  return { solve, cancel, progress, message, isRunning, result, error, setError, reset };
 }

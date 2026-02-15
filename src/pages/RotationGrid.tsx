@@ -86,16 +86,17 @@ export function RotationGrid() {
     }
   }, [isLive, currentRotationIndex]);
 
-  // Solver result effect
+  // Solver result effect — use gameId (string) instead of game (object) to avoid
+  // re-triggering when the game reference changes after dispatch
   useEffect(() => {
-    if (solverResult && game) {
+    if (solverResult && gameId) {
       dispatch({
         type: 'SET_GAME_SCHEDULE',
-        payload: { gameId: game.id, schedule: solverResult },
+        payload: { gameId, schedule: solverResult },
       });
       solverReset();
     }
-  }, [solverResult, game, dispatch, solverReset]);
+  }, [solverResult, gameId, dispatch, solverReset]);
 
   // Group rotations by period for collapse rendering
   const periodGroups = useMemo(() => {
@@ -293,6 +294,9 @@ export function RotationGrid() {
 
     const remainingPlayers = activePlayers.filter((p) => p.id !== removingPlayerId);
     if (remainingPlayers.length < config.fieldSize) {
+      solver.setError(
+        `Cannot remove player: only ${remainingPlayers.length} would remain, but ${config.fieldSize} are needed on field`,
+      );
       setRemovingPlayerId(null);
       return;
     }
