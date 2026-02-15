@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { calculatePlayerStats, computeStrengthStats, previewSwap } from './stats.ts';
+import {
+  calculatePlayerStats,
+  computeStrengthStats,
+  previewSwap,
+  previewSwapRange,
+} from './stats.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { Rotation, Player, RotationSchedule } from '@/types/domain.ts';
 import { playerFactory, buildRotation } from '@/test/factories.ts';
@@ -122,5 +127,49 @@ describe('previewSwap', () => {
     expect(result.rotations[0].assignments[p1.id]).toBe(RotationAssignment.Bench);
     expect(result.rotations[0].assignments[p2.id]).toBe(RotationAssignment.Field);
     expect(result.rotations[0].teamStrength).toBe(1);
+  });
+});
+
+describe('previewSwapRange', () => {
+  it('swaps two players from the given rotation onward', () => {
+    const p1 = playerFactory.build({ name: 'A', skillRanking: 5 });
+    const p2 = playerFactory.build({ name: 'B', skillRanking: 1 });
+    const players = [p1, p2];
+
+    const rotations: Rotation[] = [
+      buildRotation(0, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+      buildRotation(1, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+      buildRotation(2, { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Field }),
+      buildRotation(3, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+    ];
+
+    const schedule: RotationSchedule = {
+      rotations,
+      playerStats: calculatePlayerStats(rotations, players),
+      overallStats: {
+        strengthVariance: 0,
+        minStrength: 0,
+        maxStrength: 0,
+        avgStrength: 0,
+        violations: [],
+        isValid: true,
+      },
+      generatedAt: Date.now(),
+    };
+
+    const result = previewSwapRange(schedule, 1, p1.id, p2.id, players);
+
+    // R0 unchanged
+    expect(result.rotations[0].assignments[p1.id]).toBe(RotationAssignment.Field);
+    expect(result.rotations[0].assignments[p2.id]).toBe(RotationAssignment.Bench);
+    // R1 swapped
+    expect(result.rotations[1].assignments[p1.id]).toBe(RotationAssignment.Bench);
+    expect(result.rotations[1].assignments[p2.id]).toBe(RotationAssignment.Field);
+    // R2 swapped (was B on field, now A on field)
+    expect(result.rotations[2].assignments[p1.id]).toBe(RotationAssignment.Field);
+    expect(result.rotations[2].assignments[p2.id]).toBe(RotationAssignment.Bench);
+    // R3 swapped
+    expect(result.rotations[3].assignments[p1.id]).toBe(RotationAssignment.Bench);
+    expect(result.rotations[3].assignments[p2.id]).toBe(RotationAssignment.Field);
   });
 });

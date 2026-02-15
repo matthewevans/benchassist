@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils.ts';
 import { Settings2, ChevronRightIcon } from 'lucide-react';
 import { SUB_POSITION_LABELS, RotationAssignment } from '@/types/domain.ts';
 import type { PlayerId, Game, GoalieAssignment } from '@/types/domain.ts';
-import { previewSwap } from '@/utils/stats.ts';
+import { previewSwap, previewSwapRange } from '@/utils/stats.ts';
 import { getAssignmentDisplay } from '@/utils/positions.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
@@ -33,6 +33,7 @@ import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
 import { LiveBottomBar } from '@/components/game/LiveBottomBar.tsx';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
+import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -40,6 +41,11 @@ export function RotationGrid() {
   const [swapSource, setSwapSource] = useState<{
     rotationIndex: number;
     playerId: PlayerId;
+  } | null>(null);
+  const [pendingSwap, setPendingSwap] = useState<{
+    rotationIndex: number;
+    playerAId: PlayerId;
+    playerBId: PlayerId;
   } | null>(null);
   const solver = useSolver();
   const solverResult = solver.result;
@@ -237,21 +243,47 @@ export function RotationGrid() {
           return;
         }
       }
-      const newSchedule = previewSwap(
-        schedule,
+      setPendingSwap({
         rotationIndex,
-        swapSource.playerId,
-        playerId,
-        activePlayers,
-      );
-      dispatch({
-        type: 'SET_GAME_SCHEDULE',
-        payload: { gameId: game.id, schedule: newSchedule },
+        playerAId: swapSource.playerId,
+        playerBId: playerId,
       });
       setSwapSource(null);
     } else {
       setSwapSource({ rotationIndex, playerId });
     }
+  }
+
+  function handleSwapThisRotation() {
+    if (!pendingSwap || !schedule) return;
+    const newSchedule = previewSwap(
+      schedule,
+      pendingSwap.rotationIndex,
+      pendingSwap.playerAId,
+      pendingSwap.playerBId,
+      activePlayers,
+    );
+    dispatch({
+      type: 'SET_GAME_SCHEDULE',
+      payload: { gameId: game.id, schedule: newSchedule },
+    });
+    setPendingSwap(null);
+  }
+
+  function handleSwapAllRemaining() {
+    if (!pendingSwap || !schedule) return;
+    const newSchedule = previewSwapRange(
+      schedule,
+      pendingSwap.rotationIndex,
+      pendingSwap.playerAId,
+      pendingSwap.playerBId,
+      activePlayers,
+    );
+    dispatch({
+      type: 'SET_GAME_SCHEDULE',
+      payload: { gameId: game.id, schedule: newSchedule },
+    });
+    setPendingSwap(null);
   }
 
   function handleStartGame() {
@@ -666,12 +698,10 @@ export function RotationGrid() {
                             isLive ? 'py-2.5 px-2' : 'py-1.5 px-1',
                             isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
                             isNext && 'bg-accent/30',
-                            isPast && 'opacity-40',
+                            (isPast || isCompleted) && 'opacity-40 pointer-events-none',
                           )}
                           {...(isCurrent ? { 'data-current-rotation': '' } : {})}
-                          onClick={() =>
-                            !isPast && !isCompleted && handleCellClick(rotation.index, player.id)
-                          }
+                          onClick={() => handleCellClick(rotation.index, player.id)}
                         >
                           <span
                             className={cn(
@@ -686,6 +716,8 @@ export function RotationGrid() {
                               swapSource &&
                                 !isSelected &&
                                 !isValidTarget &&
+                                !isPast &&
+                                !isCompleted &&
                                 'opacity-70 hover:opacity-100',
                             )}
                             title={cellTitle}
@@ -799,6 +831,16 @@ export function RotationGrid() {
           onCancelSwap={() => setSwapSource(null)}
         />
       )}
+
+      {/* Swap scope dialog */}
+      <SwapScopeDialog
+        open={pendingSwap !== null}
+        playerA={pendingSwap ? (playerMap.get(pendingSwap.playerAId)?.name ?? 'Player') : ''}
+        playerB={pendingSwap ? (playerMap.get(pendingSwap.playerBId)?.name ?? 'Player') : ''}
+        onThisRotation={handleSwapThisRotation}
+        onAllRemaining={handleSwapAllRemaining}
+        onCancel={() => setPendingSwap(null)}
+      />
 
       {/* Player removal confirmation */}
       <ConfirmDialog
