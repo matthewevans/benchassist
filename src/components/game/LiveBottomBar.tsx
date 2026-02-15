@@ -56,18 +56,20 @@ export function LiveBottomBar({
         ))}
       </div>
 
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-3">
         {/* Left: Timer + controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <span
             className={cn(
-              'font-mono font-bold tabular-nums text-lg',
+              'font-mono font-bold tabular-nums text-base sm:text-lg',
               timer.isOvertime && 'text-destructive',
             )}
           >
             {timer.formattedElapsed}
           </span>
-          <span className="text-sm text-muted-foreground">/ {timer.formattedDuration}</span>
+          <span className="text-sm text-muted-foreground hidden sm:inline">
+            / {timer.formattedDuration}
+          </span>
           {timer.isRunning ? (
             <Button
               variant="ghost"
@@ -101,14 +103,14 @@ export function LiveBottomBar({
         </div>
 
         {/* Center: swap mode indicator OR next sub hint */}
-        <div className="flex-1 text-center text-sm">
+        <div className="flex-1 min-w-0 text-center text-sm">
           {swapPlayerName ? (
             <div className="flex items-center justify-center gap-2">
-              <span className="font-medium text-primary">Swapping {swapPlayerName}</span>
+              <span className="font-medium text-primary truncate">Swapping {swapPlayerName}</span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 px-2 text-xs"
+                className="h-6 px-2 text-xs shrink-0"
                 onClick={onCancelSwap}
                 aria-label="Cancel swap"
               >
@@ -117,12 +119,14 @@ export function LiveBottomBar({
               </Button>
             </div>
           ) : nextSubMin != null && !timer.isOvertime ? (
-            <span className="text-muted-foreground">Next sub ~{nextSubMin} min</span>
+            <span className="text-muted-foreground whitespace-nowrap hidden sm:inline">
+              Next sub ~{nextSubMin} min
+            </span>
           ) : null}
         </div>
 
         {/* Right: Navigation buttons */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <Button
             variant="outline"
             size="lg"
@@ -133,10 +137,21 @@ export function LiveBottomBar({
           >
             <ChevronLeftIcon className="size-4" />
           </Button>
-          <Button size="lg" className="px-6" onClick={onAdvance} aria-label={advanceLabel}>
-            {advanceLabel}
-            {!isLastRotation && <ChevronRightIcon className="size-4 ml-1" />}
-          </Button>
+          {isLastRotation ? (
+            <Button size="lg" className="px-4 sm:px-6" onClick={onAdvance} aria-label="End Game">
+              End Game
+            </Button>
+          ) : (
+            <Button
+              size="lg"
+              className="px-3 sm:px-6"
+              onClick={onAdvance}
+              aria-label={advanceLabel}
+            >
+              <span className="hidden sm:inline">{advanceLabel}</span>
+              <ChevronRightIcon className="size-4 sm:ml-1" />
+            </Button>
+          )}
         </div>
       </div>
     </div>
