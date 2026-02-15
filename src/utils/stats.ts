@@ -72,44 +72,38 @@ export function calculateRotationStrength(rotation: Rotation, players: Player[])
   return strength;
 }
 
-export function previewSwap(
+function swapRotation(r: Rotation, playerAId: PlayerId, playerBId: PlayerId): Rotation {
+  const newAssignments = { ...r.assignments };
+  const temp = newAssignments[playerAId];
+  newAssignments[playerAId] = newAssignments[playerBId];
+  newAssignments[playerBId] = temp;
+
+  // Also swap field positions (handles field↔field and field↔bench)
+  let newFieldPositions = r.fieldPositions;
+  if (newFieldPositions) {
+    newFieldPositions = { ...newFieldPositions };
+    const posA = newFieldPositions[playerAId];
+    const posB = newFieldPositions[playerBId];
+    if (posA && posB) {
+      newFieldPositions[playerAId] = posB;
+      newFieldPositions[playerBId] = posA;
+    } else if (posA) {
+      newFieldPositions[playerBId] = posA;
+      delete newFieldPositions[playerAId];
+    } else if (posB) {
+      newFieldPositions[playerAId] = posB;
+      delete newFieldPositions[playerBId];
+    }
+  }
+
+  return { ...r, assignments: newAssignments, fieldPositions: newFieldPositions };
+}
+
+function rebuildSchedule(
   schedule: RotationSchedule,
-  rotationIndex: number,
-  playerAId: PlayerId,
-  playerBId: PlayerId,
+  newRotations: Rotation[],
   players: Player[],
 ): RotationSchedule {
-  const newRotations = schedule.rotations.map((r, i) => {
-    if (i !== rotationIndex) return r;
-    const newAssignments = { ...r.assignments };
-    const temp = newAssignments[playerAId];
-    newAssignments[playerAId] = newAssignments[playerBId];
-    newAssignments[playerBId] = temp;
-
-    // Also swap field positions (handles field↔field and field↔bench)
-    let newFieldPositions = r.fieldPositions;
-    if (newFieldPositions) {
-      newFieldPositions = { ...newFieldPositions };
-      const posA = newFieldPositions[playerAId];
-      const posB = newFieldPositions[playerBId];
-      if (posA && posB) {
-        // Both on field: swap positions
-        newFieldPositions[playerAId] = posB;
-        newFieldPositions[playerBId] = posA;
-      } else if (posA) {
-        // A on field, B off: B inherits A's position
-        newFieldPositions[playerBId] = posA;
-        delete newFieldPositions[playerAId];
-      } else if (posB) {
-        // B on field, A off: A inherits B's position
-        newFieldPositions[playerAId] = posB;
-        delete newFieldPositions[playerBId];
-      }
-    }
-
-    return { ...r, assignments: newAssignments, fieldPositions: newFieldPositions };
-  });
-
   const recalculated = newRotations.map((r) => ({
     ...r,
     teamStrength: calculateRotationStrength(r, players),
@@ -132,4 +126,30 @@ export function previewSwap(
     },
     generatedAt: schedule.generatedAt,
   };
+}
+
+export function previewSwap(
+  schedule: RotationSchedule,
+  rotationIndex: number,
+  playerAId: PlayerId,
+  playerBId: PlayerId,
+  players: Player[],
+): RotationSchedule {
+  const newRotations = schedule.rotations.map((r, i) =>
+    i === rotationIndex ? swapRotation(r, playerAId, playerBId) : r,
+  );
+  return rebuildSchedule(schedule, newRotations, players);
+}
+
+export function previewSwapRange(
+  schedule: RotationSchedule,
+  fromRotationIndex: number,
+  playerAId: PlayerId,
+  playerBId: PlayerId,
+  players: Player[],
+): RotationSchedule {
+  const newRotations = schedule.rotations.map((r, i) =>
+    i >= fromRotationIndex ? swapRotation(r, playerAId, playerBId) : r,
+  );
+  return rebuildSchedule(schedule, newRotations, players);
 }

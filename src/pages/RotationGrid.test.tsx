@@ -359,7 +359,7 @@ describe('RotationGrid', () => {
       expect(screen.queryByText(/Selected/)).not.toBeInTheDocument();
     });
 
-    it('dispatches SET_GAME_SCHEDULE when swapping two players in same rotation', async () => {
+    it('shows swap scope dialog and dispatches on "Just This Rotation"', async () => {
       const { state, game } = buildTestState();
       const { dispatch } = renderGrid(state, game.id);
 
@@ -373,6 +373,31 @@ describe('RotationGrid', () => {
       const benchBadges = screen.getAllByText('Bench');
       await userEvent.click(fieldBadges[0]);
       await userEvent.click(benchBadges[3]);
+
+      // Dialog should appear
+      expect(screen.getByText(/Swap Alice and Eve/)).toBeInTheDocument();
+
+      // Click "Just This Rotation"
+      await userEvent.click(screen.getByRole('button', { name: 'Just This Rotation' }));
+
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'SET_GAME_SCHEDULE',
+        }),
+      );
+    });
+
+    it('dispatches swap for all remaining rotations', async () => {
+      const { state, game } = buildTestState();
+      const { dispatch } = renderGrid(state, game.id);
+
+      const fieldBadges = screen.getAllByText('Field');
+      const benchBadges = screen.getAllByText('Bench');
+      await userEvent.click(fieldBadges[0]);
+      await userEvent.click(benchBadges[3]);
+
+      // Click "All Remaining"
+      await userEvent.click(screen.getByRole('button', { name: 'All Remaining' }));
 
       expect(dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
