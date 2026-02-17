@@ -11,6 +11,7 @@ import {
   Fence,
 } from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
+import { DrillDiagram } from '@/components/DrillDiagram.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent } from '@/components/ui/card.tsx';
@@ -615,7 +616,15 @@ function DrillCard({
         </div>
 
         {/* Description */}
-        <p className="text-sm text-muted-foreground">{drill.description}</p>
+        <div className={drill.diagram ? 'flex gap-3 items-start' : ''}>
+          <p className="text-sm text-muted-foreground flex-1">{drill.description}</p>
+          {drill.diagram && (
+            <DrillDiagram
+              diagram={drill.diagram}
+              className="w-36 h-36 shrink-0 rounded-md hidden sm:block"
+            />
+          )}
+        </div>
 
         {/* First coaching tip (always visible) */}
         {drill.coachingTips.length > 0 && (
