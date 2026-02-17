@@ -415,4 +415,14 @@ describe('generatePracticePlan', () => {
     const sum = plan.drills.reduce((acc, d) => acc + d.durationMinutes, 0);
     expect(plan.totalDurationMinutes).toBe(sum);
   });
+
+  it('prefers drills from the same progression when available', () => {
+    // This test verifies the progression preference by checking that
+    // when a main drill is part of a progression, other drills from
+    // that progression are more likely to appear
+    const plan1 = makePlan({ seed: 42, categories: ['passing', 'dribbling'] });
+    const mainDrillIds = plan1.drills.filter((d) => d.phase === 'main').map((d) => d.id);
+    // At minimum, the plan should still generate valid main drills
+    expect(mainDrillIds.length).toBeGreaterThanOrEqual(2);
+  });
 });

@@ -1,5 +1,6 @@
 import type { DrillAgeGroup } from '@/utils/age.ts';
 import type { Drill, DrillCategory, DrillPhase, PracticePlan } from '@/types/drill.ts';
+import { DRILL_PROGRESSIONS } from '@/data/drill-progressions.ts';
 
 export interface PracticeGeneratorOptions {
   drills: Drill[];
@@ -77,10 +78,35 @@ export function generatePracticePlan(opts: PracticeGeneratorOptions): PracticePl
   );
   const mainBudget = Math.max(targetDurationMinutes - fixedDuration, 10);
 
-  // Fill main drills to match budget
+  // Fill main drills to match budget, preferring progressions
   const mainCandidates = shuffle(byPhase('main', categories), rng);
   const mainDrills: Drill[] = [];
   let mainTotal = 0;
+
+  // Pick first main drill
+  const firstDrill = mainCandidates.shift();
+  if (firstDrill && firstDrill.durationMinutes <= mainBudget + 5) {
+    mainDrills.push(firstDrill);
+    mainTotal += firstDrill.durationMinutes;
+  }
+
+  // Check if first drill is in a progression
+  const activeProgression =
+    mainDrills.length > 0
+      ? DRILL_PROGRESSIONS.find((p) => p.drillIds.includes(mainDrills[0].id))
+      : undefined;
+
+  // Re-order remaining candidates: progression members first
+  if (activeProgression) {
+    const progIds = new Set(activeProgression.drillIds);
+    mainCandidates.sort((a, b) => {
+      const aIn = progIds.has(a.id) ? 0 : 1;
+      const bIn = progIds.has(b.id) ? 0 : 1;
+      return aIn - bIn;
+    });
+  }
+
+  // Fill remaining main slots
   for (const drill of mainCandidates) {
     if (mainTotal + drill.durationMinutes > mainBudget + 5) continue;
     mainDrills.push(drill);
