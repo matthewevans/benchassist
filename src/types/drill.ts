@@ -67,6 +67,7 @@ export interface Drill {
   durationMinutes: number;
   intensity: 'low' | 'medium' | 'high';
   equipment: string[];
+  diagram?: string;
 }
 
 export interface DrillProgression {

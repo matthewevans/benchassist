@@ -302,6 +302,18 @@ export const DRILLS: Drill[] = [
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 1,1  C 9,1  C 1,8  C 9,8
+G 3,0 7,0
+P 2,7 A
+P 6,3 B
+D 5,5
+B 2,7
+
+run A > 5,5
+pass A > B
+
+pass B > 8,1
+run A > 8,1`,
   },
 
   {
@@ -484,6 +496,12 @@ export const DRILLS: Drill[] = [
     durationMinutes: 12,
     intensity: 'high',
     equipment: ['cones', 'balls'],
+    diagram: `C 1,0  C 9,0  C 1,8  C 9,8
+P 5,7 A
+D 5,2
+B 5,7
+
+run A > 5,2 > 5,0`,
   },
 
   {
@@ -666,6 +684,15 @@ export const DRILLS: Drill[] = [
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 3,0 7,0
+GK 5,1
+P 5,5 S
+P 5,9 Sv
+B 5,9
+
+pass Sv > S
+run S > 4,4
+pass S > 5,1`,
   },
 
   {
@@ -1299,6 +1326,19 @@ export const DRILLS: Drill[] = [
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `Z 1,1 9,9
+P 5,1 A
+P 9,5 B
+P 5,9 C
+P 1,5 D
+P 3,2 E
+D 4,4
+D 6,6
+B 5,1
+
+pass A > B
+pass B > C
+pass C > D`,
   },
 
   {
@@ -1643,6 +1683,15 @@ export const DRILLS: Drill[] = [
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 3,3 A
+P 5,5 B
+P 7,3 C
+D 3,7
+D 5,5
+D 7,7
+B 5,5`,
   },
 
   {
