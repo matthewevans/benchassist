@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -49,6 +49,35 @@ function pickRandom<T>(arr: T[]): T {
 /** U-age values to display as quick-select chips */
 const U_AGE_CHIPS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
 
+const SESSION_KEY = 'practice_plan_state';
+
+interface PersistentPlanState {
+  birthYear: number | null;
+  playerCount: number;
+  selectedCategories: DrillCategory[];
+  targetDuration: number;
+  favoritesOnly: boolean;
+  seed: number;
+}
+
+function loadPlanState(): Partial<PersistentPlanState> {
+  try {
+    const stored = sessionStorage.getItem(SESSION_KEY);
+    if (!stored) return {};
+    return JSON.parse(stored);
+  } catch {
+    return {};
+  }
+}
+
+function savePlanState(state: PersistentPlanState): void {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+  } catch {
+    // Silently ignore storage errors
+  }
+}
+
 export function Practice() {
   const { state, dispatch } = useAppContext();
   const [searchParams] = useSearchParams();
@@ -58,16 +87,46 @@ export function Practice() {
   const initialBirthYear = team?.birthYear ?? null;
   const initialPlayerCount = team ? Math.max(...team.rosters.map((r) => r.players.length), 10) : 10;
 
-  const [birthYear, setBirthYear] = useState<number | null>(initialBirthYear);
-  const [playerCount, setPlayerCount] = useState(initialPlayerCount);
-  const [selectedCategories, setSelectedCategories] = useState<DrillCategory[]>([]);
-  const [targetDuration, setTargetDuration] = useState(60);
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [seed, setSeed] = useState(() => Date.now());
+  const saved = loadPlanState();
+
+  const [birthYear, setBirthYear] = useState<number | null>(
+    initialBirthYear ?? saved.birthYear ?? null,
+  );
+  const [playerCount, setPlayerCount] = useState(
+    team ? initialPlayerCount : (saved.playerCount ?? 10),
+  );
+  const [selectedCategories, setSelectedCategories] = useState<DrillCategory[]>(
+    saved.selectedCategories ?? [],
+  );
+  const [targetDuration, setTargetDuration] = useState(saved.targetDuration ?? 60);
+  const [favoritesOnly, setFavoritesOnly] = useState(saved.favoritesOnly ?? false);
+  const [seed, setSeed] = useState(() => saved.seed ?? Date.now());
   const [expandedDrillIds, setExpandedDrillIds] = useState<Set<string>>(new Set());
   const [swappedDrills, setSwappedDrills] = useState<Map<number, Drill>>(new Map());
   const [browseSearch, setBrowseSearch] = useState('');
   const [browseCategory, setBrowseCategory] = useState<DrillCategory | null>(null);
+
+  // Persist plan inputs to sessionStorage
+  const planInputs = useMemo(
+    () => ({
+      birthYear,
+      playerCount,
+      selectedCategories,
+      targetDuration,
+      favoritesOnly,
+      seed,
+    }),
+    [birthYear, playerCount, selectedCategories, targetDuration, favoritesOnly, seed],
+  );
+
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => {
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      savePlanState(planInputs);
+    }, 300);
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [planInputs]);
 
   const drillBracket = birthYear ? getDrillBracket(birthYear) : null;
 
