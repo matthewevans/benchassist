@@ -44,7 +44,9 @@ const COORD_REGEX = /^(\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/;
 const LABEL_REGEX = /^([A-Za-z]\w*)/;
 const QUOTED_REGEX = /^"([^"]*)"/;
 
-function tokenToType(token: string): DiagramElementType {
+type TokenLiteral = 'GK' | 'P' | 'D' | 'B' | 'G' | 'Z' | 'C' | 'T';
+
+function tokenToType(token: TokenLiteral): DiagramElementType {
   switch (token) {
     case 'P':
       return 'player';
@@ -62,8 +64,6 @@ function tokenToType(token: string): DiagramElementType {
       return 'zone';
     case 'T':
       return 'text';
-    default:
-      throw new Error(`Unknown token: ${token}`);
   }
 }
 
@@ -98,7 +98,7 @@ function parseElementLine(
     const nextStart = i + 1 < rawMatches.length ? rawMatches[i + 1].matchStart : line.length;
     const lookahead = line.slice(raw.matchEnd, nextStart).trimStart();
     const pos: DiagramPoint = { x: raw.x, y: raw.y };
-    const type = tokenToType(raw.token);
+    const type = tokenToType(raw.token as TokenLiteral);
     const element: DiagramElement = { type, position: pos };
 
     if (type === 'goal' || type === 'zone') {
