@@ -16,7 +16,12 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { generateId } from '@/utils/id.ts';
-import { GAME_CONFIG_TEMPLATES, DEFAULT_GAME_RULES, TEAM_GENDER_LABELS } from '@/types/domain.ts';
+import {
+  GAME_CONFIG_TEMPLATES,
+  DEFAULT_GAME_RULES,
+  TEAM_GENDER_LABELS,
+  TEAM_GENDER_DOT_COLORS,
+} from '@/types/domain.ts';
 import type { Roster, GameConfig, GameConfigId, TeamGender } from '@/types/domain.ts';
 import {
   Select,
@@ -158,7 +163,12 @@ export function TeamManagement() {
           <SelectContent>
             {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
               <SelectItem key={value} value={value}>
-                {label}
+                <span className="flex items-center gap-2">
+                  <span
+                    className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value as TeamGender]}`}
+                  />
+                  {label}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

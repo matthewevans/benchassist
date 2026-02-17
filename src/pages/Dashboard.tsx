@@ -20,6 +20,7 @@ import { CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
 import {
   TEAM_GENDER_LABELS,
   TEAM_GENDER_BORDER_COLORS,
+  TEAM_GENDER_DOT_COLORS,
   type Player,
   type Team,
   type TeamGender,
@@ -186,7 +187,12 @@ export function Dashboard() {
                   <SelectContent>
                     {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
-                        {label}
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value as TeamGender]}`}
+                          />
+                          {label}
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>
