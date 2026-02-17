@@ -44,18 +44,16 @@ function renderElement(el: DiagramElement, i: number) {
     }
     case 'goal': {
       if (!el.position2) return null;
-      const x1 = toSvg(el.position.x);
       const x2 = toSvg(el.position2.x);
-      const y1 = toSvg(el.position.y);
       const y2 = toSvg(el.position2.y);
-      const width = Math.abs(x2 - x1);
-      const height = Math.abs(y2 - y1);
+      const width = Math.abs(x2 - cx);
+      const height = Math.abs(y2 - cy);
       // Render as a rect; for a horizontal goal line, height defaults to 4
       return (
         <rect
           key={i}
-          x={Math.min(x1, x2)}
-          y={height > 0 ? Math.min(y1, y2) : Math.min(y1, y2) - 2}
+          x={Math.min(cx, x2)}
+          y={height > 0 ? Math.min(cy, y2) : Math.min(cy, y2) - 2}
           width={width}
           height={height > 0 ? height : 4}
           fill="white"
@@ -159,7 +157,6 @@ function renderElement(el: DiagramElement, i: number) {
 function renderArrow(arrow: DiagramArrow, stepIdx: number, arrowIdx: number) {
   if (arrow.points.length < 2) return null;
   const pts = pointsToStr(arrow.points);
-  const markerId = arrow.type === 'pass' ? 'ahd' : 'ah';
   return (
     <polyline
       key={`${stepIdx}-${arrowIdx}`}
@@ -168,7 +165,7 @@ function renderArrow(arrow: DiagramArrow, stepIdx: number, arrowIdx: number) {
       stroke="white"
       strokeWidth={1.5}
       strokeDasharray={arrow.type === 'pass' ? '4 3' : undefined}
-      markerEnd={`url(#${markerId})`}
+      markerEnd="url(#ah)"
       opacity={0.85}
     />
   );
@@ -188,9 +185,6 @@ export function DrillDiagram({ diagram, className }: DrillDiagramProps) {
     >
       <defs>
         <marker id="ah" markerWidth={6} markerHeight={6} refX={5} refY={3} orient="auto">
-          <path d="M0,0 L0,6 L6,3 z" fill="white" />
-        </marker>
-        <marker id="ahd" markerWidth={6} markerHeight={6} refX={5} refY={3} orient="auto">
           <path d="M0,0 L0,6 L6,3 z" fill="white" />
         </marker>
       </defs>
