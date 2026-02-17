@@ -15,6 +15,7 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { generateId } from '@/utils/id.ts';
+import { getUAge } from '@/utils/age.ts';
 import { downloadJSON, readJSONFile } from '@/storage/exportImport.ts';
 import { CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
 import {
@@ -235,6 +236,7 @@ export function Dashboard() {
                   <CardContent className="space-y-3">
                     <div className="flex gap-4 text-sm text-muted-foreground">
                       <span>{TEAM_GENDER_LABELS[team.gender]}</span>
+                      {team.birthYear && <span>U{getUAge(team.birthYear)}</span>}
                       <span>
                         {team.rosters.length} roster{team.rosters.length !== 1 ? 's' : ''}
                       </span>
