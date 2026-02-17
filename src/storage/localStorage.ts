@@ -7,6 +7,7 @@ export interface StorageData {
   version: number;
   teams: Record<string, Team>;
   games: Record<string, Game>;
+  favoriteDrillIds?: string[];
 }
 
 type PreMigrationTeam = Omit<Team, 'gender' | 'birthYear'> & {

@@ -112,7 +112,11 @@ export function Dashboard() {
     if (!importData) return;
     dispatch({
       type: 'IMPORT_DATA',
-      payload: { teams: importData.teams, games: importData.games },
+      payload: {
+        teams: importData.teams,
+        games: importData.games,
+        favoriteDrillIds: importData.favoriteDrillIds ?? [],
+      },
     });
     setImportData(null);
   }
