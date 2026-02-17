@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { getUAge, getDrillBracket, birthYearToDisplay, DRILL_BRACKETS } from '@/utils/age.ts';
+import {
+  getUAge,
+  getDrillBracket,
+  birthYearToDisplay,
+  uAgeToBirthYear,
+  DRILL_BRACKETS,
+  DRILL_BRACKET_LABELS,
+} from '@/utils/age.ts';
 
 describe('getUAge', () => {
   it('returns current year minus birth year', () => {
@@ -60,8 +67,28 @@ describe('birthYearToDisplay', () => {
   });
 });
 
+describe('uAgeToBirthYear', () => {
+  it('returns current year minus uAge', () => {
+    const currentYear = new Date().getFullYear();
+    expect(uAgeToBirthYear(9)).toBe(currentYear - 9);
+  });
+});
+
+describe('getUAge - edge cases', () => {
+  it('clamps future birth years to 0', () => {
+    const futureYear = new Date().getFullYear() + 5;
+    expect(getUAge(futureYear)).toBe(0);
+  });
+});
+
 describe('DRILL_BRACKETS', () => {
   it('has all expected brackets', () => {
     expect(DRILL_BRACKETS).toEqual(['U6', 'U8', 'U10', 'U12', 'U14', 'U16', 'U18']);
+  });
+});
+
+describe('DRILL_BRACKET_LABELS', () => {
+  it('has labels for all brackets', () => {
+    expect(Object.keys(DRILL_BRACKET_LABELS)).toEqual(DRILL_BRACKETS);
   });
 });

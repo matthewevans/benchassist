@@ -13,7 +13,7 @@ export const DRILL_BRACKET_LABELS: Record<DrillAgeGroup, string> = {
 };
 
 export function getUAge(birthYear: number): number {
-  return new Date().getFullYear() - birthYear;
+  return Math.max(0, new Date().getFullYear() - birthYear);
 }
 
 export function getDrillBracket(birthYear: number): DrillAgeGroup {
