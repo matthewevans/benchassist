@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select.tsx';
 import { DRILLS } from '@/data/drills.ts';
+import { TRAINING_FOCUSES } from '@/data/training-focuses.ts';
 import { getDrillBracket, getUAge, uAgeToBirthYear, DRILL_BRACKET_LABELS } from '@/utils/age.ts';
 import { generatePracticePlan } from '@/utils/practiceGenerator.ts';
 import {
@@ -284,6 +285,31 @@ export function Practice() {
           Favorites
         </Button>
       </div>
+
+      {/* Practice theme quick-select */}
+      {drillBracket && (
+        <div className="space-y-2">
+          <span className="text-sm font-medium">Practice themes</span>
+          <div className="flex flex-wrap gap-1.5">
+            {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(drillBracket)).map((template) => (
+              <Button
+                key={template.id}
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const cats = [
+                    ...new Set(template.slots.flatMap((s) => s.preferredCategories)),
+                  ].filter((c) => availableCategories.includes(c)) as DrillCategory[];
+                  setSelectedCategories(cats);
+                  setSeed(Date.now());
+                }}
+              >
+                {template.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Category chips */}
       {drillBracket && (
