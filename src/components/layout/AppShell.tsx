@@ -36,7 +36,7 @@ export function AppShell() {
               alt=""
               className="h-9 hidden dark:block"
             />
-            BenchAssist
+            <span className="hidden sm:inline">BenchAssist</span>
           </Link>
           <nav className="flex gap-1 items-center">
             <Button
