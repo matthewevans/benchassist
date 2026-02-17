@@ -74,7 +74,7 @@ export function LiveBottomBar({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-11 w-11"
               onClick={timer.pause}
               aria-label="Pause timer"
             >
@@ -84,7 +84,7 @@ export function LiveBottomBar({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-11 w-11"
               onClick={timer.play}
               aria-label="Start timer"
             >
@@ -94,7 +94,7 @@ export function LiveBottomBar({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-11 w-11"
             onClick={timer.reset}
             aria-label="Reset timer"
           >

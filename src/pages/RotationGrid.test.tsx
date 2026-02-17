@@ -427,6 +427,9 @@ describe('RotationGrid', () => {
       const { state, game } = buildLiveState();
       const { dispatch } = renderGrid(state, game.id);
 
+      // Switch from focus view (default in live mode) to grid view so cells are interactive
+      await userEvent.click(screen.getByRole('button', { name: 'Grid' }));
+
       // R1 (current rotation, index 0): Alice=Field, Bob=Field, Carol=Field, Dave=Field, Eve=Bench
       // Field badges in DOM order: [0]=Alice/R1, [3]=Bob/R1
       const fieldBadges = screen.getAllByText('Field');
@@ -469,6 +472,96 @@ describe('RotationGrid', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
       expect(screen.getByText('Team Strength')).toBeInTheDocument();
+    });
+  });
+
+  describe('breadcrumb navigation', () => {
+    it('renders breadcrumb links in setup mode', () => {
+      const { state, game, team } = buildTestState();
+      renderGrid(state, game.id);
+      const teamsLinks = screen.getAllByRole('link', { name: 'Teams' });
+      expect(teamsLinks.length).toBeGreaterThanOrEqual(1);
+      const teamLinks = screen.getAllByRole('link', { name: team.name });
+      expect(teamLinks.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('end-game confirmation', () => {
+    function buildLiveState() {
+      const { state, game, ...rest } = buildTestState();
+      const liveGame: Game = {
+        ...game,
+        status: 'in-progress',
+        startedAt: Date.now(),
+      };
+      const liveState: AppState = {
+        ...state,
+        games: { [game.id]: liveGame },
+      };
+      return { state: liveState, game: liveGame, ...rest };
+    }
+
+    it('shows confirmation dialog when End Game button clicked', async () => {
+      const { state, game } = buildLiveState();
+      renderGrid(state, game.id);
+
+      const endGameButtons = screen.getAllByRole('button', { name: /end game/i });
+      await userEvent.click(endGameButtons[0]);
+
+      expect(screen.getByText('End this game?')).toBeInTheDocument();
+      expect(screen.getByText(/won't be able to resume/)).toBeInTheDocument();
+    });
+
+    it('does not dispatch when dialog is cancelled', async () => {
+      const { state, game } = buildLiveState();
+      const { dispatch } = renderGrid(state, game.id);
+
+      const endGameButtons = screen.getAllByRole('button', { name: /end game/i });
+      await userEvent.click(endGameButtons[0]);
+
+      await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
+
+      expect(dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({ status: 'completed' }),
+        }),
+      );
+    });
+
+    it('dispatches UPDATE_GAME with completed status when confirmed', async () => {
+      const { state, game } = buildLiveState();
+      const { dispatch } = renderGrid(state, game.id);
+
+      const endGameButtons = screen.getAllByRole('button', { name: /end game/i });
+      await userEvent.click(endGameButtons[0]);
+
+      await userEvent.click(screen.getByRole('button', { name: 'End Game' }));
+
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'UPDATE_GAME',
+          payload: expect.objectContaining({ status: 'completed' }),
+        }),
+      );
+    });
+
+    it('shows confirmation when advancing past last rotation', async () => {
+      const { state, game } = buildLiveState();
+      // Put game on last rotation (index 3, total of 4)
+      const lastRotGame: Game = { ...game, currentRotationIndex: 3 };
+      const lastRotState: AppState = {
+        ...state,
+        games: { [game.id]: lastRotGame },
+      };
+      renderGrid(lastRotState, game.id);
+
+      // On the last rotation, LiveBottomBar shows "End Game" on the advance button
+      // There are multiple "End Game" buttons (header + bottom bar)
+      const endButtons = screen.getAllByRole('button', { name: /end game/i });
+      // Click the bottom bar one (last in DOM)
+      await userEvent.click(endButtons[endButtons.length - 1]);
+
+      expect(screen.getByText('End this game?')).toBeInTheDocument();
     });
   });
 });

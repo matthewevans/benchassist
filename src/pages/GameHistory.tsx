@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
+import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
@@ -8,14 +9,15 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { GAME_STATUS_LABELS, GAME_STATUS_STYLES } from '@/types/domain.ts';
 
 export function GameHistory() {
-  const { state, dispatch } = useAppContext();
+  const { state } = useAppContext();
+  const dispatchWithUndo = useUndoToast();
   const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
 
   const games = Object.values(state.games).sort((a, b) => b.createdAt - a.createdAt);
 
   function handleDeleteGame() {
     if (!deletingGameId) return;
-    dispatch({ type: 'DELETE_GAME', payload: deletingGameId });
+    dispatchWithUndo({ type: 'DELETE_GAME', payload: deletingGameId });
     setDeletingGameId(null);
   }
 

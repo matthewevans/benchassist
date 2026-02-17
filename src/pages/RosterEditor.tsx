@@ -25,6 +25,7 @@ import { Switch } from '@/components/ui/switch.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { cn } from '@/lib/utils.ts';
+import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { parsePlayerImport } from '@/utils/parsePlayerImport.ts';
 import { POSITION_LABELS } from '@/types/domain.ts';
@@ -65,6 +66,7 @@ interface ImportRow {
 export function RosterEditor() {
   const { teamId, rosterId } = useParams<{ teamId: string; rosterId: string }>();
   const { state, dispatch } = useAppContext();
+  const dispatchWithUndo = useUndoToast();
   const [isAdding, setIsAdding] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [form, setForm] = useState<PlayerFormData>(DEFAULT_FORM);
@@ -136,7 +138,7 @@ export function RosterEditor() {
 
   function handleDeletePlayer(playerId: string) {
     if (!teamId || !rosterId) return;
-    dispatch({ type: 'DELETE_PLAYER', payload: { teamId, rosterId, playerId } });
+    dispatchWithUndo({ type: 'DELETE_PLAYER', payload: { teamId, rosterId, playerId } });
   }
 
   function handleImportParse() {
@@ -326,7 +328,7 @@ export function RosterEditor() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 px-1 text-xs text-destructive shrink-0"
+                          className="h-8 px-2 text-xs text-destructive shrink-0"
                           onClick={() => removeImportRow(i)}
                           aria-label="Remove player"
                         >
@@ -470,7 +472,7 @@ export function RosterEditor() {
                   <Popover>
                     <PopoverTrigger asChild>
                       <button
-                        className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold hover:bg-primary/20 transition-colors cursor-pointer"
+                        className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold hover:bg-primary/20 transition-colors cursor-pointer"
                         aria-label={`Skill ${player.skillRanking}, click to change`}
                       >
                         {player.skillRanking}

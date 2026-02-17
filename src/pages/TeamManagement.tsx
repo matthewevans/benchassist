@@ -15,6 +15,7 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
+import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
 import {
@@ -31,10 +32,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
+import { PencilIcon } from 'lucide-react';
 
 export function TeamManagement() {
   const { teamId } = useParams<{ teamId: string }>();
   const { state, dispatch } = useAppContext();
+  const dispatchWithUndo = useUndoToast();
   const navigate = useNavigate();
   const [isAddingRoster, setIsAddingRoster] = useState(false);
   const [newRosterName, setNewRosterName] = useState('');
@@ -89,7 +92,7 @@ export function TeamManagement() {
 
   function handleDeleteTeam() {
     if (!teamId || !team) return;
-    dispatch({ type: 'DELETE_TEAM', payload: teamId });
+    dispatchWithUndo({ type: 'DELETE_TEAM', payload: teamId });
     navigate('/');
   }
 
@@ -136,13 +139,14 @@ export function TeamManagement() {
             </div>
           ) : (
             <h1
-              className="text-2xl font-bold cursor-pointer hover:text-primary"
+              className="text-2xl font-bold cursor-pointer hover:text-primary group flex items-center gap-1.5"
               onClick={() => {
                 setEditName(team.name);
                 setIsEditing(true);
               }}
             >
               {team.name}
+              <PencilIcon className="size-3.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
             </h1>
           )}
         </div>
@@ -404,7 +408,7 @@ export function TeamManagement() {
         open={deletingConfigId !== null}
         onConfirm={() => {
           if (teamId && deletingConfigId) {
-            dispatch({
+            dispatchWithUndo({
               type: 'DELETE_GAME_CONFIG',
               payload: { teamId, configId: deletingConfigId },
             });

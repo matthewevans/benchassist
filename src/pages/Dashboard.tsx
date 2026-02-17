@@ -12,8 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog.tsx';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
+import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
 import { downloadJSON, readJSONFile } from '@/storage/exportImport.ts';
@@ -22,12 +22,9 @@ import {
   TEAM_GENDER_LABELS,
   TEAM_GENDER_BORDER_COLORS,
   TEAM_GENDER_DOT_COLORS,
-  GAME_STATUS_LABELS,
-  GAME_STATUS_STYLES,
   type Player,
   type Team,
   type TeamGender,
-  type GameStatus,
 } from '@/types/domain.ts';
 import {
   Select,
@@ -76,19 +73,30 @@ function getAllPlayers(team: Team): Player[] {
   return players;
 }
 
+function OnboardingStep({ number, label }: { number: number; label: string }) {
+  return (
+    <div className="flex items-center gap-3 text-sm">
+      <span className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-muted text-muted-foreground">
+        {number}
+      </span>
+      <span>{label}</span>
+    </div>
+  );
+}
+
 const MAX_AVATARS = 8;
 
 export function Dashboard() {
   const { state, dispatch } = useAppContext();
+  const dispatchWithUndo = useUndoToast();
   const [isCreating, setIsCreating] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamGender, setNewTeamGender] = useState<TeamGender>('coed');
 
   const teams = Object.values(state.teams).sort((a, b) => b.updatedAt - a.updatedAt);
 
-  const recentGames = Object.values(state.games)
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, 5);
+  const activeGame = Object.values(state.games).find((g) => g.status === 'in-progress');
+  const activeTeam = activeGame ? state.teams[activeGame.teamId] : undefined;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importData, setImportData] = useState<StorageData | null>(null);
@@ -112,15 +120,16 @@ export function Dashboard() {
     }
   }
 
-  function handleConfirmImport() {
+  function handleImport(mode: 'replace' | 'merge') {
     if (!importData) return;
-    dispatch({
-      type: 'IMPORT_DATA',
-      payload: {
-        teams: importData.teams,
-        games: importData.games,
-        favoriteDrillIds: importData.favoriteDrillIds ?? [],
-      },
+    const payload = {
+      teams: importData.teams,
+      games: importData.games,
+      favoriteDrillIds: importData.favoriteDrillIds ?? [],
+    };
+    dispatchWithUndo({
+      type: mode === 'merge' ? 'MERGE_DATA' : 'IMPORT_DATA',
+      payload,
     });
     setImportData(null);
   }
@@ -147,17 +156,36 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-center py-2">
-        <img
-          src={`${import.meta.env.BASE_URL}full_logo_light.png`}
-          alt="BenchAssist"
-          className="h-40 dark:hidden"
-        />
-        <img
-          src={`${import.meta.env.BASE_URL}full_logo_dark.png`}
-          alt="BenchAssist"
-          className="h-40 hidden dark:block"
-        />
+      <div className="space-y-3">
+        <div className="flex justify-center py-2">
+          <img
+            src={`${import.meta.env.BASE_URL}full_logo_light.png`}
+            alt="BenchAssist"
+            className="h-40 dark:hidden"
+          />
+          <img
+            src={`${import.meta.env.BASE_URL}full_logo_dark.png`}
+            alt="BenchAssist"
+            className="h-40 hidden dark:block"
+          />
+        </div>
+
+        {activeGame && (
+          <Link to={`/games/${activeGame.id}/rotations`}>
+            <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors">
+              <div className="flex items-center gap-2.5">
+                <span className="size-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+                <span className="text-sm font-medium">{activeGame.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {activeTeam?.name} · R{activeGame.currentRotationIndex + 1}
+                </span>
+              </div>
+              <span className="text-xs font-semibold text-green-700 dark:text-green-400 shrink-0">
+                Resume →
+              </span>
+            </div>
+          </Link>
+        )}
       </div>
 
       <div className="flex items-center justify-between">
@@ -217,9 +245,19 @@ export function Dashboard() {
 
       {teams.length === 0 ? (
         <Card>
-          <CardContent className="pt-6 text-center text-muted-foreground">
-            <p className="text-lg font-medium">No teams yet</p>
-            <p className="text-sm mt-1">Create a team to get started with rotation management.</p>
+          <CardHeader>
+            <CardTitle>Get Started</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <OnboardingStep number={1} label="Create a team" />
+            <OnboardingStep number={2} label="Add players to a roster" />
+            <OnboardingStep number={3} label="Set up a game format (5v5, 7v7, etc.)" />
+            <OnboardingStep number={4} label="Generate fair rotations" />
+            <div className="pt-2">
+              <Button className="w-full" onClick={() => setIsCreating(true)}>
+                Create Your First Team
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -273,33 +311,6 @@ export function Dashboard() {
         </div>
       )}
 
-      {recentGames.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold">Recent Games</h2>
-          <div className="grid gap-2">
-            {recentGames.map((game) => {
-              const team = state.teams[game.teamId];
-              return (
-                <Link key={game.id} to={`/games/${game.id}/rotations`}>
-                  <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-                    <CardContent className="py-3 flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{game.name}</p>
-                        <p className="text-sm text-muted-foreground">{team?.name}</p>
-                      </div>
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full font-medium ${GAME_STATUS_STYLES[game.status as GameStatus]}`}
-                      >
-                        {GAME_STATUS_LABELS[game.status as GameStatus]}
-                      </span>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
       <Separator />
 
       <div className="space-y-2">
@@ -321,15 +332,34 @@ export function Dashboard() {
         </div>
       </div>
 
-      <ConfirmDialog
+      <Dialog
         open={importData !== null}
-        onConfirm={handleConfirmImport}
-        onCancel={() => setImportData(null)}
-        title="Import backup?"
-        description="This will replace all your current teams, rosters, and games with the imported data."
-        confirmLabel="Import"
-        variant="destructive"
-      />
+        onOpenChange={(open) => {
+          if (!open) setImportData(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Import backup</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">How would you like to import the data?</p>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button onClick={() => handleImport('merge')}>Merge</Button>
+            <p className="text-xs text-muted-foreground -mt-1 mb-1 pl-1">
+              Add imported teams and games to your existing data. Duplicates are overwritten.
+            </p>
+            <Button variant="destructive" onClick={() => handleImport('replace')}>
+              Replace All
+            </Button>
+            <p className="text-xs text-muted-foreground -mt-1 mb-1 pl-1">
+              Delete all current data and replace with the imported backup.
+            </p>
+            <Button variant="outline" onClick={() => setImportData(null)}>
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {importError && (
         <Dialog open onOpenChange={() => setImportError(null)}>

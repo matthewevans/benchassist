@@ -19,7 +19,8 @@ import { Separator } from '@/components/ui/separator.tsx';
 import { cn } from '@/lib/utils.ts';
 import { generateId } from '@/utils/id.ts';
 import { validateRosterForGame } from '@/utils/validation.ts';
-import type { Game, GoalieAssignment, PlayerId } from '@/types/domain.ts';
+import { GAME_CONFIG_TEMPLATES, DEFAULT_GAME_RULES } from '@/types/domain.ts';
+import type { Game, GameConfig, GoalieAssignment, PlayerId } from '@/types/domain.ts';
 
 export function GameSetup() {
   const { state, dispatch } = useAppContext();
@@ -185,7 +186,10 @@ export function GameSetup() {
         ) : (
           <>
             <CardHeader>
-              <CardTitle className="text-base">Team & Configuration</CardTitle>
+              <CardTitle className="text-base">
+                <span className="text-muted-foreground mr-1.5">1.</span>
+                Team & Configuration
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -227,6 +231,18 @@ export function GameSetup() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {selectedTeam.rosters.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        No rosters yet.{' '}
+                        <Link
+                          to={`/teams/${teamId}`}
+                          className="text-primary underline hover:no-underline"
+                        >
+                          Add players to a roster
+                        </Link>{' '}
+                        first.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -243,6 +259,46 @@ export function GameSetup() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {selectedTeam.gameConfigs.length === 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">
+                          No configurations yet. Quick-create one:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {GAME_CONFIG_TEMPLATES.map((template) => (
+                            <Button
+                              key={template.name}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const config: GameConfig = {
+                                  id: generateId(),
+                                  teamId,
+                                  name: template.name,
+                                  fieldSize: template.fieldSize,
+                                  periods: template.periods,
+                                  periodDurationMinutes: template.periodDurationMinutes,
+                                  rotationsPerPeriod: template.rotationsPerPeriod,
+                                  usePositions: template.usePositions,
+                                  formation: template.formation,
+                                  useGoalie: template.useGoalie,
+                                  ...DEFAULT_GAME_RULES,
+                                  createdAt: Date.now(),
+                                  updatedAt: Date.now(),
+                                };
+                                dispatch({
+                                  type: 'ADD_GAME_CONFIG',
+                                  payload: { teamId, config },
+                                });
+                                setConfigId(config.id);
+                              }}
+                            >
+                              {template.name}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -269,6 +325,7 @@ export function GameSetup() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
+              <span className="text-muted-foreground mr-1.5">2.</span>
               Attendance ({activePlayers.length} / {selectedRoster.players.length} available)
             </CardTitle>
           </CardHeader>
@@ -307,7 +364,10 @@ export function GameSetup() {
       {selectedConfig?.useGoalie !== false && selectedConfig && activePlayers.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Goalie Assignment</CardTitle>
+            <CardTitle className="text-base">
+              <span className="text-muted-foreground mr-1.5">3.</span>
+              Goalie Assignment
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {Array.from({ length: selectedConfig.periods }, (_, i) => (

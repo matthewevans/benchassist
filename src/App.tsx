@@ -8,11 +8,12 @@ import { GameSetup } from '@/pages/GameSetup.tsx';
 import { RotationGrid } from '@/pages/RotationGrid.tsx';
 import { GameHistory } from '@/pages/GameHistory.tsx';
 import { Practice } from '@/pages/Practice.tsx';
+import { Toaster } from '@/components/ui/sonner.tsx';
 
 export default function App() {
   return (
     <AppProvider>
-      <BrowserRouter basename="/benchassist">
+      <BrowserRouter basename="/benchassist/">
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<Dashboard />} />
@@ -27,6 +28,7 @@ export default function App() {
           </Route>
         </Routes>
       </BrowserRouter>
+      <Toaster />
     </AppProvider>
   );
 }

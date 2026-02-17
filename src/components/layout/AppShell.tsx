@@ -44,7 +44,7 @@ export function AppShell() {
               size="sm"
               onClick={cycle}
               aria-label={`Theme: ${preference}`}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0"
             >
               {preference === 'system' ? (
                 <MonitorIcon className="h-4 w-4" />
