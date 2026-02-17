@@ -14,6 +14,12 @@ export const TEAM_GENDER_LABELS: Record<TeamGender, string> = {
   girls: 'Girls',
 };
 
+export const TEAM_GENDER_BORDER_COLORS: Record<TeamGender, string> = {
+  coed: 'border-l-slate-400',
+  boys: 'border-l-blue-400',
+  girls: 'border-l-pink-400',
+};
+
 export type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
 
 export const POSITION_LABELS: Record<Position, string> = {

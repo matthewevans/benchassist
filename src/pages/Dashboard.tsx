@@ -17,7 +17,13 @@ import { Separator } from '@/components/ui/separator.tsx';
 import { generateId } from '@/utils/id.ts';
 import { downloadJSON, readJSONFile } from '@/storage/exportImport.ts';
 import { CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
-import { TEAM_GENDER_LABELS, type Player, type Team, type TeamGender } from '@/types/domain.ts';
+import {
+  TEAM_GENDER_LABELS,
+  TEAM_GENDER_BORDER_COLORS,
+  type Player,
+  type Team,
+  type TeamGender,
+} from '@/types/domain.ts';
 import {
   Select,
   SelectContent,
@@ -209,7 +215,9 @@ export function Dashboard() {
             const overflow = players.length - MAX_AVATARS;
             return (
               <Link key={team.id} to={`/teams/${team.id}`}>
-                <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
+                <Card
+                  className={`hover:bg-accent/50 transition-colors cursor-pointer border-l-4 ${TEAM_GENDER_BORDER_COLORS[team.gender]}`}
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg">{team.name}</CardTitle>
                   </CardHeader>
