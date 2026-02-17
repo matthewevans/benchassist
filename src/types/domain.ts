@@ -124,6 +124,7 @@ export interface Team {
   id: TeamId;
   name: string;
   gender: TeamGender;
+  birthYear: number | null;
   rosters: Roster[];
   gameConfigs: GameConfig[];
   createdAt: number;

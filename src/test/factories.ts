@@ -58,6 +58,7 @@ export const teamFactory = Factory.define<Team>(({ sequence }) => ({
   id: generateId(),
   name: `Team ${sequence}`,
   gender: 'coed',
+  birthYear: null,
   rosters: [],
   gameConfigs: [],
   createdAt: Date.now(),

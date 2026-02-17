@@ -124,6 +124,7 @@ export function Dashboard() {
       id: generateId(),
       name: newTeamName.trim(),
       gender: newTeamGender,
+      birthYear: null,
       rosters: [],
       gameConfigs: [],
       createdAt: Date.now(),
