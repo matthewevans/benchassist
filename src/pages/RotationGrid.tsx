@@ -75,6 +75,7 @@ export function RotationGrid() {
     isLive,
   });
 
+  const [confirmEndGame, setConfirmEndGame] = useState(false);
   const [removingPlayerId, setRemovingPlayerId] = useState<PlayerId | null>(null);
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -231,18 +232,6 @@ export function RotationGrid() {
     }
 
     if (swapSource.rotationIndex === rotationIndex && schedule) {
-      // In live mode on current rotation, only allow swaps involving a bench player
-      if (isLive && rotationIndex === currentRotationIndex) {
-        const sourceAssignment = schedule.rotations[rotationIndex].assignments[swapSource.playerId];
-        const targetAssignment = schedule.rotations[rotationIndex].assignments[playerId];
-        if (
-          sourceAssignment !== RotationAssignment.Bench &&
-          targetAssignment !== RotationAssignment.Bench
-        ) {
-          setSwapSource({ rotationIndex, playerId });
-          return;
-        }
-      }
       setPendingSwap({
         rotationIndex,
         playerAId: swapSource.playerId,
@@ -300,7 +289,7 @@ export function RotationGrid() {
   function handleAdvance() {
     if (!gameId) return;
     if (isLastRotation) {
-      handleEndGame();
+      setConfirmEndGame(true);
       return;
     }
     dispatch({ type: 'ADVANCE_ROTATION', payload: gameId });
@@ -440,11 +429,24 @@ export function RotationGrid() {
 
   return (
     <div className="space-y-4">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm">
+        <Link to="/" className="text-muted-foreground hover:text-foreground">
+          Teams
+        </Link>
+        <span className="text-muted-foreground">/</span>
+        <Link to={`/teams/${game.teamId}`} className="text-muted-foreground hover:text-foreground">
+          {team?.name}
+        </Link>
+        <span className="text-muted-foreground">/</span>
+        <span>{game.name}</span>
+      </div>
+
       {/* Header — adapts to game state */}
       {isCompleted ? (
         <div>
           <h1 className="text-xl font-bold">{game.name}</h1>
-          <p className="text-sm text-muted-foreground">{team?.name} &middot; Completed</p>
+          <p className="text-sm text-muted-foreground">Completed</p>
         </div>
       ) : isLive ? (
         <div className="flex items-center justify-between">
@@ -455,7 +457,6 @@ export function RotationGrid() {
                 &middot; Period {currentPeriodIndex + 1}
               </span>
             </h1>
-            <p className="text-sm text-muted-foreground">{game.name}</p>
           </div>
           <div className="flex gap-2">
             <Button
@@ -466,17 +467,14 @@ export function RotationGrid() {
             >
               {solver.isRunning ? 'Solving...' : 'Regenerate'}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleEndGame}>
+            <Button variant="outline" size="sm" onClick={() => setConfirmEndGame(true)}>
               End Game
             </Button>
           </div>
         </div>
       ) : (
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">{game.name}</h1>
-            <p className="text-sm text-muted-foreground">{team?.name}</p>
-          </div>
+          <h1 className="text-xl font-bold">{game.name}</h1>
           <div className="flex gap-2">
             <Button
               variant="ghost"
@@ -840,6 +838,20 @@ export function RotationGrid() {
         onThisRotation={handleSwapThisRotation}
         onAllRemaining={handleSwapAllRemaining}
         onCancel={() => setPendingSwap(null)}
+      />
+
+      {/* End game confirmation */}
+      <ConfirmDialog
+        open={confirmEndGame}
+        onConfirm={() => {
+          setConfirmEndGame(false);
+          handleEndGame();
+        }}
+        onCancel={() => setConfirmEndGame(false)}
+        title="End this game?"
+        description="The game will be marked as completed. You won't be able to resume live tracking."
+        confirmLabel="End Game"
+        variant="destructive"
       />
 
       {/* Player removal confirmation */}

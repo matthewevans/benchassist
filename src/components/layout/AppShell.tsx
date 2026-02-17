@@ -10,6 +10,13 @@ const NAV_ITEMS = [
   { path: '/games', label: 'History' },
 ];
 
+function isNavActive(pathname: string, navPath: string): boolean {
+  if (navPath === '/') {
+    return pathname === '/' || pathname.startsWith('/teams');
+  }
+  return pathname === navPath || pathname.startsWith(navPath + '/');
+}
+
 export function AppShell() {
   const location = useLocation();
   const { preference, cycle } = useTheme();
@@ -53,7 +60,7 @@ export function AppShell() {
                 to={item.path}
                 className={cn(
                   'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                  location.pathname === item.path
+                  isNavActive(location.pathname, item.path)
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                 )}

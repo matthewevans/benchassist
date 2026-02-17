@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { cn } from '@/lib/utils.ts';
 import { generateId } from '@/utils/id.ts';
 import { parsePlayerImport } from '@/utils/parsePlayerImport.ts';
@@ -67,6 +68,7 @@ export function RosterEditor() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [form, setForm] = useState<PlayerFormData>(DEFAULT_FORM);
+  const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importText, setImportText] = useState('');
   const [importStep, setImportStep] = useState<'paste' | 'preview'>('paste');
@@ -524,7 +526,7 @@ export function RosterEditor() {
                     variant="ghost"
                     size="sm"
                     className="text-destructive"
-                    onClick={() => handleDeletePlayer(player.id)}
+                    onClick={() => setDeletingPlayerId(player.id)}
                   >
                     Remove
                   </Button>
@@ -534,6 +536,19 @@ export function RosterEditor() {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={deletingPlayerId !== null}
+        onConfirm={() => {
+          if (deletingPlayerId) handleDeletePlayer(deletingPlayerId);
+          setDeletingPlayerId(null);
+        }}
+        onCancel={() => setDeletingPlayerId(null)}
+        title={`Remove ${roster.players.find((p) => p.id === deletingPlayerId)?.name ?? 'player'}?`}
+        description="This player will be permanently removed from this roster."
+        confirmLabel="Remove"
+        variant="destructive"
+      />
     </div>
   );
 }

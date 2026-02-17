@@ -126,6 +126,7 @@ export function TeamManagement() {
                   if (e.key === 'Enter') handleRenameTeam();
                   if (e.key === 'Escape') setIsEditing(false);
                 }}
+                aria-label="Team name"
                 autoFocus
                 className="h-8 w-48"
               />

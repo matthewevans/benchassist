@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -151,6 +151,21 @@ export function GameSetup() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-2 text-sm">
+        <Link to="/" className="text-muted-foreground hover:text-foreground">
+          Teams
+        </Link>
+        {selectedTeam && (
+          <>
+            <span className="text-muted-foreground">/</span>
+            <Link to={`/teams/${teamId}`} className="text-muted-foreground hover:text-foreground">
+              {selectedTeam.name}
+            </Link>
+          </>
+        )}
+        <span className="text-muted-foreground">/</span>
+        <span>New Game</span>
+      </div>
       <h1 className="text-2xl font-bold">New Game</h1>
 
       {/* Step 1: Select Team */}

@@ -22,9 +22,12 @@ import {
   TEAM_GENDER_LABELS,
   TEAM_GENDER_BORDER_COLORS,
   TEAM_GENDER_DOT_COLORS,
+  GAME_STATUS_LABELS,
+  GAME_STATUS_STYLES,
   type Player,
   type Team,
   type TeamGender,
+  type GameStatus,
 } from '@/types/domain.ts';
 import {
   Select,
@@ -284,8 +287,10 @@ export function Dashboard() {
                         <p className="font-medium">{game.name}</p>
                         <p className="text-sm text-muted-foreground">{team?.name}</p>
                       </div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-secondary">
-                        {game.status}
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${GAME_STATUS_STYLES[game.status as GameStatus]}`}
+                      >
+                        {GAME_STATUS_LABELS[game.status as GameStatus]}
                       </span>
                     </CardContent>
                   </Card>

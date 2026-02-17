@@ -133,6 +133,18 @@ export interface Team {
 
 export type GameStatus = 'setup' | 'in-progress' | 'completed';
 
+export const GAME_STATUS_LABELS: Record<GameStatus, string> = {
+  setup: 'Ready',
+  'in-progress': 'Live',
+  completed: 'Done',
+};
+
+export const GAME_STATUS_STYLES: Record<GameStatus, string> = {
+  setup: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  'in-progress': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  completed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+};
+
 export enum RotationAssignment {
   Field = 'FIELD',
   Bench = 'BENCH',

@@ -5,12 +5,7 @@ import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
-
-const STATUS_STYLES: Record<string, string> = {
-  setup: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  'in-progress': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  completed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-};
+import { GAME_STATUS_LABELS, GAME_STATUS_STYLES } from '@/types/domain.ts';
 
 export function GameHistory() {
   const { state, dispatch } = useAppContext();
@@ -54,7 +49,9 @@ export function GameHistory() {
                       </div>
                     </Link>
                     <div className="flex items-center gap-2">
-                      <Badge className={STATUS_STYLES[game.status] ?? ''}>{game.status}</Badge>
+                      <Badge className={GAME_STATUS_STYLES[game.status]}>
+                        {GAME_STATUS_LABELS[game.status]}
+                      </Badge>
                       <Button
                         variant="ghost"
                         size="sm"
