@@ -1,6 +1,17 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import {
+  Clock,
+  Users,
+  Triangle,
+  Circle,
+  Shirt,
+  RectangleHorizontal,
+  Hand,
+  Fence,
+} from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
+import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Input } from '@/components/ui/input.tsx';
@@ -14,6 +25,7 @@ import {
 import { DRILLS } from '@/data/drills.ts';
 import { TRAINING_FOCUSES } from '@/data/training-focuses.ts';
 import { getDrillBracket, getUAge, uAgeToBirthYear, DRILL_BRACKET_LABELS } from '@/utils/age.ts';
+import { getPhaseColor, getIntensityDisplay } from '@/utils/drillDisplay.ts';
 import { generatePracticePlan } from '@/utils/practiceGenerator.ts';
 import {
   YOUNG_CATEGORIES,
@@ -35,6 +47,15 @@ const CATEGORY_COLORS: Record<DrillCategory, string> = {
   possession: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
   transition: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
   'set-pieces': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+};
+
+const EQUIPMENT_ICONS: Record<string, React.ComponentType<{ className?: string }> | undefined> = {
+  balls: Circle,
+  cones: Triangle,
+  pinnies: Shirt,
+  goals: RectangleHorizontal,
+  gloves: Hand,
+  'agility ladder': Fence,
 };
 
 const DURATION_OPTIONS = [30, 45, 60, 75, 90];
@@ -532,11 +553,10 @@ function DrillCard({
   const hasExpandContent =
     drill.setup ||
     (drill.coachingTips && drill.coachingTips.length > 1) ||
-    (drill.variations && drill.variations.length > 0) ||
-    (drill.equipment && drill.equipment.length > 0);
+    (drill.variations && drill.variations.length > 0);
 
   return (
-    <Card className="gap-0 py-0">
+    <Card className={`gap-0 py-0 border-l-4 ${getPhaseColor(drill.phase)}`}>
       <CardContent className="p-4 space-y-2">
         {/* Header row */}
         <div className="flex items-start justify-between gap-2">
@@ -559,15 +579,35 @@ function DrillCard({
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-muted-foreground">
-              {drill.durationMinutes}m &middot; {drill.minPlayers}+ players
-            </span>
             {showSwap && onSwap && (
               <Button size="icon-xs" variant="ghost" onClick={onSwap} aria-label="Swap drill">
                 <SwapIcon className="size-3.5" />
               </Button>
             )}
           </div>
+        </div>
+
+        {/* Metadata pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="outline" className="gap-1 text-xs font-normal">
+            <Clock className="size-3" />
+            {drill.durationMinutes}m
+          </Badge>
+          <Badge variant="outline" className="gap-1 text-xs font-normal">
+            <Users className="size-3" />
+            {drill.minPlayers}+
+          </Badge>
+          <Badge variant="outline" className="gap-1 text-xs font-normal">
+            <IntensityDots intensity={drill.intensity} />
+          </Badge>
+          {drill.equipment.length > 0 && (
+            <Badge variant="outline" className="gap-1 text-xs font-normal text-muted-foreground">
+              {drill.equipment.map((eq) => {
+                const Icon = EQUIPMENT_ICONS[eq];
+                return Icon ? <Icon key={eq} className="size-3" /> : null;
+              })}
+            </Badge>
+          )}
         </div>
 
         {/* Description */}
@@ -612,13 +652,6 @@ function DrillCard({
                 </ul>
               </div>
             )}
-
-            {drill.equipment.length > 0 && (
-              <div className="text-sm">
-                <span className="font-medium">Equipment: </span>
-                <span className="text-muted-foreground">{drill.equipment.join(', ')}</span>
-              </div>
-            )}
           </div>
         )}
 
@@ -639,6 +672,20 @@ function DrillCard({
 // ---------------------------------------------------------------------------
 // Inline SVG icons (avoid extra icon library deps for just 2 icons)
 // ---------------------------------------------------------------------------
+
+function IntensityDots({ intensity }: { intensity: 'low' | 'medium' | 'high' }) {
+  const { filled, label, colorClass } = getIntensityDisplay(intensity);
+  return (
+    <span className={`inline-flex items-center gap-0.5 ${colorClass}`}>
+      {[0, 1, 2].map((i) => (
+        <span key={i} className="text-[8px]">
+          {i < filled ? '\u25CF' : '\u25CB'}
+        </span>
+      ))}
+      <span className="ml-0.5 text-xs">{label}</span>
+    </span>
+  );
+}
 
 function StarIcon({ filled, className }: { filled: boolean; className?: string }) {
   if (filled) {
