@@ -98,15 +98,29 @@ describe('loadData', () => {
   });
 
   it('loads valid data with empty collections', () => {
-    const data = { version: 1, teams: {}, games: {} };
+    const data = { version: 2, teams: {}, games: {} };
     localStorage.setItem('benchassist_data', JSON.stringify(data));
     expect(loadData()).toEqual(data);
+  });
+
+  it('migrates v1 data by adding gender to teams', () => {
+    const data = {
+      version: 1,
+      teams: {
+        t1: { id: 't1', name: 'Team 1', rosters: [], gameConfigs: [], createdAt: 0, updatedAt: 0 },
+      },
+      games: {},
+    };
+    localStorage.setItem('benchassist_data', JSON.stringify(data));
+    const result = loadData();
+    expect(result!.version).toBe(2);
+    expect(result!.teams.t1.gender).toBe('coed');
   });
 });
 
 describe('saveData', () => {
   it('persists data to localStorage', () => {
-    const data = { version: 1, teams: {}, games: {} };
+    const data = { version: 2, teams: {}, games: {} };
     saveData(data);
     expect(localStorage.getItem('benchassist_data')).toBe(JSON.stringify(data));
   });

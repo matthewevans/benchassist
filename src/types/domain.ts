@@ -6,6 +6,14 @@ export type PlayerId = string;
 
 export type SkillRanking = 1 | 2 | 3 | 4 | 5;
 
+export type TeamGender = 'coed' | 'boys' | 'girls';
+
+export const TEAM_GENDER_LABELS: Record<TeamGender, string> = {
+  coed: 'Co-ed',
+  boys: 'Boys',
+  girls: 'Girls',
+};
+
 export type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
 
 export const POSITION_LABELS: Record<Position, string> = {
@@ -103,6 +111,7 @@ export interface GameConfig {
 export interface Team {
   id: TeamId;
   name: string;
+  gender: TeamGender;
   rosters: Roster[];
   gameConfigs: GameConfig[];
   createdAt: number;

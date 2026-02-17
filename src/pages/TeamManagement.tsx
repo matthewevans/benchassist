@@ -16,8 +16,15 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { generateId } from '@/utils/id.ts';
-import { GAME_CONFIG_TEMPLATES, DEFAULT_GAME_RULES } from '@/types/domain.ts';
-import type { Roster, GameConfig, GameConfigId } from '@/types/domain.ts';
+import { GAME_CONFIG_TEMPLATES, DEFAULT_GAME_RULES, TEAM_GENDER_LABELS } from '@/types/domain.ts';
+import type { Roster, GameConfig, GameConfigId, TeamGender } from '@/types/domain.ts';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx';
 
 export function TeamManagement() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -81,9 +88,18 @@ export function TeamManagement() {
   }
 
   function handleRenameTeam() {
-    if (!teamId || !editName.trim()) return;
-    dispatch({ type: 'UPDATE_TEAM', payload: { teamId, name: editName.trim() } });
+    if (!teamId || !editName.trim() || !team) return;
+    dispatch({
+      type: 'UPDATE_TEAM',
+      payload: { teamId, name: editName.trim(), gender: team.gender },
+    });
     setIsEditing(false);
+  }
+
+  function handleChangeGender(gender: TeamGender) {
+    if (!teamId || !team) return;
+    const name = isEditing ? editName.trim() || team.name : team.name;
+    dispatch({ type: 'UPDATE_TEAM', payload: { teamId, name, gender } });
   }
 
   return (
@@ -131,6 +147,22 @@ export function TeamManagement() {
             Delete
           </Button>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">Gender:</span>
+        <Select value={team.gender} onValueChange={(v) => handleChangeGender(v as TeamGender)}>
+          <SelectTrigger className="w-28 h-8">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Rosters */}

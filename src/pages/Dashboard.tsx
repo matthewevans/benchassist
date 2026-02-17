@@ -16,8 +16,15 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { generateId } from '@/utils/id.ts';
 import { downloadJSON, readJSONFile } from '@/storage/exportImport.ts';
-import type { StorageData } from '@/storage/localStorage.ts';
-import type { Player, Team } from '@/types/domain.ts';
+import { CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
+import { TEAM_GENDER_LABELS, type Player, type Team, type TeamGender } from '@/types/domain.ts';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select.tsx';
 
 const AVATAR_COLORS = [
   'bg-red-200 text-red-800',
@@ -64,6 +71,7 @@ export function Dashboard() {
   const { state, dispatch } = useAppContext();
   const [isCreating, setIsCreating] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamGender, setNewTeamGender] = useState<TeamGender>('coed');
 
   const teams = Object.values(state.teams).sort((a, b) => b.updatedAt - a.updatedAt);
 
@@ -76,7 +84,7 @@ export function Dashboard() {
   const [importError, setImportError] = useState<string | null>(null);
 
   function handleExport() {
-    const data: StorageData = { version: 1, teams: state.teams, games: state.games };
+    const data: StorageData = { version: CURRENT_VERSION, teams: state.teams, games: state.games };
     downloadJSON(data, `benchassist-backup-${new Date().toISOString().slice(0, 10)}.json`);
   }
 
@@ -108,6 +116,7 @@ export function Dashboard() {
     const team: Team = {
       id: generateId(),
       name: newTeamName.trim(),
+      gender: newTeamGender,
       rosters: [],
       gameConfigs: [],
       createdAt: Date.now(),
@@ -116,6 +125,7 @@ export function Dashboard() {
 
     dispatch({ type: 'CREATE_TEAM', payload: team });
     setNewTeamName('');
+    setNewTeamGender('coed');
     setIsCreating(false);
   }
 
@@ -158,6 +168,24 @@ export function Dashboard() {
                   autoFocus
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Gender</Label>
+                <Select
+                  value={newTeamGender}
+                  onValueChange={(v) => setNewTeamGender(v as TeamGender)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={handleCreateTeam} className="w-full" disabled={!newTeamName.trim()}>
                 Create Team
               </Button>
@@ -187,6 +215,7 @@ export function Dashboard() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex gap-4 text-sm text-muted-foreground">
+                      <span>{TEAM_GENDER_LABELS[team.gender]}</span>
                       <span>
                         {team.rosters.length} roster{team.rosters.length !== 1 ? 's' : ''}
                       </span>

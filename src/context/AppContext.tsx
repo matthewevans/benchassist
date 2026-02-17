@@ -1,6 +1,7 @@
 import { createContext, useReducer, useEffect, useRef, type ReactNode } from 'react';
 import type {
   Team,
+  TeamGender,
   Game,
   Roster,
   Player,
@@ -13,7 +14,7 @@ import type {
   GameId,
 } from '@/types/domain.ts';
 import { produce } from 'immer';
-import { loadData, saveData, type StorageData } from '@/storage/localStorage.ts';
+import { loadData, saveData, CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
 
 // --- State ---
 
@@ -34,7 +35,7 @@ export type AppAction =
   | { type: 'IMPORT_DATA'; payload: AppState }
   // Team
   | { type: 'CREATE_TEAM'; payload: Team }
-  | { type: 'UPDATE_TEAM'; payload: { teamId: TeamId; name: string } }
+  | { type: 'UPDATE_TEAM'; payload: { teamId: TeamId; name: string; gender: TeamGender } }
   | { type: 'DELETE_TEAM'; payload: TeamId }
   // Roster
   | { type: 'ADD_ROSTER'; payload: { teamId: TeamId; roster: Roster } }
@@ -80,6 +81,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       case 'UPDATE_TEAM':
         if (draft.teams[action.payload.teamId]) {
           draft.teams[action.payload.teamId].name = action.payload.name;
+          draft.teams[action.payload.teamId].gender = action.payload.gender;
           draft.teams[action.payload.teamId].updatedAt = Date.now();
         }
         break;
@@ -308,7 +310,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearTimeout(saveTimeout.current);
     saveTimeout.current = setTimeout(() => {
       const data: StorageData = {
-        version: 1,
+        version: CURRENT_VERSION,
         teams: state.teams,
         games: state.games,
       };

@@ -1,4 +1,4 @@
-import type { StorageData } from './localStorage.ts';
+import { normalizeImportedData, type StorageData } from './localStorage.ts';
 
 interface ExportFormat {
   app: 'benchassist';
@@ -32,7 +32,7 @@ export function importFromJSON(json: string): StorageData {
   if (data.games && typeof data.games !== 'object') {
     throw new Error('Invalid export: malformed games data');
   }
-  return { ...data, games: data.games ?? {} };
+  return normalizeImportedData({ ...data, games: data.games ?? {} });
 }
 
 export function downloadJSON(data: StorageData, filename?: string): void {

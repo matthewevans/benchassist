@@ -1,7 +1,7 @@
 import type { Team, Game } from '@/types/domain.ts';
 
 const STORAGE_KEY = 'benchassist_data';
-const CURRENT_VERSION = 1;
+export const CURRENT_VERSION = 2;
 
 export interface StorageData {
   version: number;
@@ -9,10 +9,19 @@ export interface StorageData {
   games: Record<string, Game>;
 }
 
+type PreMigrationTeam = Omit<Team, 'gender'> & { gender?: Team['gender'] };
+
 function migrateData(data: StorageData): StorageData {
-  // Add migration steps here as the schema evolves:
-  // if (data.version === 1) { data = migrateV1ToV2(data); }
-  return data;
+  let migrated = data;
+  if (migrated.version === 1) {
+    // v1→v2: Add gender field to all teams (default: 'coed')
+    const teams: Record<string, Team> = {};
+    for (const [id, team] of Object.entries(migrated.teams as Record<string, PreMigrationTeam>)) {
+      teams[id] = { ...team, gender: team.gender ?? 'coed' };
+    }
+    migrated = { ...migrated, version: 2, teams };
+  }
+  return migrated;
 }
 
 function isValidStorageData(data: unknown): data is StorageData {
@@ -53,6 +62,13 @@ export function loadData(): StorageData | null {
   } catch {
     return null;
   }
+}
+
+export function normalizeImportedData(data: StorageData): StorageData {
+  if (data.version < CURRENT_VERSION) {
+    return migrateData(data);
+  }
+  return data;
 }
 
 export function saveData(data: StorageData): void {
