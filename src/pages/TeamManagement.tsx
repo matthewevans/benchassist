@@ -16,6 +16,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { generateId } from '@/utils/id.ts';
+import { getUAge } from '@/utils/age.ts';
 import {
   GAME_CONFIG_TEMPLATES,
   DEFAULT_GAME_RULES,
@@ -125,6 +126,7 @@ export function TeamManagement() {
                   if (e.key === 'Enter') handleRenameTeam();
                   if (e.key === 'Escape') setIsEditing(false);
                 }}
+                aria-label="Team name"
                 autoFocus
                 className="h-8 w-48"
               />
@@ -145,6 +147,9 @@ export function TeamManagement() {
           )}
         </div>
         <div className="flex gap-2">
+          <Link to={`/practice?team=${teamId}`}>
+            <Button variant="outline">Practice</Button>
+          </Link>
           <Link to={`/games/new?teamId=${teamId}`}>
             <Button>New Game</Button>
           </Link>
@@ -173,6 +178,28 @@ export function TeamManagement() {
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">Birth Year:</span>
+        <Input
+          type="number"
+          min={2005}
+          max={new Date().getFullYear()}
+          value={team.birthYear ?? ''}
+          onChange={(e) => {
+            const val = e.target.value ? parseInt(e.target.value, 10) : null;
+            dispatch({
+              type: 'SET_TEAM_BIRTH_YEAR',
+              payload: { teamId: teamId!, birthYear: val },
+            });
+          }}
+          placeholder="e.g., 2017"
+          className="w-24 h-8"
+        />
+        {team.birthYear && (
+          <span className="text-muted-foreground">= U{getUAge(team.birthYear)}</span>
+        )}
       </div>
 
       {/* Rosters */}

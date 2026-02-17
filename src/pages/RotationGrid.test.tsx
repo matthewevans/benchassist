@@ -183,8 +183,9 @@ describe('RotationGrid', () => {
     it('renders game name and team name', () => {
       const { state, game, team } = buildTestState();
       renderGrid(state, game.id);
-      expect(screen.getByText('Test Match')).toBeInTheDocument();
-      expect(screen.getByText(team.name)).toBeInTheDocument();
+      // Game name and team name appear in both breadcrumb and header
+      expect(screen.getAllByText('Test Match').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText(team.name).length).toBeGreaterThanOrEqual(1);
     });
 
     it('shows Start Game and Regenerate buttons', () => {
@@ -404,6 +405,39 @@ describe('RotationGrid', () => {
           type: 'SET_GAME_SCHEDULE',
         }),
       );
+    });
+  });
+
+  describe('live swap interaction', () => {
+    function buildLiveState() {
+      const { state, game, ...rest } = buildTestState();
+      const liveGame: Game = {
+        ...game,
+        status: 'in-progress',
+        startedAt: Date.now(),
+      };
+      const liveState: AppState = {
+        ...state,
+        games: { [game.id]: liveGame },
+      };
+      return { state: liveState, game: liveGame, ...rest };
+    }
+
+    it('allows field-to-field swap on current rotation in live mode', async () => {
+      const { state, game } = buildLiveState();
+      const { dispatch } = renderGrid(state, game.id);
+
+      // R1 (current rotation, index 0): Alice=Field, Bob=Field, Carol=Field, Dave=Field, Eve=Bench
+      // Field badges in DOM order: [0]=Alice/R1, [3]=Bob/R1
+      const fieldBadges = screen.getAllByText('Field');
+      await userEvent.click(fieldBadges[0]); // Alice in R1
+      await userEvent.click(fieldBadges[3]); // Bob in R1
+
+      // Swap dialog should appear — both are field players on current rotation
+      expect(screen.getByText(/Swap Alice and Bob/)).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Just This Rotation' }));
+      expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_GAME_SCHEDULE' }));
     });
   });
 

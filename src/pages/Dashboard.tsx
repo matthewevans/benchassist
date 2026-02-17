@@ -15,15 +15,19 @@ import {
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
 import { generateId } from '@/utils/id.ts';
+import { getUAge } from '@/utils/age.ts';
 import { downloadJSON, readJSONFile } from '@/storage/exportImport.ts';
 import { CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
 import {
   TEAM_GENDER_LABELS,
   TEAM_GENDER_BORDER_COLORS,
   TEAM_GENDER_DOT_COLORS,
+  GAME_STATUS_LABELS,
+  GAME_STATUS_STYLES,
   type Player,
   type Team,
   type TeamGender,
+  type GameStatus,
 } from '@/types/domain.ts';
 import {
   Select,
@@ -112,7 +116,11 @@ export function Dashboard() {
     if (!importData) return;
     dispatch({
       type: 'IMPORT_DATA',
-      payload: { teams: importData.teams, games: importData.games },
+      payload: {
+        teams: importData.teams,
+        games: importData.games,
+        favoriteDrillIds: importData.favoriteDrillIds ?? [],
+      },
     });
     setImportData(null);
   }
@@ -124,6 +132,7 @@ export function Dashboard() {
       id: generateId(),
       name: newTeamName.trim(),
       gender: newTeamGender,
+      birthYear: null,
       rosters: [],
       gameConfigs: [],
       createdAt: Date.now(),
@@ -230,6 +239,7 @@ export function Dashboard() {
                   <CardContent className="space-y-3">
                     <div className="flex gap-4 text-sm text-muted-foreground">
                       <span>{TEAM_GENDER_LABELS[team.gender]}</span>
+                      {team.birthYear && <span>U{getUAge(team.birthYear)}</span>}
                       <span>
                         {team.rosters.length} roster{team.rosters.length !== 1 ? 's' : ''}
                       </span>
@@ -277,8 +287,10 @@ export function Dashboard() {
                         <p className="font-medium">{game.name}</p>
                         <p className="text-sm text-muted-foreground">{team?.name}</p>
                       </div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-secondary">
-                        {game.status}
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full font-medium ${GAME_STATUS_STYLES[game.status as GameStatus]}`}
+                      >
+                        {GAME_STATUS_LABELS[game.status as GameStatus]}
                       </span>
                     </CardContent>
                   </Card>

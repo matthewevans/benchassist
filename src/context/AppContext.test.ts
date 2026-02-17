@@ -18,7 +18,7 @@ function stateWithGame(gameOverrides = {}): AppState {
     currentRotationIndex: 0,
     ...gameOverrides,
   });
-  return { teams: {}, games: { [game.id]: game } };
+  return { teams: {}, games: { [game.id]: game }, favoriteDrillIds: [] };
 }
 
 describe('ADVANCE_ROTATION', () => {
@@ -61,7 +61,7 @@ describe('ADVANCE_ROTATION', () => {
       periodTimerStartedAt: Date.now(),
       periodTimerPausedElapsed: 5000,
     });
-    const state: AppState = { teams: {}, games: { [game.id]: game } };
+    const state: AppState = { teams: {}, games: { [game.id]: game }, favoriteDrillIds: [] };
 
     const next = appReducer(state, { type: 'ADVANCE_ROTATION', payload: game.id });
     expect(next.games[game.id].periodTimerStartedAt).toBeNull();
@@ -75,5 +75,78 @@ describe('RETREAT_ROTATION', () => {
     const gameId = Object.keys(state.games)[0];
     const next = appReducer(state, { type: 'RETREAT_ROTATION', payload: gameId });
     expect(next.games[gameId].currentRotationIndex).toBe(0);
+  });
+});
+
+const emptyState: AppState = {
+  teams: {},
+  games: {},
+  favoriteDrillIds: [],
+};
+
+describe('appReducer - TOGGLE_FAVORITE_DRILL', () => {
+  it('adds a drill to favorites', () => {
+    const result = appReducer(emptyState, {
+      type: 'TOGGLE_FAVORITE_DRILL',
+      payload: 'drill-1',
+    });
+    expect(result.favoriteDrillIds).toEqual(['drill-1']);
+  });
+
+  it('removes a drill from favorites when already present', () => {
+    const state: AppState = { ...emptyState, favoriteDrillIds: ['drill-1', 'drill-2'] };
+    const result = appReducer(state, {
+      type: 'TOGGLE_FAVORITE_DRILL',
+      payload: 'drill-1',
+    });
+    expect(result.favoriteDrillIds).toEqual(['drill-2']);
+  });
+});
+
+describe('appReducer - SET_TEAM_BIRTH_YEAR', () => {
+  it('sets birth year on a team', () => {
+    const state: AppState = {
+      ...emptyState,
+      teams: {
+        t1: {
+          id: 't1',
+          name: 'Test',
+          gender: 'coed',
+          birthYear: null,
+          rosters: [],
+          gameConfigs: [],
+          createdAt: 1000,
+          updatedAt: 1000,
+        },
+      },
+    };
+    const result = appReducer(state, {
+      type: 'SET_TEAM_BIRTH_YEAR',
+      payload: { teamId: 't1', birthYear: 2017 },
+    });
+    expect(result.teams['t1'].birthYear).toBe(2017);
+  });
+
+  it('clears birth year when set to null', () => {
+    const state: AppState = {
+      ...emptyState,
+      teams: {
+        t1: {
+          id: 't1',
+          name: 'Test',
+          gender: 'coed',
+          birthYear: 2017,
+          rosters: [],
+          gameConfigs: [],
+          createdAt: 1000,
+          updatedAt: 1000,
+        },
+      },
+    };
+    const result = appReducer(state, {
+      type: 'SET_TEAM_BIRTH_YEAR',
+      payload: { teamId: 't1', birthYear: null },
+    });
+    expect(result.teams['t1'].birthYear).toBeNull();
   });
 });

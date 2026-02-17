@@ -21,11 +21,13 @@ import { loadData, saveData, CURRENT_VERSION, type StorageData } from '@/storage
 export interface AppState {
   teams: Record<TeamId, Team>;
   games: Record<GameId, Game>;
+  favoriteDrillIds: string[];
 }
 
 const INITIAL_STATE: AppState = {
   teams: {},
   games: {},
+  favoriteDrillIds: [],
 };
 
 // --- Actions ---
@@ -60,7 +62,11 @@ export type AppAction =
   | { type: 'ADD_PLAYER_TO_GAME'; payload: { gameId: GameId; playerId: PlayerId } }
   | { type: 'START_PERIOD_TIMER'; payload: { gameId: GameId; startedAt: number } }
   | { type: 'PAUSE_PERIOD_TIMER'; payload: { gameId: GameId; pausedElapsed: number } }
-  | { type: 'RESET_PERIOD_TIMER'; payload: { gameId: GameId } };
+  | { type: 'RESET_PERIOD_TIMER'; payload: { gameId: GameId } }
+  // Favorites
+  | { type: 'TOGGLE_FAVORITE_DRILL'; payload: string }
+  // Team birth year
+  | { type: 'SET_TEAM_BIRTH_YEAR'; payload: { teamId: TeamId; birthYear: number | null } };
 
 // --- Reducer ---
 
@@ -72,6 +78,7 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       case 'IMPORT_DATA':
         draft.teams = action.payload.teams;
         draft.games = action.payload.games;
+        draft.favoriteDrillIds = action.payload.favoriteDrillIds ?? [];
         break;
 
       case 'CREATE_TEAM':
@@ -278,6 +285,23 @@ export function appReducer(state: AppState, action: AppAction): AppState {
         }
         break;
 
+      case 'TOGGLE_FAVORITE_DRILL': {
+        const idx = draft.favoriteDrillIds.indexOf(action.payload);
+        if (idx >= 0) {
+          draft.favoriteDrillIds.splice(idx, 1);
+        } else {
+          draft.favoriteDrillIds.push(action.payload);
+        }
+        break;
+      }
+
+      case 'SET_TEAM_BIRTH_YEAR':
+        if (draft.teams[action.payload.teamId]) {
+          draft.teams[action.payload.teamId].birthYear = action.payload.birthYear;
+          draft.teams[action.payload.teamId].updatedAt = Date.now();
+        }
+        break;
+
       default: {
         const _exhaustive: never = action;
         return _exhaustive;
@@ -300,7 +324,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, INITIAL_STATE, () => {
     const saved = loadData();
     if (saved) {
-      return { teams: saved.teams, games: saved.games };
+      return {
+        teams: saved.teams,
+        games: saved.games,
+        favoriteDrillIds: saved.favoriteDrillIds ?? [],
+      };
     }
     return INITIAL_STATE;
   });
@@ -313,6 +341,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         version: CURRENT_VERSION,
         teams: state.teams,
         games: state.games,
+        favoriteDrillIds: state.favoriteDrillIds,
       };
       saveData(data);
     }, 500);
