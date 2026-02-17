@@ -114,7 +114,7 @@ export function TeamManagement() {
   return (
     <div className="space-y-6">
       {/* Team header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="text-muted-foreground hover:text-foreground text-sm">
             Teams
