@@ -98,7 +98,7 @@ describe('loadData', () => {
   });
 
   it('loads valid data with empty collections', () => {
-    const data = { version: 2, teams: {}, games: {} };
+    const data = { version: 3, teams: {}, games: {} };
     localStorage.setItem('benchassist_data', JSON.stringify(data));
     expect(loadData()).toEqual(data);
   });
@@ -113,8 +113,102 @@ describe('loadData', () => {
     };
     localStorage.setItem('benchassist_data', JSON.stringify(data));
     const result = loadData();
-    expect(result!.version).toBe(2);
+    expect(result!.version).toBe(3);
     expect(result!.teams.t1.gender).toBe('coed');
+    expect(result!.teams.t1.birthYear).toBeNull();
+  });
+});
+
+describe('localStorage migration v2→v3', () => {
+  it('migrates v2 data to v3 by adding birthYear to teams', () => {
+    const v2Data = {
+      version: 2,
+      teams: {
+        t1: {
+          id: 't1',
+          name: 'Thunder 2017',
+          gender: 'coed',
+          rosters: [],
+          gameConfigs: [
+            {
+              fieldSize: 7,
+              id: 'c1',
+              teamId: 't1',
+              name: '7v7',
+              periods: 2,
+              periodDurationMinutes: 30,
+              rotationsPerPeriod: 2,
+              usePositions: false,
+              formation: [],
+              useGoalie: true,
+              noConsecutiveBench: true,
+              maxConsecutiveBench: 1,
+              enforceMinPlayTime: true,
+              minPlayPercentage: 50,
+              goaliePlayFullPeriod: true,
+              goalieRestAfterPeriod: true,
+              balancePriority: 'balanced',
+              createdAt: 1000,
+              updatedAt: 1000,
+            },
+          ],
+          createdAt: 1000,
+          updatedAt: 1000,
+        },
+      },
+      games: {},
+    };
+    localStorage.setItem('benchassist_data', JSON.stringify(v2Data));
+
+    const result = loadData();
+    expect(result).not.toBeNull();
+    expect(result!.version).toBe(3);
+    expect(result!.teams['t1'].birthYear).toBeNull();
+  });
+
+  it('sets birthYear to null for all teams (no auto-inference)', () => {
+    const v2Data = {
+      version: 2,
+      teams: {
+        t1: {
+          id: 't1',
+          name: 'Team A',
+          gender: 'boys',
+          rosters: [],
+          gameConfigs: [],
+          createdAt: 1000,
+          updatedAt: 1000,
+        },
+      },
+      games: {},
+    };
+    localStorage.setItem('benchassist_data', JSON.stringify(v2Data));
+
+    const result = loadData();
+    expect(result!.teams['t1'].birthYear).toBeNull();
+  });
+
+  it('preserves existing v3 data with birthYear', () => {
+    const v3Data = {
+      version: 3,
+      teams: {
+        t1: {
+          id: 't1',
+          name: 'Team A',
+          gender: 'coed',
+          birthYear: 2017,
+          rosters: [],
+          gameConfigs: [],
+          createdAt: 1000,
+          updatedAt: 1000,
+        },
+      },
+      games: {},
+    };
+    localStorage.setItem('benchassist_data', JSON.stringify(v3Data));
+
+    const result = loadData();
+    expect(result!.teams['t1'].birthYear).toBe(2017);
   });
 });
 
