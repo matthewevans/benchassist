@@ -26,12 +26,3 @@ const INTENSITY_MAP: Record<'low' | 'medium' | 'high', IntensityDisplay> = {
 export function getIntensityDisplay(intensity: 'low' | 'medium' | 'high'): IntensityDisplay {
   return INTENSITY_MAP[intensity];
 }
-
-export const EQUIPMENT_ICON_NAMES: Record<string, string | undefined> = {
-  balls: 'Circle',
-  cones: 'Triangle',
-  pinnies: 'Shirt',
-  goals: 'RectangleHorizontal',
-  gloves: 'Hand',
-  'agility ladder': 'Fence',
-};

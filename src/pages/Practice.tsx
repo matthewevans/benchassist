@@ -601,7 +601,11 @@ function DrillCard({
             <IntensityDots intensity={drill.intensity} />
           </Badge>
           {drill.equipment.length > 0 && (
-            <Badge variant="outline" className="gap-1 text-xs font-normal text-muted-foreground">
+            <Badge
+              variant="outline"
+              className="gap-1 text-xs font-normal text-muted-foreground"
+              aria-label={`Equipment: ${drill.equipment.join(', ')}`}
+            >
               {drill.equipment.map((eq) => {
                 const Icon = EQUIPMENT_ICONS[eq];
                 return Icon ? <Icon key={eq} className="size-3" /> : null;
@@ -678,7 +682,7 @@ function IntensityDots({ intensity }: { intensity: 'low' | 'medium' | 'high' }) 
   return (
     <span className={`inline-flex items-center gap-0.5 ${colorClass}`}>
       {[0, 1, 2].map((i) => (
-        <span key={i} className="text-[8px]">
+        <span key={i} className="text-[8px]" aria-hidden="true">
           {i < filled ? '\u25CF' : '\u25CB'}
         </span>
       ))}

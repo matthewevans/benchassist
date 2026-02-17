@@ -1,4 +1,4 @@
-import { getPhaseColor, getIntensityDisplay, EQUIPMENT_ICON_NAMES } from '@/utils/drillDisplay.ts';
+import { getPhaseColor, getIntensityDisplay } from '@/utils/drillDisplay.ts';
 
 describe('getPhaseColor', () => {
   it('returns amber classes for warm-up', () => {
@@ -38,20 +38,5 @@ describe('getIntensityDisplay', () => {
     expect(result.filled).toBe(3);
     expect(result.label).toBe('High');
     expect(result.colorClass).toContain('red');
-  });
-});
-
-describe('EQUIPMENT_ICON_NAMES', () => {
-  it('returns known icon names for standard equipment', () => {
-    expect(EQUIPMENT_ICON_NAMES['balls']).toBe('Circle');
-    expect(EQUIPMENT_ICON_NAMES['cones']).toBe('Triangle');
-    expect(EQUIPMENT_ICON_NAMES['pinnies']).toBe('Shirt');
-    expect(EQUIPMENT_ICON_NAMES['goals']).toBe('RectangleHorizontal');
-    expect(EQUIPMENT_ICON_NAMES['gloves']).toBe('Hand');
-    expect(EQUIPMENT_ICON_NAMES['agility ladder']).toBe('Fence');
-  });
-
-  it('returns undefined for unknown equipment', () => {
-    expect(EQUIPMENT_ICON_NAMES['unknown-item']).toBeUndefined();
   });
 });
