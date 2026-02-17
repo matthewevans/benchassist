@@ -66,6 +66,8 @@ export function Practice() {
   const [seed, setSeed] = useState(() => Date.now());
   const [expandedDrillIds, setExpandedDrillIds] = useState<Set<string>>(new Set());
   const [swappedDrills, setSwappedDrills] = useState<Map<number, Drill>>(new Map());
+  const [browseSearch, setBrowseSearch] = useState('');
+  const [browseCategory, setBrowseCategory] = useState<DrillCategory | null>(null);
 
   const drillBracket = birthYear ? getDrillBracket(birthYear) : null;
 
@@ -93,8 +95,18 @@ export function Practice() {
 
   const browseDrills = useMemo(() => {
     if (!drillBracket || selectedCategories.length > 0) return null;
-    return DRILLS.filter((d) => d.ageGroups.includes(drillBracket) && d.minPlayers <= playerCount);
-  }, [drillBracket, playerCount, selectedCategories]);
+    return DRILLS.filter((d) => {
+      if (!d.ageGroups.includes(drillBracket)) return false;
+      if (d.minPlayers > playerCount) return false;
+      if (browseCategory && d.category !== browseCategory) return false;
+      if (browseSearch) {
+        const q = browseSearch.toLowerCase();
+        if (!d.name.toLowerCase().includes(q) && !d.description.toLowerCase().includes(q))
+          return false;
+      }
+      return true;
+    });
+  }, [drillBracket, playerCount, selectedCategories, browseSearch, browseCategory]);
 
   // Reset swaps when plan changes
   const planKey = plan ? plan.drills.map((d) => d.id).join(',') : '';
@@ -361,7 +373,39 @@ export function Practice() {
       )}
 
       {groupedBrowseDrills && !plan && (
-        <div className="space-y-6">
+        <div className="space-y-4">
+          {/* Browse filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              placeholder="Search drills..."
+              value={browseSearch}
+              onChange={(e) => setBrowseSearch(e.target.value)}
+              className="w-64"
+            />
+            <div className="flex flex-wrap gap-1.5">
+              <Button
+                size="xs"
+                variant={browseCategory === null ? 'default' : 'outline'}
+                onClick={() => setBrowseCategory(null)}
+              >
+                All
+              </Button>
+              {availableCategories.map((cat) => (
+                <Button
+                  key={cat}
+                  size="xs"
+                  variant={browseCategory === cat ? 'default' : 'outline'}
+                  onClick={() => setBrowseCategory(browseCategory === cat ? null : cat)}
+                >
+                  {DRILL_CATEGORY_LABELS[cat]}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground">{browseDrills!.length} drills</p>
+
+          {/* Grouped drills */}
           {PHASE_ORDER.map((phase) => {
             const drills = groupedBrowseDrills[phase];
             if (drills.length === 0) return null;
