@@ -166,4 +166,39 @@ describe('Practice page', () => {
     renderPractice();
     expect(screen.getByText('Favorites')).toBeInTheDocument();
   });
+
+  it('shows phase-colored borders on drill cards when plan is generated', async () => {
+    const user = userEvent.setup();
+    renderPractice();
+    await user.click(screen.getByRole('button', { name: 'U10' }));
+    const section = getFocusAreasSection();
+    await user.click(within(section).getByRole('button', { name: 'Passing' }));
+    // Cards should be rendered
+    const cards = document.querySelectorAll('[data-slot="card"]');
+    expect(cards.length).toBeGreaterThanOrEqual(3);
+    // At least one card should have a phase border class
+    const hasPhaseClass = Array.from(cards).some(
+      (c) =>
+        c.className.includes('border-l-amber') ||
+        c.className.includes('border-l-blue') ||
+        c.className.includes('border-l-emerald') ||
+        c.className.includes('border-l-slate'),
+    );
+    expect(hasPhaseClass).toBe(true);
+  });
+
+  it('shows intensity badges on drill cards', async () => {
+    const user = userEvent.setup();
+    renderPractice();
+    await user.click(screen.getByRole('button', { name: 'U10' }));
+    const section = getFocusAreasSection();
+    await user.click(within(section).getByRole('button', { name: 'Passing' }));
+    // Should see at least one intensity label (Low, Med, or High)
+    const intensityLabels = [
+      ...screen.queryAllByText('Low'),
+      ...screen.queryAllByText('Med'),
+      ...screen.queryAllByText('High'),
+    ];
+    expect(intensityLabels.length).toBeGreaterThan(0);
+  });
 });
