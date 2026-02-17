@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button.tsx';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Teams' },
+  { path: '/practice', label: 'Practice' },
   { path: '/games', label: 'History' },
 ];
 
