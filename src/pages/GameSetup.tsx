@@ -19,8 +19,9 @@ import { Separator } from '@/components/ui/separator.tsx';
 import { cn } from '@/lib/utils.ts';
 import { generateId } from '@/utils/id.ts';
 import { validateRosterForGame } from '@/utils/validation.ts';
-import { GAME_CONFIG_TEMPLATES, DEFAULT_GAME_RULES } from '@/types/domain.ts';
-import type { Game, GameConfig, GoalieAssignment, PlayerId } from '@/types/domain.ts';
+import { createConfigFromTemplate } from '@/utils/gameConfig.ts';
+import { GAME_CONFIG_TEMPLATES } from '@/types/domain.ts';
+import type { Game, GoalieAssignment, PlayerId } from '@/types/domain.ts';
 
 export function GameSetup() {
   const { state, dispatch } = useAppContext();
@@ -271,25 +272,8 @@ export function GameSetup() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                const config: GameConfig = {
-                                  id: generateId(),
-                                  teamId,
-                                  name: template.name,
-                                  fieldSize: template.fieldSize,
-                                  periods: template.periods,
-                                  periodDurationMinutes: template.periodDurationMinutes,
-                                  rotationsPerPeriod: template.rotationsPerPeriod,
-                                  usePositions: template.usePositions,
-                                  formation: template.formation,
-                                  useGoalie: template.useGoalie,
-                                  ...DEFAULT_GAME_RULES,
-                                  createdAt: Date.now(),
-                                  updatedAt: Date.now(),
-                                };
-                                dispatch({
-                                  type: 'ADD_GAME_CONFIG',
-                                  payload: { teamId, config },
-                                });
+                                const config = createConfigFromTemplate(teamId, template);
+                                dispatch({ type: 'ADD_GAME_CONFIG', payload: { teamId, config } });
                                 setConfigId(config.id);
                               }}
                             >

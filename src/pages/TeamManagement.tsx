@@ -18,9 +18,9 @@ import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
+import { createConfigFromTemplate } from '@/utils/gameConfig.ts';
 import {
   GAME_CONFIG_TEMPLATES,
-  DEFAULT_GAME_RULES,
   TEAM_GENDER_LABELS,
   TEAM_GENDER_DOT_COLORS,
 } from '@/types/domain.ts';
@@ -307,21 +307,7 @@ export function TeamManagement() {
               variant="outline"
               size="sm"
               onClick={() => {
-                const config: GameConfig = {
-                  id: generateId(),
-                  teamId: teamId!,
-                  name: template.name,
-                  fieldSize: template.fieldSize,
-                  periods: template.periods,
-                  periodDurationMinutes: template.periodDurationMinutes,
-                  rotationsPerPeriod: template.rotationsPerPeriod,
-                  usePositions: template.usePositions,
-                  formation: template.formation,
-                  useGoalie: template.useGoalie,
-                  ...DEFAULT_GAME_RULES,
-                  createdAt: Date.now(),
-                  updatedAt: Date.now(),
-                };
+                const config = createConfigFromTemplate(teamId!, template);
                 dispatch({ type: 'ADD_GAME_CONFIG', payload: { teamId: teamId!, config } });
               }}
             >
