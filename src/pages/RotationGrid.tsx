@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { cn } from '@/lib/utils.ts';
 import { Settings2, ChevronRightIcon, RotateCcwIcon } from 'lucide-react';
 import { SUB_POSITION_LABELS, RotationAssignment } from '@/types/domain.ts';
@@ -17,6 +16,8 @@ import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
+import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
+import { PlayerStatsCard } from '@/components/game/PlayerStatsCard.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 
@@ -514,32 +515,7 @@ export function RotationGrid() {
       />
 
       {/* Overall stats — setup mode only */}
-      {!isLive && !isCompleted && (
-        <div className="grid grid-cols-3 gap-3">
-          <Card>
-            <CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold">{schedule.overallStats.avgStrength}</p>
-              <p className="text-xs text-muted-foreground">Avg Strength</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold">
-                {schedule.overallStats.minStrength}-{schedule.overallStats.maxStrength}
-              </p>
-              <p className="text-xs text-muted-foreground">Strength Range</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="py-3 text-center">
-              <p className="text-2xl font-bold">
-                {schedule.overallStats.strengthVariance.toFixed(1)}
-              </p>
-              <p className="text-xs text-muted-foreground">Variance</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {!isLive && !isCompleted && <OverallStatsCards stats={schedule.overallStats} />}
 
       {/* Swap hint — setup mode only, hidden once a swap starts */}
       {!isLive && !isCompleted && !swapSource && (
@@ -838,38 +814,11 @@ export function RotationGrid() {
 
       {/* Player statistics — setup mode only */}
       {!isLive && !isCompleted && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Player Statistics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {sortedPlayers.map((player) => {
-                const stats = schedule.playerStats[player.id];
-                if (!stats) return null;
-                return (
-                  <div key={player.id} className="flex items-center justify-between text-sm">
-                    <span>{player.name}</span>
-                    <div className="flex items-center gap-3 text-muted-foreground">
-                      <span>{stats.rotationsPlayed} played</span>
-                      <span>{stats.rotationsBenched} bench</span>
-                      {stats.rotationsGoalie > 0 && <span>{stats.rotationsGoalie} GK</span>}
-                      <span
-                        className={`font-medium ${
-                          stats.playPercentage < (config?.minPlayPercentage ?? 50)
-                            ? 'text-destructive'
-                            : 'text-foreground'
-                        }`}
-                      >
-                        {stats.playPercentage}%
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <PlayerStatsCard
+          players={sortedPlayers}
+          playerStats={schedule.playerStats}
+          minPlayPercentage={config?.minPlayPercentage ?? 50}
+        />
       )}
 
       {/* Live bottom bar */}
