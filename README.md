@@ -1,6 +1,7 @@
-<p align="center">
-  <img src="public/logo_original_solid_1024.png" alt="BenchAssist" width="200" />
-</p>
+<h1 align="center">
+  <img src="public/logo_original_solid_1024.png" alt="" width="48" valign="middle" />&nbsp;
+  BenchAssist
+</h1>
 
 <p align="center">
   <strong>Fair rotation schedules for youth soccer — no backend, no accounts, just open your browser.</strong>
