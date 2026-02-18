@@ -18,7 +18,14 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      includeAssets: [
+        'favicon.ico',
+        'apple-touch-icon.png',
+        'full_logo_light.png',
+        'full_logo_dark.png',
+        'small_logo.png',
+        'small_logo_light.png',
+      ],
       manifest: {
         name: 'BenchAssist',
         short_name: 'BenchAssist',

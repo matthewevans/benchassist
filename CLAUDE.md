@@ -23,9 +23,11 @@ BenchAssist is a PWA for managing player rotations in team sports (soccer). Coac
 
 ### State Management
 
-All app state lives in `src/context/AppContext.tsx` — a single `useReducer` + Immer pattern. State shape is `{ teams: Record<TeamId, Team>, games: Record<GameId, Game> }`. The reducer handles all mutations via a discriminated union `AppAction` with exhaustive `never` check. State auto-persists to localStorage (key `benchassist_data`, 500ms debounce) via `src/storage/localStorage.ts`.
+All app state lives in `src/context/AppContext.tsx` — a single `useReducer` + Immer pattern. State shape is `{ teams: Record<TeamId, Team>, games: Record<GameId, Game>, favoriteDrillIds: string[] }`. The reducer handles all mutations via a discriminated union `AppAction` with exhaustive `never` check. State auto-persists to localStorage (key `benchassist_data`, 500ms debounce) via `src/storage/localStorage.ts`.
 
 **Adding new state mutations:** Define a new action type in the `AppAction` union, add a case in `appReducer` using `produce()` from Immer for immutable updates, and dispatch from components via `const { state, dispatch } = useAppContext()`.
+
+**Undo system:** `useUndoReducer` (`src/hooks/useUndoReducer.ts`) wraps the app reducer and intercepts destructive actions (`DELETE_TEAM`, `DELETE_ROSTER`, `DELETE_PLAYER`, `DELETE_GAME`, `DELETE_GAME_CONFIG`, `IMPORT_DATA`, `MERGE_DATA`). It uses Immer's `produceWithPatches` to capture inverse patches, storing them on a ref-based stack (max 30 entries). `useUndoToast` (`src/hooks/useUndoToast.ts`) is the component-facing API — wraps dispatch and shows a sonner toast with an 8-second "Undo" button after any undoable action. `enablePatches()` is called at module load in `AppContext.tsx`.
 
 ### Domain Model (`src/types/domain.ts`)
 
@@ -62,9 +64,28 @@ All routes are nested inside `AppShell` (layout with navigation):
 - `/teams/:teamId` — Team management (rosters, configs)
 - `/teams/:teamId/rosters/:rosterId` — Roster editor (bulk import, positions)
 - `/games/new` — Game setup (config, roster, absent players, goalie assignments)
-- `/games/:gameId/rotations` — Rotation grid (view/edit schedule, swap players)
-- `/games/:gameId/live` — Game day (live timer, substitutions, player removal/addition)
+- `/games/:gameId/rotations` — Rotation grid + live game (single page handles both setup and live modes based on `game.status`)
+- `/games/:gameId/live` — Redirects to `../rotations`
 - `/games` — Game history
+- `/practice` — Practice planner (drill library, age-based plans)
+
+### Practice Planner
+
+Drill library in `src/data/drills.ts` with age-bracket matching via `getDrillBracket(birthYear)` (U6–U18). `generatePracticePlan()` (`src/utils/practiceGenerator.ts`) creates seeded plans based on selected categories, player count, and target duration. `usePracticePlan` hook manages all state, persisting inputs to `sessionStorage` (key `practice_plan_state`, 300ms debounce). Users can swap individual drills and favorite them (`TOGGLE_FAVORITE_DRILL` action, stored in `favoriteDrillIds`). Drill diagrams rendered via `DrillDiagram.tsx` with a parser in `src/utils/diagramParser.ts`. Accepts `?team=<teamId>` query param to pre-fill birth year and player count.
+
+### Live Game
+
+Game status lifecycle: `setup` → `in-progress` → `completed`. The rotation grid page (`RotationGrid.tsx`) handles both modes — live mode shows a focus view (side-by-side Now/Next rotation cards) or full grid, toggled by the user.
+
+**Period timer** (`usePeriodTimer`): Timer state (`periodTimerStartedAt`, `periodTimerPausedElapsed`) is stored on the `Game` domain object, surviving page refresh. Audio alert (Web Audio API, 800Hz sine) fires when elapsed crosses a substitution marker. Timer auto-resets on period boundary via `ADVANCE_ROTATION`.
+
+**Mid-game changes:** Removing or adding a player dispatches an action then triggers an immediate re-solve from `currentRotationIndex` with existing rotations preserved. Guard prevents removal below `fieldSize` players.
+
+### Export/Import & Schema Migration
+
+Export (`src/storage/exportImport.ts`): `filterStorageData()` strips data by per-team selections (rosters/configs/history), then `downloadJSON()` wraps it with `{ app: 'benchassist', version, exportedAt, data }`. Import validates the `app` field and runs `normalizeImportedData()` through the same migration pipeline as `loadData()`. Two import modes: **Import Selected** dispatches `MERGE_DATA` (merges by id, deduplicates), **Replace All** dispatches `IMPORT_DATA` (full overwrite). Both are undoable.
+
+**Schema versioning** (`src/storage/localStorage.ts`): `CURRENT_VERSION = 3`. `migrateData()` applies incremental steps (v1→v2: adds `gender: 'coed'`; v2→v3: adds `birthYear: null`). Both `loadData()` and import run migrations.
 
 ### Key Utilities (`src/utils/`)
 
@@ -72,6 +93,8 @@ All routes are nested inside `AppShell` (layout with navigation):
 - **validation.ts** — Schedule validation (field size, goalie counts, consecutive bench, min play time)
 - **positions.ts** — Sub-position mapping, auto-assign to formation slots, display formatting
 - **parsePlayerImport.ts** — Parse bulk player imports (format: `Name: Skill`)
+- **practiceGenerator.ts** — Seeded practice plan generation from drill library
+- **diagramParser.ts** — Parses drill diagram DSL into renderable SVG elements
 
 ### Testing
 
@@ -85,3 +108,5 @@ Tests use Vitest with `globals: true` (no need to import `describe`/`it`/`expect
 - **Forms:** Manual `useState` per field, no form library. Validation in save handlers.
 - **TypeScript:** Strict mode with `noUnusedLocals` and `noUnusedParameters`. ESLint FlatConfig with React Hooks + React Refresh rules.
 - **PWA:** vite-plugin-pwa with `registerType: 'autoUpdate'`, standalone display, green theme.
+- **Build/deploy:** Base URL is `/benchassist/` (set in `vite.config.ts`). `__BUILD_HASH__` global injected from `git rev-parse --short HEAD` at build time (typed in `src/globals.d.ts`).
+- **TypeScript imports:** `allowImportingTsExtensions: true` in tsconfig — imports use `.ts`/`.tsx` extensions. `verbatimModuleSyntax: true` enforces `import type` for type-only imports. Test files are excluded from `tsconfig.app.json`.
