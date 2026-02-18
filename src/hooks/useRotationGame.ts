@@ -337,6 +337,8 @@ export function useRotationGame(gameId: string | undefined) {
     setRemovingPlayerId,
     viewMode,
     setViewMode,
+    // Context
+    dispatch,
     // Handlers
     handleCellClick,
     handleSwapThisRotation,

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 import { Settings2, RotateCcwIcon } from 'lucide-react';
@@ -61,7 +60,6 @@ function RotationPips({
 
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
-  const { dispatch } = useAppContext();
   const g = useRotationGame(gameId);
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -70,7 +68,7 @@ export function RotationGrid() {
     g.isLive ? g.game : undefined,
     g.config,
     g.currentRotation,
-    dispatch,
+    g.dispatch,
   );
 
   const { collapsedPeriods, togglePeriod } = usePeriodCollapse({
