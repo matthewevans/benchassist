@@ -16,8 +16,9 @@ import { Separator } from '@/components/ui/separator.tsx';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
-import { downloadJSON, readJSONFile } from '@/storage/exportImport.ts';
-import { CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
+import { readJSONFile } from '@/storage/exportImport.ts';
+import type { StorageData } from '@/storage/localStorage.ts';
+import { ExportDialog } from '@/components/ExportDialog.tsx';
 import {
   TEAM_GENDER_LABELS,
   TEAM_GENDER_BORDER_COLORS,
@@ -90,6 +91,7 @@ export function Dashboard() {
   const { state, dispatch } = useAppContext();
   const dispatchWithUndo = useUndoToast();
   const [isCreating, setIsCreating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamGender, setNewTeamGender] = useState<TeamGender>('coed');
 
@@ -101,11 +103,6 @@ export function Dashboard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importData, setImportData] = useState<StorageData | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
-
-  function handleExport() {
-    const data: StorageData = { version: CURRENT_VERSION, teams: state.teams, games: state.games };
-    downloadJSON(data, `benchassist-backup-${new Date().toISOString().slice(0, 10)}.json`);
-  }
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -316,7 +313,7 @@ export function Dashboard() {
       <div className="space-y-2">
         <h2 className="text-lg font-semibold">Data</h2>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={() => setIsExporting(true)}>
             Export Backup
           </Button>
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
@@ -371,6 +368,13 @@ export function Dashboard() {
           </DialogContent>
         </Dialog>
       )}
+
+      <ExportDialog
+        open={isExporting}
+        onOpenChange={setIsExporting}
+        teams={state.teams}
+        games={state.games}
+      />
     </div>
   );
 }
