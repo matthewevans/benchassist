@@ -13,8 +13,8 @@ import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent } from '@/components/ui/card.tsx';
 import { DrillDiagram } from '@/components/DrillDiagram.tsx';
-import { getPhaseColor, getIntensityDisplay } from '@/utils/drillDisplay.ts';
-import { DRILL_CATEGORY_LABELS } from '@/types/drill.ts';
+import { getPhaseColor, getIntensityDisplay, getPhaseBadgeColor } from '@/utils/drillDisplay.ts';
+import { DRILL_CATEGORY_LABELS, DRILL_PHASE_LABELS } from '@/types/drill.ts';
 import type { Drill, DrillCategory } from '@/types/drill.ts';
 
 const CATEGORY_COLORS: Record<DrillCategory, string> = {
@@ -39,6 +39,15 @@ const EQUIPMENT_ICONS: Record<string, ComponentType<{ className?: string }> | un
   'agility ladder': Fence,
 };
 
+const EQUIPMENT_LABELS: Record<string, string> = {
+  balls: 'Balls',
+  cones: 'Cones',
+  pinnies: 'Pinnies',
+  goals: 'Goals',
+  gloves: 'Gloves',
+  'agility ladder': 'Ladder',
+};
+
 interface DrillCardProps {
   drill: Drill;
   index?: number;
@@ -61,7 +70,7 @@ export function DrillCard({
   showSwap,
 }: DrillCardProps) {
   const hasExpandContent =
-    drill.setup ||
+    drill.diagram ||
     (drill.coachingTips && drill.coachingTips.length > 1) ||
     (drill.variations && drill.variations.length > 0);
 
@@ -69,32 +78,30 @@ export function DrillCard({
     <Card className={`gap-0 py-0 border-l-4 ${getPhaseColor(drill.phase)}`}>
       <CardContent className="p-4 space-y-2">
         {/* Header row */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            {index !== undefined && (
-              <span className="text-sm font-semibold text-muted-foreground shrink-0">{index}.</span>
-            )}
-            <span className="font-semibold">{drill.name}</span>
-            <button
-              onClick={onToggleFavorite}
-              className="shrink-0 hover:opacity-80 transition-opacity"
-              aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              <StarIcon filled={isFavorite} className="size-4" />
-            </button>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORY_COLORS[drill.category]}`}
-            >
-              {DRILL_CATEGORY_LABELS[drill.category]}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {showSwap && onSwap && (
-              <Button size="icon-xs" variant="ghost" onClick={onSwap} aria-label="Swap drill">
-                <SwapIcon className="size-3.5" />
-              </Button>
-            )}
-          </div>
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          {index !== undefined && (
+            <span className="text-sm font-semibold text-muted-foreground shrink-0">{index}.</span>
+          )}
+          <span className="font-semibold">{drill.name}</span>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="-my-1"
+            onClick={onToggleFavorite}
+            aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <StarIcon filled={isFavorite} className="size-4" />
+          </Button>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-medium ${getPhaseBadgeColor(drill.phase)}`}
+          >
+            {DRILL_PHASE_LABELS[drill.phase]}
+          </span>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-medium ${CATEGORY_COLORS[drill.category]}`}
+          >
+            {DRILL_CATEGORY_LABELS[drill.category]}
+          </span>
         </div>
 
         {/* Metadata pills */}
@@ -110,18 +117,16 @@ export function DrillCard({
           <Badge variant="outline" className="gap-1 text-xs font-normal">
             <IntensityDots intensity={drill.intensity} />
           </Badge>
-          {drill.equipment.length > 0 && (
-            <Badge
-              variant="outline"
-              className="gap-1 text-xs font-normal text-muted-foreground"
-              aria-label={`Equipment: ${drill.equipment.join(', ')}`}
-            >
-              {drill.equipment.map((eq) => {
-                const Icon = EQUIPMENT_ICONS[eq];
-                return Icon ? <Icon key={eq} className="size-3" /> : null;
-              })}
-            </Badge>
-          )}
+          {drill.equipment.map((eq) => {
+            const Icon = EQUIPMENT_ICONS[eq];
+            const label = EQUIPMENT_LABELS[eq] ?? eq;
+            return (
+              <Badge key={eq} variant="outline" className="gap-1 text-xs font-normal">
+                {Icon && <Icon className="size-3" />}
+                {label}
+              </Badge>
+            );
+          })}
         </div>
 
         {/* Description */}
@@ -135,6 +140,14 @@ export function DrillCard({
           )}
         </div>
 
+        {/* Setup (always visible) */}
+        {drill.setup && (
+          <div className="text-sm">
+            <span className="font-medium">Setup: </span>
+            <span className="text-muted-foreground">{drill.setup}</span>
+          </div>
+        )}
+
         {/* First coaching tip (always visible) */}
         {drill.coachingTips.length > 0 && (
           <div className="text-sm">
@@ -146,11 +159,8 @@ export function DrillCard({
         {/* Expand section */}
         {isExpanded && hasExpandContent && (
           <div className="space-y-3 pt-2 border-t">
-            {drill.setup && (
-              <div className="text-sm">
-                <span className="font-medium">Setup: </span>
-                <span className="text-muted-foreground">{drill.setup}</span>
-              </div>
+            {drill.diagram && (
+              <DrillDiagram diagram={drill.diagram} className="w-full h-48 rounded-md sm:hidden" />
             )}
 
             {drill.coachingTips.length > 1 && (
@@ -177,14 +187,26 @@ export function DrillCard({
           </div>
         )}
 
-        {/* Expand toggle */}
-        {hasExpandContent && (
-          <button
-            onClick={onToggleExpand}
-            className="text-xs font-medium text-primary hover:underline"
-          >
-            {isExpanded ? 'Less' : 'More'}
-          </button>
+        {/* Action bar */}
+        {(hasExpandContent || (showSwap && onSwap)) && (
+          <div className="flex items-center gap-1">
+            {showSwap && onSwap && (
+              <Button size="icon-sm" variant="ghost" onClick={onSwap} aria-label="Swap drill">
+                <SwapIcon className="size-4" />
+              </Button>
+            )}
+            <div className="flex-1" />
+            {hasExpandContent && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-2 text-xs font-medium text-primary"
+                onClick={onToggleExpand}
+              >
+                {isExpanded ? 'Less' : 'More'}
+              </Button>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

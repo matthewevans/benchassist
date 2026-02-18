@@ -26,3 +26,14 @@ const INTENSITY_MAP: Record<'low' | 'medium' | 'high', IntensityDisplay> = {
 export function getIntensityDisplay(intensity: 'low' | 'medium' | 'high'): IntensityDisplay {
   return INTENSITY_MAP[intensity];
 }
+
+const PHASE_BADGE_COLORS: Record<DrillPhase, string> = {
+  'warm-up': 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200',
+  main: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  scrimmage: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+  'cool-down': 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200',
+};
+
+export function getPhaseBadgeColor(phase: DrillPhase): string {
+  return PHASE_BADGE_COLORS[phase];
+}

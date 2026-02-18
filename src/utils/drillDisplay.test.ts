@@ -1,4 +1,4 @@
-import { getPhaseColor, getIntensityDisplay } from '@/utils/drillDisplay.ts';
+import { getPhaseColor, getIntensityDisplay, getPhaseBadgeColor } from '@/utils/drillDisplay.ts';
 
 describe('getPhaseColor', () => {
   it('returns amber classes for warm-up', () => {
@@ -15,6 +15,25 @@ describe('getPhaseColor', () => {
 
   it('returns slate classes for cool-down', () => {
     expect(getPhaseColor('cool-down')).toBe('border-l-slate-400');
+  });
+});
+
+describe('getPhaseBadgeColor', () => {
+  it('returns amber bg classes for warm-up', () => {
+    expect(getPhaseBadgeColor('warm-up')).toContain('bg-amber-100');
+    expect(getPhaseBadgeColor('warm-up')).toContain('text-amber-800');
+  });
+
+  it('returns blue bg classes for main', () => {
+    expect(getPhaseBadgeColor('main')).toContain('bg-blue-100');
+  });
+
+  it('returns emerald bg classes for scrimmage', () => {
+    expect(getPhaseBadgeColor('scrimmage')).toContain('bg-emerald-100');
+  });
+
+  it('returns slate bg classes for cool-down', () => {
+    expect(getPhaseBadgeColor('cool-down')).toContain('bg-slate-100');
   });
 });
 

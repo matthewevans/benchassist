@@ -129,8 +129,8 @@ describe('Practice page', () => {
     renderPractice();
     await user.click(screen.getByRole('button', { name: 'U12' }));
     // Browse mode shows phase headings
-    expect(screen.getByText('Warm-up')).toBeInTheDocument();
-    expect(screen.getByText('Main')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Warm-up' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Main' })).toBeInTheDocument();
   });
 
   it('removes empty state card after entering a birth year', async () => {
