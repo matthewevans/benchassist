@@ -14,7 +14,7 @@ interface PeriodGroup {
 interface RotationTableProps {
   periodGroups: PeriodGroup[];
   allDisplayPlayers: Player[];
-  playerStats: Record<string, PlayerStats>;
+  playerStats: Record<PlayerId, PlayerStats>;
   config: GameConfig;
   gameRemovedPlayerIds: PlayerId[];
   isLive: boolean;
@@ -226,7 +226,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                                 role: 'button' as const,
                                 tabIndex: 0,
                                 'aria-label': `${player.name}: ${display.label}, rotation ${rotation.index + 1}`,
-                                onKeyDown: (e: React.KeyboardEvent) => {
+                                onKeyDown: (e) => {
                                   if (e.key === 'Enter' || e.key === ' ') {
                                     e.preventDefault();
                                     onCellClick(rotation.index, player.id);
