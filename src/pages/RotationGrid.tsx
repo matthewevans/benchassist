@@ -3,15 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import { cn } from '@/lib/utils.ts';
 import { Settings2, ChevronRightIcon, RotateCcwIcon } from 'lucide-react';
 import { SUB_POSITION_LABELS, RotationAssignment } from '@/types/domain.ts';
@@ -25,8 +16,7 @@ import { LiveBottomBar } from '@/components/game/LiveBottomBar.tsx';
 import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
-import { AttendanceList } from '@/components/game/AttendanceList.tsx';
-import { GoalieAssignmentSelector } from '@/components/game/GoalieAssignmentSelector.tsx';
+import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 
@@ -88,8 +78,6 @@ export function RotationGrid() {
   const solverResult = solver.result;
   const solverReset = solver.reset;
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [editAbsent, setEditAbsent] = useState<Set<PlayerId>>(new Set());
-  const [editGoalies, setEditGoalies] = useState<GoalieAssignment[]>([]);
 
   const game = gameId ? state.games[gameId] : undefined;
   const team = game ? state.teams[game.teamId] : undefined;
@@ -418,45 +406,24 @@ export function RotationGrid() {
     }
   }
 
-  function handleOpenSettings() {
-    if (!game) return;
-    setEditAbsent(new Set(game.absentPlayerIds));
-    setEditGoalies([...game.goalieAssignments]);
-    setSettingsOpen(true);
-  }
-
-  function handleToggleAbsent(playerId: PlayerId) {
-    setEditAbsent((prev) => {
-      const next = new Set(prev);
-      if (next.has(playerId)) next.delete(playerId);
-      else next.add(playerId);
-      return next;
-    });
-  }
-
-  function handleGoalieChange(periodIndex: number, playerId: string) {
-    setEditGoalies((prev) => {
-      const filtered = prev.filter((a) => a.periodIndex !== periodIndex);
-      return [...filtered, { periodIndex, playerId: playerId as PlayerId | 'auto' }];
-    });
-  }
-
-  function handleRegenerateWithSettings() {
+  function handleRegenerateWithSettings(
+    absentIds: PlayerId[],
+    goalieAssignments: GoalieAssignment[],
+  ) {
     if (!roster || !config || !game) return;
     const updatedGame: Game = {
       ...game,
-      absentPlayerIds: [...editAbsent],
-      goalieAssignments: config.useGoalie ? editGoalies : [],
+      absentPlayerIds: absentIds,
+      goalieAssignments,
     };
     dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
     solver.solve({
       players: roster.players,
       config,
-      absentPlayerIds: [...editAbsent],
-      goalieAssignments: config.useGoalie ? editGoalies : [],
+      absentPlayerIds: absentIds,
+      goalieAssignments,
       manualOverrides: game.manualOverrides,
     });
-    setSettingsOpen(false);
   }
 
   const sortedPlayers = [...activePlayers].sort((a, b) => b.skillRanking - a.skillRanking);
@@ -518,7 +485,7 @@ export function RotationGrid() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleOpenSettings}
+              onClick={() => setSettingsOpen(true)}
               title="Edit game settings"
             >
               <Settings2 className="h-4 w-4" />
@@ -956,52 +923,16 @@ export function RotationGrid() {
       />
 
       {/* Settings Sheet — only in setup mode */}
-      <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Game Settings</SheetTitle>
-            <SheetDescription>
-              Edit attendance and goalie assignments, then regenerate.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="space-y-6 px-4">
-            {/* Absent players */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                Attendance ({roster.players.filter((p) => !editAbsent.has(p.id)).length} /{' '}
-                {roster.players.length})
-              </Label>
-              <AttendanceList
-                players={roster.players}
-                absentIds={editAbsent}
-                onToggle={handleToggleAbsent}
-              />
-            </div>
-
-            {/* Goalie assignments */}
-            {config?.useGoalie && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Goalie Assignment</Label>
-                <GoalieAssignmentSelector
-                  periods={config.periods}
-                  goalieAssignments={editGoalies}
-                  eligiblePlayers={roster.players.filter(
-                    (p) => p.canPlayGoalie && !editAbsent.has(p.id),
-                  )}
-                  onChange={handleGoalieChange}
-                />
-              </div>
-            )}
-          </div>
-
-          <SheetFooter>
-            <Button className="w-full" onClick={handleRegenerateWithSettings}>
-              Regenerate with Changes
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      <GameSettingsSheet
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        players={roster.players}
+        initialAbsentIds={game.absentPlayerIds}
+        initialGoalieAssignments={game.goalieAssignments}
+        periods={config?.periods ?? 2}
+        useGoalie={config?.useGoalie ?? false}
+        onRegenerate={handleRegenerateWithSettings}
+      />
     </div>
   );
 }
