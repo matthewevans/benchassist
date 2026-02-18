@@ -149,7 +149,7 @@ export function useRotationGame(gameId: string | undefined) {
   }
 
   function handleSwapThisRotation() {
-    if (!pendingSwap || !schedule) return;
+    if (!pendingSwap || !schedule || !gameId) return;
     const newSchedule = previewSwap(
       schedule,
       pendingSwap.rotationIndex,
@@ -157,12 +157,12 @@ export function useRotationGame(gameId: string | undefined) {
       pendingSwap.playerBId,
       activePlayers,
     );
-    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId: game!.id, schedule: newSchedule } });
+    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: newSchedule } });
     setPendingSwap(null);
   }
 
   function handleSwapAllRemaining() {
-    if (!pendingSwap || !schedule) return;
+    if (!pendingSwap || !schedule || !gameId) return;
     const newSchedule = previewSwapRange(
       schedule,
       pendingSwap.rotationIndex,
@@ -170,7 +170,7 @@ export function useRotationGame(gameId: string | undefined) {
       pendingSwap.playerBId,
       activePlayers,
     );
-    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId: game!.id, schedule: newSchedule } });
+    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: newSchedule } });
     setPendingSwap(null);
   }
 
@@ -281,7 +281,10 @@ export function useRotationGame(gameId: string | undefined) {
   }
 
   // --- Computed display values ---
-  const removedPlayers = roster?.players.filter((p) => game?.removedPlayerIds.includes(p.id)) ?? [];
+  const removedPlayers = useMemo(
+    () => roster?.players.filter((p) => game?.removedPlayerIds.includes(p.id)) ?? [],
+    [roster, game?.removedPlayerIds],
+  );
   const isLastRotation = currentRotationIndex >= (schedule?.rotations.length ?? 0) - 1;
   const manyRotations = (schedule?.rotations.length ?? 0) > 4;
   const isCrossingPeriod = nextRotation ? nextRotation.periodIndex !== currentPeriodIndex : false;
@@ -289,11 +292,17 @@ export function useRotationGame(gameId: string | undefined) {
     ? (playerMap.get(removingPlayerId) ?? roster?.players.find((p) => p.id === removingPlayerId))
     : undefined;
 
-  const sortedPlayers = [...activePlayers].sort((a, b) => b.skillRanking - a.skillRanking);
-  const allDisplayPlayers = [
-    ...sortedPlayers,
-    ...removedPlayers.sort((a, b) => b.skillRanking - a.skillRanking),
-  ];
+  const sortedPlayers = useMemo(
+    () => [...activePlayers].sort((a, b) => b.skillRanking - a.skillRanking),
+    [activePlayers],
+  );
+  const allDisplayPlayers = useMemo(
+    () => [
+      ...sortedPlayers,
+      ...[...removedPlayers].sort((a, b) => b.skillRanking - a.skillRanking),
+    ],
+    [sortedPlayers, removedPlayers],
+  );
 
   return {
     // Core data
