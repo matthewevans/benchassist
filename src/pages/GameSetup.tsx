@@ -413,7 +413,7 @@ export function GameSetup() {
       {/* Solver status */}
       {solver.isRunning && (
         <Card>
-          <CardContent className="py-4">
+          <CardContent className="py-3">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>{solver.message}</span>

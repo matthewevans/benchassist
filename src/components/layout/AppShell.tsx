@@ -76,7 +76,7 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <footer className="py-2 text-center text-[10px] text-muted-foreground/40">
+      <footer className="py-2 text-center text-xs text-muted-foreground/40">
         build {__BUILD_HASH__}
       </footer>
     </div>

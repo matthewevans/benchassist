@@ -514,7 +514,7 @@ export function Practice() {
       {/* Empty state: no bracket selected */}
       {!drillBracket && (
         <Card>
-          <CardContent className="pt-6 text-center text-muted-foreground">
+          <CardContent className="py-6 text-center text-muted-foreground">
             <p className="text-lg font-medium">Select a birth year to get started</p>
             <p className="text-sm mt-1">
               Choose the team birth year above to browse drills and generate practice plans.
@@ -563,7 +563,7 @@ function DrillCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             {index !== undefined && (
-              <span className="text-sm font-bold text-muted-foreground shrink-0">{index}.</span>
+              <span className="text-sm font-semibold text-muted-foreground shrink-0">{index}.</span>
             )}
             <span className="font-semibold">{drill.name}</span>
             <button
@@ -707,7 +707,7 @@ function StarIcon({ filled, className }: { filled: boolean; className?: string }
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="currentColor"
-        className={`text-yellow-500 ${className ?? ''}`}
+        className={`text-yellow-500 dark:text-yellow-400 ${className ?? ''}`}
       >
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
       </svg>

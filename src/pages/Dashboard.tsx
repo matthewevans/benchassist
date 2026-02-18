@@ -35,16 +35,16 @@ import {
 } from '@/components/ui/select.tsx';
 
 const AVATAR_COLORS = [
-  'bg-red-200 text-red-800',
-  'bg-blue-200 text-blue-800',
-  'bg-green-200 text-green-800',
-  'bg-yellow-200 text-yellow-800',
-  'bg-purple-200 text-purple-800',
-  'bg-pink-200 text-pink-800',
-  'bg-indigo-200 text-indigo-800',
-  'bg-orange-200 text-orange-800',
-  'bg-teal-200 text-teal-800',
-  'bg-cyan-200 text-cyan-800',
+  'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200',
+  'bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  'bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200',
+  'bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+  'bg-purple-200 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  'bg-pink-200 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+  'bg-indigo-200 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
+  'bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  'bg-teal-200 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+  'bg-cyan-200 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
 ];
 
 function getInitials(name: string): string {
@@ -272,7 +272,7 @@ export function Dashboard() {
                   className={`hover:bg-accent/50 transition-colors cursor-pointer border-l-4 ${TEAM_GENDER_BORDER_COLORS[team.gender]}`}
                 >
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">{team.name}</CardTitle>
+                    <CardTitle>{team.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex gap-4 text-sm text-muted-foreground">

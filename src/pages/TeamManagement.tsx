@@ -53,7 +53,7 @@ export function TeamManagement() {
   if (!team) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Team not found</p>
+        <p className="text-sm text-muted-foreground">Team not found</p>
         <Link to="/" className="text-primary underline mt-2 inline-block">
           Back to teams
         </Link>
@@ -152,10 +152,12 @@ export function TeamManagement() {
         </div>
         <div className="flex gap-2">
           <Link to={`/practice?team=${teamId}`}>
-            <Button variant="outline">Practice</Button>
+            <Button variant="outline" size="sm">
+              Practice
+            </Button>
           </Link>
           <Link to={`/games/new?teamId=${teamId}`}>
-            <Button>New Game</Button>
+            <Button size="sm">New Game</Button>
           </Link>
           <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteTeam(true)}>
             Delete

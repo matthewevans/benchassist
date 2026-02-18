@@ -244,7 +244,7 @@ export function RotationGrid() {
   if (!game || !schedule || !roster) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Game or schedule not found</p>
+        <p className="text-sm text-muted-foreground">Game or schedule not found</p>
         <Link to="/" className="text-primary underline mt-2 inline-block">
           Back to teams
         </Link>
@@ -473,7 +473,7 @@ export function RotationGrid() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
         <Link to="/" className="text-muted-foreground hover:text-foreground">
@@ -490,7 +490,7 @@ export function RotationGrid() {
       {/* Header — adapts to game state */}
       {isCompleted ? (
         <div>
-          <h1 className="text-xl font-bold">{game.name}</h1>
+          <h1 className="text-2xl font-bold">{game.name}</h1>
           <p className="text-sm text-muted-foreground">Completed</p>
         </div>
       ) : isLive ? (
@@ -519,7 +519,7 @@ export function RotationGrid() {
         </div>
       ) : (
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">{game.name}</h1>
+          <h1 className="text-2xl font-bold">{game.name}</h1>
           <div className="flex gap-2">
             <Button
               variant="ghost"
@@ -679,7 +679,7 @@ export function RotationGrid() {
                         {(isCurrent || isNext) && (
                           <span
                             className={cn(
-                              'text-[10px] font-semibold uppercase tracking-wide',
+                              'text-xs font-semibold uppercase tracking-wide',
                               isCurrent && 'text-primary',
                               isNext && 'text-muted-foreground',
                             )}
@@ -731,7 +731,9 @@ export function RotationGrid() {
                           onRemove={() => setRemovingPlayerId(player.id)}
                           onAddBack={() => handleAddPlayerBack(player.id)}
                         >
-                          <button className="text-left">{playerNameEl}</button>
+                          <button className="text-left hover:text-primary transition-colors">
+                            {playerNameEl}
+                          </button>
                         </PlayerPopover>
                       ) : (
                         playerNameEl
@@ -979,7 +981,7 @@ export function RotationGrid() {
 
       {/* Settings Sheet — only in setup mode */}
       <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
+        <SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Game Settings</SheetTitle>
             <SheetDescription>

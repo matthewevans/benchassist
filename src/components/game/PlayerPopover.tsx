@@ -35,11 +35,11 @@ export function PlayerPopover({
             </div>
           )}
           {isRemoved ? (
-            <Button variant="outline" size="sm" className="w-full text-xs" onClick={onAddBack}>
+            <Button variant="outline" size="sm" className="w-full" onClick={onAddBack}>
               Add back
             </Button>
           ) : (
-            <Button variant="destructive" size="sm" className="w-full text-xs" onClick={onRemove}>
+            <Button variant="destructive" size="sm" className="w-full" onClick={onRemove}>
               Remove from game
             </Button>
           )}

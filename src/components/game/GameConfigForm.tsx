@@ -166,12 +166,15 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
 
       <Collapsible open={rulesOpen} onOpenChange={setRulesOpen}>
         <CollapsibleTrigger asChild>
-          <button className="flex items-center justify-between w-full py-2 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground">
+          <Button
+            variant="ghost"
+            className="flex items-center justify-between w-full px-0 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
             Rules & Balance
             <ChevronDownIcon
               className={cn('h-4 w-4 transition-transform', rulesOpen && 'rotate-180')}
             />
-          </button>
+          </Button>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div className="space-y-3 pt-1">

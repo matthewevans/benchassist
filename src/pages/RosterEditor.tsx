@@ -82,7 +82,7 @@ export function RosterEditor() {
   if (!team || !roster) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Roster not found</p>
+        <p className="text-sm text-muted-foreground">Roster not found</p>
         <Link to="/" className="text-primary underline mt-2 inline-block">
           Back to teams
         </Link>
@@ -328,7 +328,7 @@ export function RosterEditor() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 px-2 text-xs text-destructive shrink-0"
+                          className="text-destructive shrink-0"
                           onClick={() => removeImportRow(i)}
                           aria-label="Remove player"
                         >
