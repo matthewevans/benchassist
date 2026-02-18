@@ -96,7 +96,6 @@ export function PlayerImportDialog({
       open={open}
       onOpenChange={(o) => {
         if (!o) handleClose();
-        else setOpen(true);
       }}
     >
       <DialogTrigger asChild>{trigger}</DialogTrigger>
