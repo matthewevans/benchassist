@@ -45,20 +45,30 @@ export function usePracticePlan(options: {
   initialPlayerCount: number;
   favoriteDrillIds: string[];
 }) {
-  const saved = loadPlanState();
-
-  const [birthYear, setBirthYear] = useState<number | null>(
-    options.initialBirthYear ?? saved.birthYear ?? null,
-  );
-  const [playerCount, setPlayerCount] = useState(
-    options.initialBirthYear ? options.initialPlayerCount : (saved.playerCount ?? 10),
-  );
-  const [selectedCategories, setSelectedCategories] = useState<DrillCategory[]>(
-    saved.selectedCategories ?? [],
-  );
-  const [targetDuration, setTargetDuration] = useState(saved.targetDuration ?? 60);
-  const [favoritesOnly, setFavoritesOnly] = useState(saved.favoritesOnly ?? false);
-  const [seed, setSeed] = useState(() => saved.seed ?? Date.now());
+  const [birthYear, setBirthYear] = useState<number | null>(() => {
+    const saved = loadPlanState();
+    return options.initialBirthYear ?? saved.birthYear ?? null;
+  });
+  const [playerCount, setPlayerCount] = useState(() => {
+    const saved = loadPlanState();
+    return options.initialBirthYear ? options.initialPlayerCount : (saved.playerCount ?? 10);
+  });
+  const [selectedCategories, setSelectedCategories] = useState<DrillCategory[]>(() => {
+    const saved = loadPlanState();
+    return saved.selectedCategories ?? [];
+  });
+  const [targetDuration, setTargetDuration] = useState(() => {
+    const saved = loadPlanState();
+    return saved.targetDuration ?? 60;
+  });
+  const [favoritesOnly, setFavoritesOnly] = useState(() => {
+    const saved = loadPlanState();
+    return saved.favoritesOnly ?? false;
+  });
+  const [seed, setSeed] = useState(() => {
+    const saved = loadPlanState();
+    return saved.seed ?? Date.now();
+  });
   const [expandedDrillIds, setExpandedDrillIds] = useState<Set<string>>(new Set());
   const [swappedDrills, setSwappedDrills] = useState<Map<number, Drill>>(new Map());
   const [browseSearch, setBrowseSearch] = useState('');
@@ -100,7 +110,7 @@ export function usePracticePlan(options: {
     seed,
   ]);
 
-  // Reset swaps when plan changes (render-phase setState, React-supported pattern for derived state)
+  // Reset swaps when plan identity changes (render-phase derived-state pattern per project ESLint rules)
   const planKey = plan ? plan.drills.map((d) => d.id).join(',') : '';
   const [lastPlanKey, setLastPlanKey] = useState(planKey);
   if (planKey !== lastPlanKey) {
