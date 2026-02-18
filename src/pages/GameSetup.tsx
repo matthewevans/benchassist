@@ -5,6 +5,7 @@ import { useSolver } from '@/hooks/useSolver.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
+import { AttendanceList } from '@/components/game/AttendanceList.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import {
@@ -14,10 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import { Badge } from '@/components/ui/badge.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
 import { Separator } from '@/components/ui/separator.tsx';
-import { cn } from '@/lib/utils.ts';
 import { generateId } from '@/utils/id.ts';
 import { validateRosterForGame } from '@/utils/validation.ts';
 import { createConfigFromTemplate } from '@/utils/gameConfig.ts';
@@ -315,32 +313,11 @@ export function GameSetup() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2">
-              {selectedRoster.players.map((player) => {
-                const isAbsent = absentPlayerIds.has(player.id);
-                return (
-                  <div
-                    key={player.id}
-                    className={cn(
-                      'flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors',
-                      isAbsent ? 'bg-destructive/10 opacity-60' : 'hover:bg-accent',
-                    )}
-                    onClick={() => handleToggleAbsent(player.id)}
-                  >
-                    <Checkbox
-                      checked={!isAbsent}
-                      onCheckedChange={() => handleToggleAbsent(player.id)}
-                    />
-                    <span className={cn('text-sm flex-1', isAbsent && 'line-through')}>
-                      {player.name}
-                    </span>
-                    <Badge variant="secondary" className="text-xs">
-                      {player.skillRanking}
-                    </Badge>
-                  </div>
-                );
-              })}
-            </div>
+            <AttendanceList
+              players={selectedRoster.players}
+              absentIds={absentPlayerIds}
+              onToggle={handleToggleAbsent}
+            />
           </CardContent>
         </Card>
       )}

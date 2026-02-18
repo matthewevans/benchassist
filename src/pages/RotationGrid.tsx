@@ -3,7 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
-import { Badge } from '@/components/ui/badge.tsx';
 import {
   Sheet,
   SheetContent,
@@ -12,7 +11,6 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
 import {
   Select,
   SelectContent,
@@ -34,6 +32,7 @@ import { LiveBottomBar } from '@/components/game/LiveBottomBar.tsx';
 import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
+import { AttendanceList } from '@/components/game/AttendanceList.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 
@@ -979,32 +978,11 @@ export function RotationGrid() {
                 Attendance ({roster.players.filter((p) => !editAbsent.has(p.id)).length} /{' '}
                 {roster.players.length})
               </Label>
-              <div className="grid gap-1.5">
-                {roster.players.map((player) => {
-                  const isAbsent = editAbsent.has(player.id);
-                  return (
-                    <div
-                      key={player.id}
-                      className={cn(
-                        'flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors',
-                        isAbsent ? 'bg-destructive/10 opacity-60' : 'hover:bg-accent',
-                      )}
-                      onClick={() => handleToggleAbsent(player.id)}
-                    >
-                      <Checkbox
-                        checked={!isAbsent}
-                        onCheckedChange={() => handleToggleAbsent(player.id)}
-                      />
-                      <span className={cn('text-sm flex-1', isAbsent && 'line-through')}>
-                        {player.name}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {player.skillRanking}
-                      </Badge>
-                    </div>
-                  );
-                })}
-              </div>
+              <AttendanceList
+                players={roster.players}
+                absentIds={editAbsent}
+                onToggle={handleToggleAbsent}
+              />
             </div>
 
             {/* Goalie assignments */}
