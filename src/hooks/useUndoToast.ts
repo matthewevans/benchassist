@@ -2,16 +2,7 @@ import { useCallback } from 'react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import type { AppAction } from '@/context/AppContext.tsx';
-
-const UNDOABLE_ACTIONS = new Set<AppAction['type']>([
-  'DELETE_TEAM',
-  'DELETE_ROSTER',
-  'DELETE_PLAYER',
-  'DELETE_GAME',
-  'DELETE_GAME_CONFIG',
-  'IMPORT_DATA',
-  'MERGE_DATA',
-]);
+import { UNDOABLE_ACTIONS } from '@/hooks/useUndoReducer.ts';
 
 /**
  * Returns a dispatch function that shows an undo toast for destructive actions.

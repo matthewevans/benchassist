@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useRef, useState, useEffect } from 'react';
+import { useReducer, useCallback, useRef, useState, useLayoutEffect } from 'react';
 import { produceWithPatches, applyPatches, type Patch } from 'immer';
 import type { AppState, AppAction } from '@/context/AppContext.tsx';
 import { applyAction, appReducer } from '@/context/AppContext.tsx';
@@ -11,7 +11,7 @@ interface UndoEntry {
 
 const MAX_UNDO = 30;
 
-const UNDOABLE_ACTIONS = new Set<AppAction['type']>([
+export const UNDOABLE_ACTIONS = new Set<AppAction['type']>([
   'DELETE_TEAM',
   'DELETE_ROSTER',
   'DELETE_PLAYER',
@@ -60,7 +60,7 @@ export function useUndoReducer(initialState: AppState) {
   const [state, rawDispatch] = useReducer(appReducer, initialState);
 
   const stateRef = useRef(state);
-  useEffect(() => {
+  useLayoutEffect(() => {
     stateRef.current = state;
   });
 

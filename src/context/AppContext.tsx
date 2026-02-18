@@ -1,4 +1,4 @@
-import { createContext, useEffect, useRef, useMemo, type ReactNode } from 'react';
+import { createContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type {
   Team,
   TeamGender,
@@ -344,7 +344,7 @@ export interface AppContextValue {
 export const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const initialState = useMemo(() => {
+  const [initialState] = useState(() => {
     const saved = loadData();
     if (saved) {
       return {
@@ -354,7 +354,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       };
     }
     return INITIAL_STATE;
-  }, []);
+  });
 
   const { state, dispatch, undo, canUndo } = useUndoReducer(initialState);
 
