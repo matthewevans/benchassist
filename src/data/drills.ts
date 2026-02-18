@@ -28,6 +28,12 @@ export const DRILLS: Drill[] = [
     durationMinutes: 8,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `C 1,1  C 9,1  C 1,9  C 9,9
+P 3,3
+P 7,4
+P 2,7
+P 8,8
+D 5,5`,
   },
 
   {
@@ -49,6 +55,13 @@ export const DRILLS: Drill[] = [
     durationMinutes: 8,
     intensity: 'low',
     equipment: ['cones'],
+    diagram: `C 2,1  C 8,1
+C 2,9  C 8,9
+P 3,9 A
+P 5,9 B
+
+run A > 3,1
+run B > 5,1`,
   },
 
   {
@@ -74,6 +87,16 @@ export const DRILLS: Drill[] = [
     durationMinutes: 10,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `Z 2,2 8,8
+P 5,2 A
+P 8,5 B
+P 5,8 C
+P 2,5 D
+D 5,5
+B 5,2
+
+pass A > B
+pass B > C`,
   },
 
   {
@@ -100,6 +123,10 @@ export const DRILLS: Drill[] = [
     durationMinutes: 10,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `C 1,1  C 9,1  C 1,9  C 9,9
+P 3,4
+P 7,4
+P 5,7`,
   },
 
   {
@@ -126,6 +153,14 @@ export const DRILLS: Drill[] = [
     durationMinutes: 8,
     intensity: 'low',
     equipment: ['balls'],
+    diagram: `P 3,8 A
+P 7,8 B
+B 3,8
+
+pass A > B
+
+run A > 3,2
+run B > 7,2`,
   },
 
   {
@@ -147,6 +182,15 @@ export const DRILLS: Drill[] = [
     durationMinutes: 8,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `C 0,0  C 10,0  C 0,10  C 10,10
+P 2,9
+P 5,9
+P 8,9
+D 5,4
+
+run 2,9 > 2,1
+run 5,9 > 5,1
+run 8,9 > 8,1`,
   },
 
   {
@@ -172,6 +216,12 @@ export const DRILLS: Drill[] = [
     durationMinutes: 10,
     intensity: 'low',
     equipment: ['cones', 'balls', 'gloves'],
+    diagram: `G 3,0 7,0
+GK 5,2
+P 5,8 Sv
+B 5,8
+
+pass Sv > 5,2`,
   },
 
   {
@@ -198,6 +248,15 @@ export const DRILLS: Drill[] = [
     durationMinutes: 8,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `C 5,1
+C 5,2.5
+C 5,4
+C 5,5.5
+C 5,7
+P 5,9 A
+B 5,9
+
+run A > 4,7 > 6,5.5 > 4,4 > 6,2.5 > 5,1`,
   },
 
   {
@@ -224,6 +283,16 @@ export const DRILLS: Drill[] = [
     durationMinutes: 8,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `C 5,2  C 2,8  C 8,8
+P 5,2 A
+P 2,8 B
+P 8,8 C
+B 5,2
+
+pass A > B
+
+pass B > C
+run A > 2,8`,
   },
 
   {
@@ -249,6 +318,9 @@ export const DRILLS: Drill[] = [
     durationMinutes: 5,
     intensity: 'low',
     equipment: ['balls'],
+    diagram: `P 3,4
+P 7,4
+P 5,7`,
   },
 
   {
@@ -270,6 +342,8 @@ export const DRILLS: Drill[] = [
     durationMinutes: 6,
     intensity: 'low',
     equipment: ['balls'],
+    diagram: `P 5,4 A
+P 5,6 B`,
   },
 
   // ============================================================
@@ -340,6 +414,14 @@ run A > 8,1`,
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 5,1  C 8.5,3  C 8.5,7
+C 5,9  C 1.5,7  C 1.5,3
+P 5,1 A
+P 8.5,7 B
+B 5,1
+
+pass A > B
+run A > 8.5,7`,
   },
 
   {
@@ -365,6 +447,11 @@ run A > 8,1`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `P 2,2 A
+P 8,8 B
+B 2,2
+
+pass A > B`,
   },
 
   {
@@ -391,6 +478,17 @@ run A > 8,1`,
     durationMinutes: 15,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 5,5  C 2,2  C 8,2
+P 5,9 A
+P 5,5 B
+P 8,2 C
+B 5,9
+
+pass A > B
+pass B > 3,4
+
+run A > 3,4
+pass 3,4 > C`,
   },
 
   {
@@ -417,6 +515,17 @@ run A > 8,1`,
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `Z 1,1 9,9
+P 1,5 A
+P 5,1 B
+P 9,5 C
+P 5,9 D
+D 4,4
+D 6,6
+B 5,1
+
+pass B > C
+pass C > D`,
   },
 
   {
@@ -442,6 +551,13 @@ run A > 8,1`,
     durationMinutes: 8,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `P 3,5 A
+P 7,5 B
+B 3,5
+
+pass A > B
+
+pass B > A`,
   },
 
   {
@@ -468,6 +584,16 @@ run A > 8,1`,
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 0,0  C 10,0  C 0,10  C 10,10
+P 2,8 W
+P 5,5 M
+P 5,1 T
+B 2,8
+
+pass W > M
+run W > 1,5 > 1,1
+
+pass M > 1,1`,
   },
 
   // --- DRIBBLING (6 drills) ---
@@ -528,6 +654,13 @@ run A > 5,2 > 5,0`,
     durationMinutes: 15,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 3,3
+C 7,3
+C 3,7
+C 7,7
+P 3,5
+P 7,5
+P 5,9`,
   },
 
   {
@@ -553,6 +686,12 @@ run A > 5,2 > 5,0`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 1,1  C 9,1  C 1,9  C 9,9
+P 3,3
+P 6,4
+P 4,7
+P 7,7
+P 2,5`,
   },
 
   {
@@ -579,6 +718,12 @@ run A > 5,2 > 5,0`,
     durationMinutes: 10,
     intensity: 'high',
     equipment: ['cones', 'balls'],
+    diagram: `C 5,1
+P 3,9 A
+P 7,9 B
+B 3,9
+
+run A > 3,1 > 3,9`,
   },
 
   {
@@ -604,6 +749,14 @@ run A > 5,2 > 5,0`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 1,1  C 9,1  C 1,9  C 9,9
+C 3,3  C 4.5,3
+C 6,6  C 7.5,6
+C 2,8  C 3.5,8
+P 5,5 A
+B 5,5
+
+run A > 3.7,3`,
   },
 
   {
@@ -630,6 +783,13 @@ run A > 5,2 > 5,0`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 5,2
+C 5,5
+C 5,8
+P 5,10 A
+B 5,10
+
+run A > 4,8 > 6,5 > 4,2`,
   },
 
   // --- SHOOTING (6 drills) ---
@@ -658,6 +818,13 @@ run A > 5,2 > 5,0`,
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 3,0 7,0
+GK 5,1
+P 4,6 A
+P 6,6 B
+B 4,6
+
+pass A > 5,1`,
   },
 
   {
@@ -719,6 +886,16 @@ pass S > 5,1`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 2,0 8,0
+GK 5,1
+P 9,7 W
+P 4,4 A
+P 6,4 B
+B 9,7
+
+pass W > 5,2
+run A > 4,2
+run B > 6,2`,
   },
 
   {
@@ -745,6 +922,17 @@ pass S > 5,1`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 3,0 7,0
+GK 5,1
+P 2,5 A
+P 5,7 B
+P 8,5 C
+
+pass A > 5,1
+
+pass B > 5,1
+
+pass C > 5,1`,
   },
 
   {
@@ -771,6 +959,12 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['balls', 'goals'],
+    diagram: `G 3,0 7,0
+GK 5,1
+P 5,6 A
+B 5,6
+
+pass A > 5,1`,
   },
 
   {
@@ -797,6 +991,14 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 3,0 7,0
+GK 5,2
+P 5,8 A
+P 5,10 Sv
+B 5,10
+
+pass Sv > 5,5
+run A > 5,5 > 5,2`,
   },
 
   // --- FIRST TOUCH (5 drills) ---
@@ -825,6 +1027,11 @@ pass S > 5,1`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['balls'],
+    diagram: `P 3,5 A
+P 7,5 B
+B 7,5
+
+pass B > A`,
   },
 
   {
@@ -851,6 +1058,13 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 2,3  C 8,3
+P 5,8 Sv
+P 5,5 R
+B 5,8
+
+pass Sv > R
+run R > 3,3`,
   },
 
   {
@@ -876,6 +1090,11 @@ pass S > 5,1`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['balls'],
+    diagram: `G 3,1 7,1
+P 5,6 A
+B 5,6
+
+pass A > 5,1`,
   },
 
   {
@@ -902,6 +1121,11 @@ pass S > 5,1`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['balls'],
+    diagram: `P 3,2 A
+P 7,8 B
+B 7,8
+
+pass B > A`,
   },
 
   {
@@ -928,6 +1152,14 @@ pass S > 5,1`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `P 5,1 S1
+P 5,9 S2
+P 5,5 R
+B 5,1
+
+pass S1 > R
+
+pass R > S2`,
   },
 
   // --- GOALKEEPING (4 drills) ---
@@ -956,6 +1188,17 @@ pass S > 5,1`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'gloves'],
+    diagram: `G 3,0 7,0
+GK 5,2
+P 3,7 A
+P 5,7 B
+P 7,7 C
+
+pass A > 4,1
+
+pass B > 5,1
+
+pass C > 6,1`,
   },
 
   {
@@ -982,6 +1225,15 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'goals', 'gloves'],
+    diagram: `G 3,0 7,0
+GK 5,2 K
+P 3,5 A
+P 7,6 B
+P 5,9 C
+
+pass K > A
+
+pass K > B`,
   },
 
   {
@@ -1008,6 +1260,12 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'gloves'],
+    diagram: `G 3,0 7,0
+GK 5,2 K
+P 5,8 A
+B 5,8
+
+run A > 5,3`,
   },
 
   {
@@ -1034,6 +1292,12 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'gloves', 'agility ladder'],
+    diagram: `G 3,0 7,0
+GK 5,3
+C 3,5  C 5,5  C 7,5
+P 5,9 Sv
+
+pass Sv > 5,2`,
   },
 
   // --- ATTACKING (5 drills) ---
@@ -1062,6 +1326,17 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 3,0 7,0
+GK 5,1
+P 3,7 A
+P 7,7 B
+D 5,4
+B 3,7
+
+run A > 5,4
+pass A > B
+
+pass B > 7,2`,
   },
 
   {
@@ -1088,6 +1363,19 @@ pass S > 5,1`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+GK 5,1
+P 2,8 A
+P 5,8 B
+P 8,8 C
+D 4,4
+D 6,4
+B 5,8
+
+run B > 5,5
+pass B > A
+
+pass A > 5,2`,
   },
 
   {
@@ -1114,6 +1402,18 @@ pass S > 5,1`,
     durationMinutes: 20,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 2,7 A
+P 5,5 B
+P 8,3 C
+D 3,6
+D 7,4
+B 2,7
+
+pass A > B
+
+pass B > C`,
   },
 
   {
@@ -1140,6 +1440,17 @@ pass S > 5,1`,
     durationMinutes: 20,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+GK 5,1
+P 3,8 A
+P 5,6 B
+P 7,8 C
+D 3,3  D 5,3  D 7,3
+
+pass A > B
+
+pass B > 7,2
+run C > 7,2`,
   },
 
   {
@@ -1166,6 +1477,18 @@ pass S > 5,1`,
     durationMinutes: 15,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 3,0 7,0
+GK 5,1
+P 5,8 A
+P 3,6 B
+P 7,6 C
+P 5,4 D
+B 5,8
+
+pass A > D
+pass D > B
+
+pass B > 5,2`,
   },
 
   // --- DEFENDING (5 drills) ---
@@ -1194,6 +1517,12 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'medium',
     equipment: ['cones', 'balls'],
+    diagram: `C 1,0  C 9,0  C 1,8  C 9,8
+P 5,7 A
+D 5,3
+B 5,7
+
+run A > 5,3`,
   },
 
   {
@@ -1220,6 +1549,20 @@ pass S > 5,1`,
     durationMinutes: 20,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 3,4 A
+P 5,3 B
+P 7,4 C
+D 3,7 X
+D 5,7 Y
+D 7,7 Z
+B 5,3
+
+pass B > A
+
+run X > 3,5
+run Y > 5,5`,
   },
 
   {
@@ -1246,6 +1589,16 @@ pass S > 5,1`,
     durationMinutes: 20,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+GK 5,1
+D 2,4
+D 4,4
+D 6,4
+D 8,4
+P 3,8
+P 5,8
+P 7,8
+B 3,8`,
   },
 
   {
@@ -1272,6 +1625,14 @@ pass S > 5,1`,
     durationMinutes: 12,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 3,0 7,0
+GK 5,1
+P 5,5 A
+D 5,9 X
+B 5,5
+
+run A > 5,2
+run X > 6,2`,
   },
 
   {
@@ -1298,6 +1659,16 @@ pass S > 5,1`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 3,0 7,0
+GK 5,1
+P 3,7 A
+P 7,7 B
+D 4,4 X
+D 6,4 Y
+B 3,7
+
+run A > 4,4
+run X > 4,5`,
   },
 
   // --- POSSESSION (5 drills) ---
@@ -1365,6 +1736,18 @@ pass C > D`,
     durationMinutes: 20,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `Z 0,0 3.3,10
+Z 6.6,0 10,10
+P 2,5 A
+P 5,5 B
+P 8,5 C
+D 3,5
+D 7,5
+B 2,5
+
+pass A > B
+
+pass B > C`,
   },
 
   {
@@ -1391,6 +1774,18 @@ pass C > D`,
     durationMinutes: 20,
     intensity: 'high',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `Z 1,1 9,9
+P 3,3 A
+P 7,3 B
+P 3,7 C
+P 7,7 D
+P 5,1 N
+D 4,5
+D 6,5
+B 3,3
+
+pass A > N
+pass N > B`,
   },
 
   {
@@ -1416,6 +1811,15 @@ pass C > D`,
     durationMinutes: 10,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `Z 2,2 8,8
+P 5,2 A
+P 8,5 B
+P 2,5 C
+D 5,5
+B 5,2
+
+pass A > B
+pass B > C`,
   },
 
   {
@@ -1442,6 +1846,17 @@ pass C > D`,
     durationMinutes: 20,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `Z 0,0 5,5
+Z 5,0 10,5
+Z 0,5 5,10
+Z 5,5 10,10
+P 2.5,2.5
+P 7.5,2.5
+P 2.5,7.5
+P 7.5,7.5
+P 5,5
+D 4,4
+D 6,6`,
   },
 
   // --- TRANSITION (4 drills) ---
@@ -1470,6 +1885,15 @@ pass C > D`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 3,4
+P 5,3
+P 7,4
+D 3,7
+D 5,7
+D 7,7
+B 5,3`,
   },
 
   {
@@ -1496,6 +1920,17 @@ pass C > D`,
     durationMinutes: 20,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+GK 5,1
+G 3,10 4,10
+G 6,10 7,10
+P 3,6
+P 5,6
+P 7,6
+D 3,4
+D 5,4
+D 7,4
+B 5,6`,
   },
 
   {
@@ -1522,6 +1957,17 @@ pass C > D`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+GK 5,1
+P 3,7 A
+P 5,7 B
+P 7,7 C
+D 4,3
+D 6,3
+
+run A > 3,2
+run B > 5,2
+run C > 7,2`,
   },
 
   {
@@ -1548,6 +1994,14 @@ pass C > D`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 3,4
+P 5,3
+P 7,4
+D 3,7
+D 5,7
+B 5,5`,
   },
 
   // --- SET PIECES (4 drills) ---
@@ -1576,6 +2030,18 @@ pass C > D`,
     durationMinutes: 15,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 2,0 8,0
+GK 5,1
+P 10,0 K
+P 4,5 A
+P 6,5 B
+D 4,3
+D 6,3
+B 10,0
+
+pass K > 5,2
+run A > 4,2
+run B > 6,2`,
   },
 
   {
@@ -1602,6 +2068,15 @@ pass C > D`,
     durationMinutes: 15,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 2,0 8,0
+GK 5,1
+D 4,3
+D 5,3
+D 6,3
+P 5,6 A
+B 5,6
+
+pass A > 4,0`,
   },
 
   {
@@ -1628,6 +2103,15 @@ pass C > D`,
     durationMinutes: 10,
     intensity: 'low',
     equipment: ['balls'],
+    diagram: `P 0,5 T
+P 3,3 A
+P 3,7 B
+P 5,5 C
+B 0,5
+
+pass T > A
+
+pass T > C`,
   },
 
   {
@@ -1654,6 +2138,16 @@ pass C > D`,
     durationMinutes: 15,
     intensity: 'medium',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+GK 5,2 K
+P 3,4 A
+P 7,4 B
+P 5,7 C
+D 5,5
+
+pass K > A
+
+pass A > C`,
   },
 
   // ============================================================
@@ -1718,6 +2212,15 @@ B 5,5`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `G 1,0 3,0
+G 7,0 9,0
+G 1,10 3,10
+G 7,10 9,10
+P 3,4
+P 7,4
+D 3,7
+D 7,7
+B 5,5`,
   },
 
   {
@@ -1744,6 +2247,14 @@ B 5,5`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `Z 0,0 10,2
+Z 0,8 10,10
+P 3,4
+P 7,4
+P 5,5
+D 3,6
+D 7,6
+B 5,5`,
   },
 
   {
@@ -1770,6 +2281,17 @@ B 5,5`,
     durationMinutes: 25,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+G 2,10 8,10
+GK 5,1
+GK 5,9
+P 3,4
+P 7,4
+P 5,6
+D 3,6
+D 7,6
+D 5,4
+B 5,5`,
   },
 
   {
@@ -1796,6 +2318,15 @@ B 5,5`,
     durationMinutes: 20,
     intensity: 'high',
     equipment: ['cones', 'balls', 'pinnies'],
+    diagram: `G 2,0 8,0
+G 2,10 8,10
+P 3,4
+P 5,3
+P 7,4
+D 3,7
+D 5,7
+D 7,7
+B 5,5`,
   },
 
   {
@@ -1822,6 +2353,16 @@ B 5,5`,
     durationMinutes: 20,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+G 2,10 8,10
+GK 5,1
+GK 5,9
+P 3,4
+P 7,4
+P 5,6
+D 3,6
+D 7,6
+B 5,5`,
   },
 
   {
@@ -1848,6 +2389,17 @@ B 5,5`,
     durationMinutes: 30,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 9,0
+G 1,10 9,10
+GK 5,1
+GK 5,9
+P 3,3
+P 7,3
+P 5,6
+D 3,7
+D 7,7
+D 5,4
+B 5,5`,
   },
 
   {
@@ -1874,6 +2426,15 @@ B 5,5`,
     durationMinutes: 15,
     intensity: 'high',
     equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 3,4
+P 5,3
+P 7,4
+D 3,7
+D 7,7
+P 0,5
+B 5,5`,
   },
 
   // ============================================================
@@ -1903,6 +2464,13 @@ B 5,5`,
     durationMinutes: 5,
     intensity: 'low',
     equipment: ['balls'],
+    diagram: `P 5,1
+P 8.5,3
+P 8.5,7
+P 5,9
+P 1.5,7
+P 1.5,3
+B 5,5`,
   },
 
   {
@@ -1924,6 +2492,12 @@ B 5,5`,
     durationMinutes: 8,
     intensity: 'low',
     equipment: [],
+    diagram: `P 3,4
+P 5,4
+P 7,4
+P 3,6
+P 5,6
+P 7,6`,
   },
 
   {
@@ -1944,6 +2518,13 @@ B 5,5`,
     durationMinutes: 5,
     intensity: 'low',
     equipment: ['balls'],
+    diagram: `P 5,2
+P 8,4
+P 8,7
+P 5,9
+P 2,7
+P 2,4
+B 5,5`,
   },
 
   {
@@ -1965,6 +2546,13 @@ B 5,5`,
     durationMinutes: 5,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `C 5,3
+C 4.5,4  C 5.5,4
+C 4,5  C 5,5  C 6,5
+P 5,9 A
+B 5,9
+
+pass A > 5,4`,
   },
 
   {
@@ -1986,6 +2574,15 @@ B 5,5`,
     durationMinutes: 5,
     intensity: 'low',
     equipment: [],
+    diagram: `P 3,1 A
+P 8,4 B
+P 7,9 C
+P 2,6 D
+
+run A > 8,1
+run B > 8,9
+run C > 2,9
+run D > 2,1`,
   },
 
   {
@@ -2007,5 +2604,12 @@ B 5,5`,
     durationMinutes: 5,
     intensity: 'low',
     equipment: ['cones', 'balls'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 3,4
+P 7,4
+D 3,7
+D 7,7
+B 5,5`,
   },
 ];
