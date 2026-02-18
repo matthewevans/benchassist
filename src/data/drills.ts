@@ -2,7 +2,7 @@ import type { Drill } from '@/types/drill.ts';
 
 export const DRILLS: Drill[] = [
   // ============================================================
-  // WARM-UP DRILLS (11 drills)
+  // WARM-UP DRILLS (16 drills)
   // ============================================================
 
   {
@@ -347,7 +347,159 @@ P 5,6 B`,
   },
 
   // ============================================================
-  // MAIN DRILLS (48 drills)
+
+  {
+    id: 'warm-up-shadow-defending',
+    name: 'Shadow Defending',
+    description:
+      'Players pair up. The attacker dribbles freely inside a grid while the defender mirrors their movements, maintaining a 1-2 yard distance without tackling. Builds defensive stance, footwork, and the habit of staying goalside.',
+    setup:
+      'Mark a 15x15 yard grid with cones. Pair players up — one attacker with a ball, one defender without.',
+    coachingTips: [
+      'Defenders stay on the balls of their feet with knees bent.',
+      "Maintain a low center of gravity and watch the ball, not the attacker's body.",
+      'Switch roles every 60-90 seconds.',
+    ],
+    variations: [
+      'Attacker scores by dribbling past the end line — defender must now actively block.',
+      'Add a second attacker so the defender works on scanning.',
+    ],
+    category: 'defending',
+    phase: 'warm-up',
+    ageGroups: ['U10', 'U12', 'U14', 'U16', 'U18'],
+    minPlayers: 2,
+    durationMinutes: 6,
+    intensity: 'low',
+    equipment: ['cones', 'balls'],
+    diagram: `C 2,2  C 8,2  C 2,8  C 8,8
+P 4,5 A
+D 5,5 X
+
+run A > 4,3
+run X > 5,3`,
+  },
+
+  {
+    id: 'warm-up-transition-relay',
+    name: 'Transition Warm-Up Relay',
+    description:
+      'Two teams race in a relay format: dribble forward to a cone, pass back to the next teammate, then sprint to the back of the line. Introduces quick transitions between attacking (dribbling) and supporting (sprinting back) at warm-up intensity.',
+    setup: 'Two lines of cones 20 yards apart. Split players into two teams, each behind one line.',
+    coachingTips: [
+      'Focus on clean first touches and accurate passes back.',
+      'Encourage quick transitions — no standing still after passing.',
+      'Keep it fun and competitive but emphasize control over speed.',
+    ],
+    category: 'transition',
+    phase: 'warm-up',
+    ageGroups: ['U10', 'U12', 'U14', 'U16', 'U18'],
+    minPlayers: 4,
+    durationMinutes: 6,
+    intensity: 'low',
+    equipment: ['cones', 'balls'],
+    diagram: `C 2,1  C 8,1
+C 2,9  C 8,9
+P 2,9 A
+P 8,9 B
+B 2,9
+
+run A > 2,1
+pass 2,1 > B`,
+  },
+
+  {
+    id: 'warm-up-shooting-technique',
+    name: 'Shooting Technique Warm-Up',
+    description:
+      'Players line up and take turns striking a stationary ball at a target (goal or cones) from 8-10 yards. Focuses on planting foot, body position, and striking through the ball with the laces. Low intensity — no keeper pressure, just form repetition.',
+    setup:
+      'Place balls on the ground 8-10 yards from goal or a cone target. Players form a line and take turns shooting.',
+    coachingTips: [
+      'Plant foot beside the ball, pointing at the target.',
+      'Lock the ankle and follow through toward the target.',
+      'Praise accuracy over power at this stage.',
+    ],
+    variations: [
+      'Move the ball further back as confidence grows.',
+      'Add a one-step approach to introduce timing.',
+    ],
+    category: 'shooting',
+    phase: 'warm-up',
+    ageGroups: ['U8', 'U10', 'U12', 'U14'],
+    minPlayers: 2,
+    durationMinutes: 6,
+    intensity: 'low',
+    equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 3,0 7,0
+B 5,5
+P 5,7 A
+
+run A > 5,5.5
+pass 5,5.5 > 5,0`,
+  },
+
+  {
+    id: 'warm-up-keeper-reaction',
+    name: 'Keeper Reaction Game',
+    description:
+      'A fun, game-like warm-up for goalkeepers and field players alike. Players face the coach who rolls or tosses balls to the left or right. Players must dive or step to save/catch. Develops reaction time and hand-eye coordination in a non-intimidating format.',
+    setup:
+      'Players line up side by side, 5 yards from the coach. Coach has a supply of balls. No goal needed.',
+    coachingTips: [
+      'Start with gentle rolls on the ground before progressing to tosses.',
+      'Encourage getting the whole body behind the ball.',
+      'Make it a game — who can save the most?',
+    ],
+    variations: [
+      'Players start sitting or lying down and must get up before saving.',
+      'Two players compete side by side for the same ball.',
+    ],
+    category: 'goalkeeping',
+    phase: 'warm-up',
+    ageGroups: ['U6', 'U8', 'U10'],
+    minPlayers: 2,
+    durationMinutes: 6,
+    intensity: 'low',
+    equipment: ['balls'],
+    diagram: `T 5,3 "Coach"
+P 3,6 A
+P 5,6 B
+P 7,6 C
+B 5,4
+
+pass 5,4 > 3,6
+pass 5,4 > 7,6`,
+  },
+
+  {
+    id: 'warm-up-possession-grid',
+    name: 'Possession Grid Warm-Up',
+    description:
+      'Small groups of 3-4 players keep the ball moving inside a tight grid against zero defenders. Focus on receiving with an open body, quick passing, and constant movement off the ball. A step up from passing pairs that builds the possession habit.',
+    setup: 'Mark 8x8 yard grids with cones. Groups of 3-4 per grid with one ball.',
+    coachingTips: [
+      'Move to a new space immediately after passing.',
+      'Open body position — see the whole grid before receiving.',
+      'Challenge: how many passes in 60 seconds?',
+    ],
+    category: 'possession',
+    phase: 'warm-up',
+    ageGroups: ['U10', 'U12', 'U14', 'U16', 'U18'],
+    minPlayers: 3,
+    durationMinutes: 6,
+    intensity: 'low',
+    equipment: ['cones', 'balls'],
+    diagram: `C 2,2  C 8,2  C 2,8  C 8,8
+P 3,3 A
+P 7,3 B
+P 5,7 C
+B 3,3
+
+pass A > B
+pass B > C
+pass C > A`,
+  },
+  // MAIN DRILLS (58 drills)
   // ============================================================
 
   // --- PASSING (7 drills) ---
@@ -2151,7 +2303,231 @@ pass A > C`,
   },
 
   // ============================================================
-  // SCRIMMAGE DRILLS (8 drills)
+
+  {
+    id: 'shooting-knock-down-cones',
+    name: 'Knock Down the Cones',
+    description:
+      'Set up a row of cones on a line and let players take turns kicking balls to knock them down. A simple, exciting introduction to shooting for the youngest players — they get to see immediate results from every kick. Teaches aiming and striking with the laces.',
+    setup:
+      'Place 5-6 cones in a row on a line, spaced 2 feet apart. Players shoot from 5-8 yards away.',
+    coachingTips: [
+      'Let them use whatever technique feels natural at first, then gently introduce laces striking.',
+      'Reset cones quickly to maintain excitement.',
+      'Celebrate every knocked cone — build confidence and love of shooting.',
+    ],
+    variations: [
+      'Move the shooting line further back as they improve.',
+      'Assign point values to different cones.',
+      'Turn it into a team competition.',
+    ],
+    category: 'shooting',
+    phase: 'main',
+    ageGroups: ['U6', 'U8', 'U10'],
+    minPlayers: 2,
+    durationMinutes: 10,
+    intensity: 'medium',
+    equipment: ['cones', 'balls'],
+    diagram: `C 3,3  C 4,3  C 5,3  C 6,3  C 7,3
+P 5,7 A
+B 5,7
+
+pass A > 5,3`,
+  },
+
+  {
+    id: 'first-touch-toe-taps-sole-rolls',
+    name: 'Toe Taps & Sole Rolls',
+    description:
+      'Players stand with a ball at their feet and practice foundation ball mastery moves: alternating toe taps on top of the ball, sole rolls forward and backward, and side-to-side rolls. Builds comfort and confidence with the ball for the youngest players.',
+    setup:
+      'Each player needs a ball and enough space (2x2 yards) to work without bumping into others. No cones needed.',
+    coachingTips: [
+      'Start slow — rhythm matters more than speed.',
+      "Eyes up when comfortable, but it's OK to watch the ball at first.",
+      'Make it musical — count out loud or clap a rhythm for them to follow.',
+    ],
+    variations: [
+      "Add a 'freeze' command — players must stop the ball dead under their sole.",
+      'Challenge: how many toe taps in 30 seconds?',
+      'Progress to moving forward while doing sole rolls.',
+    ],
+    category: 'first-touch',
+    phase: 'main',
+    ageGroups: ['U6', 'U8', 'U10'],
+    minPlayers: 1,
+    durationMinutes: 8,
+    intensity: 'low',
+    equipment: ['balls'],
+    diagram: `P 3,5 A
+P 7,5 B
+B 3,5
+B 7,5`,
+  },
+
+  {
+    id: 'goalkeeping-basic-shot-stopping',
+    name: 'Basic Shot Stopping',
+    description:
+      'An introductory goalkeeper drill where a coach or teammate rolls and then gently kicks balls at the keeper from 6-8 yards. Teaches the ready position, getting behind the ball, and the W-shape hand catch. Progresses from ground balls to waist-height shots.',
+    setup:
+      'One mini-goal or two cones as posts. Keeper in goal, server 6-8 yards away with a supply of balls.',
+    coachingTips: [
+      'Start in the ready position: feet shoulder-width, knees bent, hands out front.',
+      'Get the whole body behind the ball — hands are the second barrier, not the first.',
+      'W-shape: thumbs and index fingers form a W behind the ball on catches.',
+    ],
+    variations: [
+      'Progress from rolls to gentle kicks once form is consistent.',
+      'Add a step to the side before the shot to practice shuffling.',
+      'Two keepers alternate — one saves, one collects.',
+    ],
+    category: 'goalkeeping',
+    phase: 'main',
+    ageGroups: ['U8', 'U10', 'U12'],
+    minPlayers: 2,
+    durationMinutes: 10,
+    intensity: 'medium',
+    equipment: ['balls', 'goals'],
+    diagram: `G 3,1 7,1
+GK 5,1.5 K
+P 5,6 A
+B 5,6
+
+pass A > 5,1.5`,
+  },
+
+  {
+    id: 'transition-3v3-quick',
+    name: '3v3 Quick Transition',
+    description:
+      'A fast-paced 3v3 game in a small grid with mini-goals at each end. When a team scores or loses possession, they must immediately transition — the scoring team retreats to defend while the conceding team attacks. Teaches transition principles with just 6 players.',
+    setup: 'Mark a 25x20 yard field with mini-goals at each end. Two teams of 3.',
+    coachingTips: [
+      'Immediate reaction on change of possession — no pause allowed.',
+      'Attacking team: get forward quickly before the defense organizes.',
+      'Defending team: closest player pressures the ball, others recover goalside.',
+    ],
+    variations: [
+      'Add a rule that goals only count within 5 seconds of winning the ball.',
+      'Play with a neutral player (3v3+1) for easier possession.',
+    ],
+    category: 'transition',
+    phase: 'main',
+    ageGroups: ['U10', 'U12', 'U14', 'U16'],
+    minPlayers: 6,
+    durationMinutes: 12,
+    intensity: 'high',
+    equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 3,0 7,0
+G 3,10 7,10
+P 3,7 A
+P 5,8 B
+P 7,7 C
+D 3,3 X
+D 5,2 Y
+D 7,3 Z
+B 5,8
+
+run A > 4,4
+pass B > A`,
+  },
+
+  {
+    id: 'transition-positional-game',
+    name: 'Transition Positional Game',
+    description:
+      'A 4v4 game in a medium grid where the team in possession must complete 5 passes before scoring. On turnover, the defending team tries to score immediately — no pass requirement. Teaches controlled build-up vs. quick counter-attack mentality.',
+    setup: 'Mark a 30x25 yard field with mini-goals. Two teams of 4. Pinnies to distinguish teams.',
+    coachingTips: [
+      'Possession team: be patient, move the ball quickly to reach 5 passes.',
+      'Defending team: press hard and attack fast on turnover — the 5-pass rule is gone.',
+      'Switch roles every 3-4 minutes to give everyone both experiences.',
+    ],
+    category: 'transition',
+    phase: 'main',
+    ageGroups: ['U10', 'U12', 'U14', 'U16', 'U18'],
+    minPlayers: 8,
+    durationMinutes: 15,
+    intensity: 'medium',
+    equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 3,0 7,0
+G 3,10 7,10
+P 2,4 A
+P 5,3 B
+P 8,4 C
+P 5,6 D
+D 3,7
+D 7,7
+D 5,5
+D 5,9
+B 5,3
+
+pass B > A
+pass A > D`,
+  },
+
+  {
+    id: 'transition-switch-and-go',
+    name: 'Switch and Go',
+    description:
+      "Players pass in a diamond shape. On the coach's whistle, the team must switch direction and play toward the opposite goal as fast as possible. A controlled, medium-intensity drill that teaches instant reaction to change of play direction without requiring large numbers.",
+    setup:
+      'Set up a 20x30 yard field with a mini-goal at each end. 4 players in a diamond formation with one ball.',
+    coachingTips: [
+      'Before the whistle: calm, accurate passing in the pattern.',
+      'On the whistle: immediate change of body shape to face the new goal.',
+      'First pass after the switch should be forward — take ground quickly.',
+    ],
+    category: 'transition',
+    phase: 'main',
+    ageGroups: ['U10', 'U12', 'U14', 'U16', 'U18'],
+    minPlayers: 4,
+    durationMinutes: 10,
+    intensity: 'medium',
+    equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 3,0 7,0
+G 3,10 7,10
+P 5,3 A
+P 3,5 B
+P 5,7 C
+P 7,5 D
+B 5,3
+
+pass A > D
+pass D > C
+pass C > B`,
+  },
+
+  {
+    id: 'passing-kick-to-partner',
+    name: 'Kick to Your Partner',
+    description:
+      "The simplest passing drill for the youngest players. Partners stand 3-5 yards apart and kick the ball back and forth using the inside of their foot. Focus on making contact with the inside of the foot and pushing the ball to the partner's feet. Success = the ball reaches your partner without them having to move.",
+    setup: 'Pairs of players facing each other, 3-5 yards apart. One ball per pair.',
+    coachingTips: [
+      'Inside of the foot — show them which part of the foot to use.',
+      'Point the toe of the kicking foot outward.',
+      'Step toward your partner as you kick.',
+    ],
+    variations: [
+      'Move further apart as they succeed consistently.',
+      'Add a gate (two cones) between them — can they pass through it?',
+    ],
+    category: 'passing',
+    phase: 'main',
+    ageGroups: ['U6', 'U8'],
+    minPlayers: 2,
+    durationMinutes: 8,
+    intensity: 'low',
+    equipment: ['balls'],
+    diagram: `P 3,4 A
+P 7,4 B
+B 3,4
+
+pass A > B`,
+  },
+  // SCRIMMAGE DRILLS (13 drills)
   // ============================================================
 
   {
@@ -2438,7 +2814,163 @@ B 5,5`,
   },
 
   // ============================================================
-  // COOL-DOWN DRILLS (6 drills)
+
+  {
+    id: 'scrimmage-defend-to-counter',
+    name: '4v4 Defend to Counter',
+    description:
+      'A 4v4 game where the defending team scores double points if they win the ball and score within 5 seconds. Rewards aggressive defending and quick transitions. The attacking team must be careful with possession, creating a realistic game scenario.',
+    setup: 'Mark a 30x20 yard field with mini-goals at each end. Two teams of 4 with pinnies.',
+    coachingTips: [
+      'Defending team: press as a unit — if one player presses, others tighten behind.',
+      'Reward interceptions and tackles that lead to attacks.',
+      'Attacking team: value the ball — sloppy passes get punished.',
+    ],
+    category: 'defending',
+    phase: 'scrimmage',
+    ageGroups: ['U10', 'U12', 'U14', 'U16'],
+    minPlayers: 8,
+    durationMinutes: 12,
+    intensity: 'high',
+    equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 3,7 A
+P 5,8 B
+P 7,7 C
+P 5,5 D
+D 3,3 X
+D 5,2 Y
+D 7,3 Z
+D 5,5.5 W
+B 5,8`,
+  },
+
+  {
+    id: 'scrimmage-shooting-tournament',
+    name: 'Shooting Tournament',
+    description:
+      'Multiple mini-games running simultaneously on small fields (3v3 or 2v2) with full-size or large goals and goalkeepers. Teams rotate opponents every 3 minutes. Every game is short and intense, maximizing shooting opportunities. Winner is the team with the most goals across all rounds.',
+    setup: 'Set up 2-3 small fields (15x20 yards) with goals. Teams of 2-3 rotate between fields.',
+    coachingTips: [
+      "Encourage shooting from any angle — don't wait for the perfect opportunity.",
+      'Quick restarts after goals to maximize reps.',
+      'Keepers rotate too — everyone gets a turn in goal.',
+    ],
+    category: 'shooting',
+    phase: 'scrimmage',
+    ageGroups: ['U8', 'U10', 'U12', 'U14'],
+    minPlayers: 6,
+    durationMinutes: 15,
+    intensity: 'high',
+    equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,0 9,0
+GK 2.5,1 K1
+GK 7.5,1 K2
+P 2,5 A
+P 3,7 B
+D 7,5 X
+D 8,7 Y
+B 2,5
+B 7,5`,
+  },
+
+  {
+    id: 'scrimmage-dead-ball-shootout',
+    name: 'Dead Ball Shootout',
+    description:
+      'Teams alternate taking set pieces — corners, free kicks from various angles, and penalties. Each delivery results in a live play until the ball goes dead. Combines set-piece practice with a competitive game format. Team with the most goals wins.',
+    setup:
+      'Full or half-field with a regulation goal and goalkeeper. Two teams alternate attacking and defending set pieces.',
+    coachingTips: [
+      'Vary the set-piece type each round: corner, direct free kick, indirect free kick.',
+      'Attackers: rehearse specific runs before each delivery.',
+      'Defenders: communicate marking assignments before every set piece.',
+    ],
+    category: 'set-pieces',
+    phase: 'scrimmage',
+    ageGroups: ['U12', 'U14', 'U16', 'U18'],
+    minPlayers: 10,
+    durationMinutes: 15,
+    intensity: 'high',
+    equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 2,0 8,0
+GK 5,1 K
+P 1,3 A
+P 4,4 B
+P 6,4 C
+P 8,3 D
+D 3,2
+D 5,3
+D 7,2
+B 1,3
+
+pass A > 5,2
+run B > 4,2
+run C > 6,2`,
+  },
+
+  {
+    id: 'scrimmage-two-touch-game',
+    name: 'Two-Touch Game',
+    description:
+      'A 4v4 or 5v5 game where players are limited to two touches maximum. Forces excellent first touch to set up the second touch (a pass or shot). Builds the habit of controlling with purpose rather than trapping and then deciding.',
+    setup:
+      'Mark a 30x25 yard field with mini-goals. Two teams with pinnies. Two-touch rule enforced (violation = turnover).',
+    coachingTips: [
+      'First touch should take the ball into space, not dead under your foot.',
+      'Think about your second touch before the ball arrives.',
+      'If two touches feels too hard, start with three-touch and progress.',
+    ],
+    category: 'first-touch',
+    phase: 'scrimmage',
+    ageGroups: ['U10', 'U12', 'U14', 'U16', 'U18'],
+    minPlayers: 8,
+    durationMinutes: 12,
+    intensity: 'high',
+    equipment: ['cones', 'balls', 'goals', 'pinnies'],
+    diagram: `G 1,0 4,0
+G 6,10 9,10
+P 3,6 A
+P 5,7 B
+P 7,6 C
+P 5,4 D
+D 3,4
+D 5,3
+D 7,4
+D 5,6
+B 5,7`,
+  },
+
+  {
+    id: 'scrimmage-keeper-wars',
+    name: 'Keeper Wars',
+    description:
+      'Two goalkeepers face off in small goals placed 20-25 yards apart. Each keeper tries to score on the other by throwing, drop-kicking, or volleying the ball. Builds distribution, shot-stopping, and competitive intensity in a fun 1v1 format.',
+    setup:
+      'Two mini-goals or cone goals 20-25 yards apart. One goalkeeper in each goal. Supply of balls nearby.',
+    coachingTips: [
+      'Emphasize technique: overarm throws, drop kicks, half-volleys.',
+      'Quick recovery after each save — get back into the ready position.',
+      'Add a rule: every other attempt must be a throw (develops distribution).',
+    ],
+    category: 'goalkeeping',
+    phase: 'scrimmage',
+    ageGroups: ['U10', 'U12', 'U14', 'U16', 'U18'],
+    minPlayers: 2,
+    durationMinutes: 8,
+    intensity: 'high',
+    equipment: ['balls', 'goals'],
+    diagram: `G 3,0 7,0
+G 3,10 7,10
+GK 5,1.5 K1
+GK 5,8.5 K2
+B 5,1.5
+
+pass K1 > 5,8.5`,
+  },
+  // COOL-DOWN DRILLS (10 drills)
   // ============================================================
 
   {
@@ -2611,5 +3143,117 @@ P 7,4
 D 3,7
 D 7,7
 B 5,5`,
+  },
+
+  {
+    id: 'cool-down-freestyle-dribble',
+    name: 'Freestyle Dribble Circle',
+    description:
+      'Players dribble slowly inside a large circle, experimenting with any moves they like — step-overs, Cruyff turns, pull-backs, rolls. No pressure, no defenders. A creative cool-down that reinforces ball familiarity while letting the heart rate come down.',
+    setup: 'Mark a large circle (15-yard radius) with cones. Every player has a ball.',
+    coachingTips: [
+      'No right or wrong moves — encourage creativity and experimentation.',
+      'Keep the pace gentle — this is a cool-down, not a speed drill.',
+      'Call out specific moves for everyone to try if you want more structure.',
+    ],
+    category: 'dribbling',
+    phase: 'cool-down',
+    ageGroups: ['U6', 'U8', 'U10', 'U12'],
+    minPlayers: 2,
+    durationMinutes: 5,
+    intensity: 'low',
+    equipment: ['cones', 'balls'],
+    diagram: `C 5,1  C 9,5  C 5,9  C 1,5
+P 3,3
+P 7,3
+P 4,7
+P 6,7
+B 3,3
+B 7,3
+B 4,7
+B 6,7`,
+  },
+
+  {
+    id: 'cool-down-target-practice',
+    name: 'Target Practice',
+    description:
+      'Players take turns calmly striking a ball at specific targets: cones in corners of a goal, a target net, or stacked cones. No time pressure, no defenders. A relaxing way to finish practice while getting extra shooting reps and building accuracy.',
+    setup:
+      'Place target cones in the corners of a goal (or on a wall). Players line up 10-12 yards away with balls.',
+    coachingTips: [
+      'Focus on placement, not power — this is precision practice.',
+      'Clean technique: plant foot, locked ankle, follow through.',
+      'Make it social — players cheer when someone hits the target.',
+    ],
+    category: 'shooting',
+    phase: 'cool-down',
+    ageGroups: ['U8', 'U10', 'U12', 'U14'],
+    minPlayers: 2,
+    durationMinutes: 5,
+    intensity: 'low',
+    equipment: ['cones', 'balls', 'goals'],
+    diagram: `G 2,0 8,0
+C 2.5,0.5
+C 7.5,0.5
+P 5,7 A
+B 5,7
+
+pass A > 2.5,0.5`,
+  },
+
+  {
+    id: 'cool-down-keeper-catch',
+    name: 'Keeper Catch & Chat',
+    description:
+      'Players pair up and gently toss balls to each other using goalkeeper techniques: W-catch, basket catch, diving saves at half pace. A calm, social cool-down that reinforces catching technique for everyone while the coach facilitates a brief reflection.',
+    setup: 'Players in pairs, 5 yards apart. Each pair has one ball. No goals needed.',
+    coachingTips: [
+      'Gentle tosses — the goal is technique, not challenge.',
+      'Practice both high catches (W-shape) and low scoops.',
+      'Use this time to chat about the session — what did we work on today?',
+    ],
+    category: 'goalkeeping',
+    phase: 'cool-down',
+    ageGroups: ['U8', 'U10', 'U12', 'U14'],
+    minPlayers: 2,
+    durationMinutes: 5,
+    intensity: 'low',
+    equipment: ['balls'],
+    diagram: `P 3,4 A
+P 7,4 B
+B 3,4
+
+pass A > B`,
+  },
+
+  {
+    id: 'cool-down-defensive-shape-walk',
+    name: 'Defensive Shape Walk-Through',
+    description:
+      'The whole team walks through defensive positions on a half-field at cool-down pace. The coach moves a ball and players shift as a unit — compact, goalside, ball-watching. A calm, educational cool-down that builds tactical awareness without physical strain.',
+    setup:
+      'Half-field or large grid. Team sets up in their defensive formation. Coach holds a ball and moves it to different positions.',
+    coachingTips: [
+      'Move as a unit — if one player shifts, everyone shifts.',
+      'Walking pace only — this is about understanding, not fitness.',
+      "Pause and ask questions: 'Where should you be if the ball is here?'",
+    ],
+    category: 'defending',
+    phase: 'cool-down',
+    ageGroups: ['U10', 'U12', 'U14', 'U16', 'U18'],
+    minPlayers: 6,
+    durationMinutes: 5,
+    intensity: 'low',
+    equipment: ['balls'],
+    diagram: `G 2,0 8,0
+GK 5,1 K
+D 3,3 LB
+D 5,2.5 CB
+D 7,3 RB
+P 3,5 LM
+P 5,4.5 CM
+P 7,5 RM
+T 5,8 "Coach + Ball"`,
   },
 ];
