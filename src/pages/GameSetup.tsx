@@ -4,6 +4,7 @@ import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import {
@@ -395,32 +396,12 @@ export function GameSetup() {
       )}
 
       {/* Solver status */}
-      {solver.isRunning && (
-        <Card>
-          <CardContent className="py-3">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>{solver.message}</span>
-                <span>{solver.progress}%</span>
-              </div>
-              <div className="w-full bg-secondary rounded-full h-2">
-                <div
-                  className="bg-primary h-2 rounded-full transition-all"
-                  style={{ width: `${solver.progress}%` }}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {solver.error && (
-        <Card className="border-destructive">
-          <CardContent className="py-3">
-            <p className="text-sm text-destructive">{solver.error}</p>
-          </CardContent>
-        </Card>
-      )}
+      <SolverStatusCard
+        isRunning={solver.isRunning}
+        progress={solver.progress}
+        message={solver.message}
+        error={solver.error}
+      />
 
       <Separator />
 

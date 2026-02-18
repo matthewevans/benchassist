@@ -33,6 +33,7 @@ import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
 import { LiveBottomBar } from '@/components/game/LiveBottomBar.tsx';
 import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
+import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 
@@ -545,30 +546,12 @@ export function RotationGrid() {
       )}
 
       {/* Solver progress/error — visible in all modes */}
-      {solver.isRunning && (
-        <Card>
-          <CardContent className="py-3">
-            <div className="flex justify-between text-sm mb-1">
-              <span>{solver.message}</span>
-              <span>{solver.progress}%</span>
-            </div>
-            <div className="w-full bg-secondary rounded-full h-1.5">
-              <div
-                className="bg-primary h-1.5 rounded-full transition-all"
-                style={{ width: `${solver.progress}%` }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {solver.error && (
-        <Card className="border-destructive">
-          <CardContent className="py-3">
-            <p className="text-sm text-destructive">{solver.error}</p>
-          </CardContent>
-        </Card>
-      )}
+      <SolverStatusCard
+        isRunning={solver.isRunning}
+        progress={solver.progress}
+        message={solver.message}
+        error={solver.error}
+      />
 
       {/* Overall stats — setup mode only */}
       {!isLive && !isCompleted && (
