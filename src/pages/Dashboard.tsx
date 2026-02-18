@@ -19,6 +19,7 @@ import { getUAge } from '@/utils/age.ts';
 import { readJSONFile } from '@/storage/exportImport.ts';
 import type { StorageData } from '@/storage/localStorage.ts';
 import { ExportDialog } from '@/components/ExportDialog.tsx';
+import { ImportDialog } from '@/components/ImportDialog.tsx';
 import {
   TEAM_GENDER_LABELS,
   TEAM_GENDER_BORDER_COLORS,
@@ -115,20 +116,6 @@ export function Dashboard() {
     } catch {
       setImportError("Could not read file. Make sure it's a valid BenchAssist export.");
     }
-  }
-
-  function handleImport(mode: 'replace' | 'merge') {
-    if (!importData) return;
-    const payload = {
-      teams: importData.teams,
-      games: importData.games,
-      favoriteDrillIds: importData.favoriteDrillIds ?? [],
-    };
-    dispatchWithUndo({
-      type: mode === 'merge' ? 'MERGE_DATA' : 'IMPORT_DATA',
-      payload,
-    });
-    setImportData(null);
   }
 
   function handleCreateTeam() {
@@ -329,34 +316,37 @@ export function Dashboard() {
         </div>
       </div>
 
-      <Dialog
-        open={importData !== null}
-        onOpenChange={(open) => {
-          if (!open) setImportData(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import backup</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">How would you like to import the data?</p>
-          <div className="flex flex-col gap-2 pt-2">
-            <Button onClick={() => handleImport('merge')}>Merge</Button>
-            <p className="text-xs text-muted-foreground -mt-1 mb-1 pl-1">
-              Add imported teams and games to your existing data. Duplicates are overwritten.
-            </p>
-            <Button variant="destructive" onClick={() => handleImport('replace')}>
-              Replace All
-            </Button>
-            <p className="text-xs text-muted-foreground -mt-1 mb-1 pl-1">
-              Delete all current data and replace with the imported backup.
-            </p>
-            <Button variant="outline" onClick={() => setImportData(null)}>
-              Cancel
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {importData && (
+        <ImportDialog
+          open={importData !== null}
+          onOpenChange={(open) => {
+            if (!open) setImportData(null);
+          }}
+          importData={importData}
+          onImportSelected={(filtered) => {
+            dispatchWithUndo({
+              type: 'MERGE_DATA',
+              payload: {
+                teams: filtered.teams,
+                games: filtered.games,
+                favoriteDrillIds: filtered.favoriteDrillIds ?? [],
+              },
+            });
+            setImportData(null);
+          }}
+          onReplaceAll={(data) => {
+            dispatchWithUndo({
+              type: 'IMPORT_DATA',
+              payload: {
+                teams: data.teams,
+                games: data.games,
+                favoriteDrillIds: data.favoriteDrillIds ?? [],
+              },
+            });
+            setImportData(null);
+          }}
+        />
+      )}
 
       {importError && (
         <Dialog open onOpenChange={() => setImportError(null)}>
