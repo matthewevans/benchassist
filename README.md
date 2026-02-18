@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/full_logo_light.png" alt="BenchAssist" width="280" />
+  <img src="public/logo_original_solid_1024.png" alt="BenchAssist" width="200" />
 </p>
 
 <p align="center">
