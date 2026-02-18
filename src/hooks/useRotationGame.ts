@@ -1,0 +1,353 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useAppContext } from '@/hooks/useAppContext.ts';
+import { useSolver } from '@/hooks/useSolver.ts';
+import { previewSwap, previewSwapRange } from '@/utils/stats.ts';
+import { RotationAssignment } from '@/types/domain.ts';
+import type { PlayerId, Game, GoalieAssignment } from '@/types/domain.ts';
+
+export function useRotationGame(gameId: string | undefined) {
+  const { state, dispatch } = useAppContext();
+  const solver = useSolver();
+
+  // --- Core data ---
+  const game = gameId ? state.games[gameId] : undefined;
+  const team = game ? state.teams[game.teamId] : undefined;
+  const roster = team?.rosters.find((r) => r.id === game?.rosterId);
+  const config = team?.gameConfigs.find((c) => c.id === game?.gameConfigId);
+  const schedule = game?.schedule;
+
+  const isLive = game?.status === 'in-progress';
+  const isCompleted = game?.status === 'completed';
+  const currentRotationIndex = game?.currentRotationIndex ?? 0;
+  const currentRotation = schedule?.rotations[currentRotationIndex];
+  const nextRotation = schedule?.rotations[currentRotationIndex + 1];
+  const currentPeriodIndex = currentRotation?.periodIndex ?? 0;
+
+  // --- Swap state ---
+  const [swapSource, setSwapSource] = useState<{
+    rotationIndex: number;
+    playerId: PlayerId;
+  } | null>(null);
+  const [pendingSwap, setPendingSwap] = useState<{
+    rotationIndex: number;
+    playerAId: PlayerId;
+    playerBId: PlayerId;
+  } | null>(null);
+
+  // --- UI state ---
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [confirmEndGame, setConfirmEndGame] = useState(false);
+  const [removingPlayerId, setRemovingPlayerId] = useState<PlayerId | null>(null);
+  const [viewMode, setViewMode] = useState<'focus' | 'grid'>('focus');
+
+  // --- Derived data ---
+  const periodGroups = useMemo(() => {
+    if (!schedule) return [];
+    const groups: { periodIndex: number; rotations: typeof schedule.rotations }[] = [];
+    for (const rotation of schedule.rotations) {
+      const existing = groups.find((g) => g.periodIndex === rotation.periodIndex);
+      if (existing) existing.rotations.push(rotation);
+      else groups.push({ periodIndex: rotation.periodIndex, rotations: [rotation] });
+    }
+    return groups;
+  }, [schedule]);
+
+  const changingPlayerIds = useMemo(() => {
+    if (!isLive || !currentRotation || !nextRotation) return new Set<PlayerId>();
+    const changing = new Set<PlayerId>();
+    for (const [playerId, nextAssignment] of Object.entries(nextRotation.assignments)) {
+      if (currentRotation.assignments[playerId] !== nextAssignment) {
+        changing.add(playerId as PlayerId);
+      }
+    }
+    return changing;
+  }, [isLive, currentRotation, nextRotation]);
+
+  const activePlayers = useMemo(() => {
+    if (!game || !roster) return [];
+    return roster.players.filter(
+      (p) => !game.absentPlayerIds.includes(p.id) && !game.removedPlayerIds.includes(p.id),
+    );
+  }, [game, roster]);
+
+  const playerMap = useMemo(() => new Map(activePlayers.map((p) => [p.id, p])), [activePlayers]);
+
+  const subTooltipMap = useMemo(() => {
+    if (!isLive || !currentRotation || !nextRotation) return new Map<PlayerId, string>();
+    const tips = new Map<PlayerId, string>();
+    const comingIn: PlayerId[] = [];
+    const goingOut: PlayerId[] = [];
+    for (const pid of changingPlayerIds) {
+      const cur = currentRotation.assignments[pid];
+      const nxt = nextRotation.assignments[pid];
+      if (cur === RotationAssignment.Bench && nxt !== RotationAssignment.Bench) comingIn.push(pid);
+      if (cur !== RotationAssignment.Bench && nxt === RotationAssignment.Bench) goingOut.push(pid);
+    }
+    const matched = new Set<PlayerId>();
+    if (currentRotation.fieldPositions && nextRotation.fieldPositions) {
+      const curSubPosToPlayer = new Map<string, PlayerId>();
+      for (const [pid, subPos] of Object.entries(currentRotation.fieldPositions)) {
+        curSubPosToPlayer.set(subPos, pid as PlayerId);
+      }
+      for (const pid of comingIn) {
+        const nextSubPos = nextRotation.fieldPositions![pid];
+        if (!nextSubPos) continue;
+        const replaced = curSubPosToPlayer.get(nextSubPos);
+        if (replaced && replaced !== pid && goingOut.includes(replaced)) {
+          const inName = playerMap.get(pid)?.name;
+          const outName = playerMap.get(replaced)?.name;
+          if (inName && outName) {
+            tips.set(pid, `Replacing ${outName}`);
+            tips.set(replaced, `Replaced by ${inName}`);
+            matched.add(pid);
+            matched.add(replaced);
+          }
+        }
+      }
+    }
+    const unmatchedIn = comingIn.filter((p) => !matched.has(p));
+    const unmatchedOut = goingOut.filter((p) => !matched.has(p));
+    if (unmatchedIn.length === 1 && unmatchedOut.length === 1) {
+      const inName = playerMap.get(unmatchedIn[0])?.name;
+      const outName = playerMap.get(unmatchedOut[0])?.name;
+      if (inName && outName) {
+        tips.set(unmatchedIn[0], `Replacing ${outName}`);
+        tips.set(unmatchedOut[0], `Replaced by ${inName}`);
+      }
+    }
+    return tips;
+  }, [isLive, currentRotation, nextRotation, changingPlayerIds, playerMap]);
+
+  // --- Solver result effect ---
+  const solverResult = solver.result;
+  const solverReset = solver.reset;
+  useEffect(() => {
+    if (solverResult && gameId) {
+      dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: solverResult } });
+      solverReset();
+    }
+  }, [solverResult, gameId, dispatch, solverReset]);
+
+  // --- Handlers ---
+  function handleCellClick(rotationIndex: number, playerId: PlayerId) {
+    if (isCompleted) return;
+    if (isLive && rotationIndex < currentRotationIndex) return;
+    if (!swapSource) {
+      setSwapSource({ rotationIndex, playerId });
+      return;
+    }
+    if (swapSource.rotationIndex === rotationIndex && swapSource.playerId === playerId) {
+      setSwapSource(null);
+      return;
+    }
+    if (swapSource.rotationIndex === rotationIndex && schedule) {
+      setPendingSwap({ rotationIndex, playerAId: swapSource.playerId, playerBId: playerId });
+      setSwapSource(null);
+    } else {
+      setSwapSource({ rotationIndex, playerId });
+    }
+  }
+
+  function handleSwapThisRotation() {
+    if (!pendingSwap || !schedule) return;
+    const newSchedule = previewSwap(
+      schedule,
+      pendingSwap.rotationIndex,
+      pendingSwap.playerAId,
+      pendingSwap.playerBId,
+      activePlayers,
+    );
+    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId: game!.id, schedule: newSchedule } });
+    setPendingSwap(null);
+  }
+
+  function handleSwapAllRemaining() {
+    if (!pendingSwap || !schedule) return;
+    const newSchedule = previewSwapRange(
+      schedule,
+      pendingSwap.rotationIndex,
+      pendingSwap.playerAId,
+      pendingSwap.playerBId,
+      activePlayers,
+    );
+    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId: game!.id, schedule: newSchedule } });
+    setPendingSwap(null);
+  }
+
+  function handleStartGame() {
+    if (!game) return;
+    const updatedGame: Game = { ...game, status: 'in-progress', startedAt: Date.now() };
+    dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
+  }
+
+  function handleAdvance() {
+    if (!gameId) return;
+    if (currentRotationIndex >= (schedule?.rotations.length ?? 0) - 1) {
+      setConfirmEndGame(true);
+      return;
+    }
+    dispatch({ type: 'ADVANCE_ROTATION', payload: gameId });
+  }
+
+  function handleRetreat() {
+    if (!gameId || currentRotationIndex <= 0) return;
+    dispatch({ type: 'RETREAT_ROTATION', payload: gameId });
+  }
+
+  function handleEndGame() {
+    if (!gameId || !game) return;
+    const updatedGame: Game = { ...game, status: 'completed', completedAt: Date.now() };
+    dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
+  }
+
+  function handleConfirmRemovePlayer() {
+    if (!gameId || !game || !config || !schedule || !removingPlayerId) return;
+    const remainingPlayers = activePlayers.filter((p) => p.id !== removingPlayerId);
+    if (remainingPlayers.length < config.fieldSize) {
+      solver.setError(
+        `Cannot remove player: only ${remainingPlayers.length} would remain, but ${config.fieldSize} are needed on field`,
+      );
+      setRemovingPlayerId(null);
+      return;
+    }
+    dispatch({ type: 'REMOVE_PLAYER_FROM_GAME', payload: { gameId, playerId: removingPlayerId } });
+    solver.solve({
+      players: remainingPlayers,
+      config,
+      absentPlayerIds: [...game.absentPlayerIds, removingPlayerId, ...game.removedPlayerIds],
+      goalieAssignments: game.goalieAssignments,
+      manualOverrides: [],
+      startFromRotation: game.currentRotationIndex,
+      existingRotations: schedule.rotations,
+    });
+    setRemovingPlayerId(null);
+  }
+
+  function handleAddPlayerBack(playerId: PlayerId) {
+    if (!gameId || !game || !roster || !config || !schedule) return;
+    dispatch({ type: 'ADD_PLAYER_TO_GAME', payload: { gameId, playerId } });
+    const returningPlayer = roster.players.find((p) => p.id === playerId);
+    if (!returningPlayer) return;
+    const updatedPlayers = [...activePlayers, returningPlayer];
+    const updatedRemoved = game.removedPlayerIds.filter((id) => id !== playerId);
+    solver.solve({
+      players: updatedPlayers,
+      config,
+      absentPlayerIds: [...game.absentPlayerIds, ...updatedRemoved],
+      goalieAssignments: game.goalieAssignments,
+      manualOverrides: [],
+      startFromRotation: game.currentRotationIndex,
+      existingRotations: schedule.rotations,
+    });
+  }
+
+  function handleRegenerate() {
+    if (!roster || !config || !game) return;
+    if (isLive && schedule) {
+      solver.solve({
+        players: activePlayers,
+        config,
+        absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
+        goalieAssignments: game.goalieAssignments,
+        manualOverrides: [],
+        startFromRotation: game.currentRotationIndex,
+        existingRotations: schedule.rotations,
+      });
+    } else {
+      solver.solve({
+        players: roster.players,
+        config,
+        absentPlayerIds: game.absentPlayerIds,
+        goalieAssignments: game.goalieAssignments,
+        manualOverrides: game.manualOverrides,
+      });
+    }
+  }
+
+  function handleRegenerateWithSettings(
+    absentIds: PlayerId[],
+    goalieAssignments: GoalieAssignment[],
+  ) {
+    if (!roster || !config || !game) return;
+    const updatedGame: Game = { ...game, absentPlayerIds: absentIds, goalieAssignments };
+    dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
+    solver.solve({
+      players: roster.players,
+      config,
+      absentPlayerIds: absentIds,
+      goalieAssignments,
+      manualOverrides: game.manualOverrides,
+    });
+  }
+
+  // --- Computed display values ---
+  const removedPlayers = roster?.players.filter((p) => game?.removedPlayerIds.includes(p.id)) ?? [];
+  const isLastRotation = currentRotationIndex >= (schedule?.rotations.length ?? 0) - 1;
+  const manyRotations = (schedule?.rotations.length ?? 0) > 4;
+  const isCrossingPeriod = nextRotation ? nextRotation.periodIndex !== currentPeriodIndex : false;
+  const removingPlayer = removingPlayerId
+    ? (playerMap.get(removingPlayerId) ?? roster?.players.find((p) => p.id === removingPlayerId))
+    : undefined;
+
+  const sortedPlayers = [...activePlayers].sort((a, b) => b.skillRanking - a.skillRanking);
+  const allDisplayPlayers = [
+    ...sortedPlayers,
+    ...removedPlayers.sort((a, b) => b.skillRanking - a.skillRanking),
+  ];
+
+  return {
+    // Core data
+    game,
+    team,
+    roster,
+    config,
+    schedule,
+    isLive,
+    isCompleted,
+    currentRotationIndex,
+    currentRotation,
+    nextRotation,
+    currentPeriodIndex,
+    // Derived
+    periodGroups,
+    changingPlayerIds,
+    activePlayers,
+    playerMap,
+    subTooltipMap,
+    sortedPlayers,
+    allDisplayPlayers,
+    removedPlayers,
+    isLastRotation,
+    manyRotations,
+    isCrossingPeriod,
+    removingPlayer,
+    // Solver
+    solver,
+    // Swap state
+    swapSource,
+    pendingSwap,
+    setSwapSource,
+    setPendingSwap,
+    // UI state
+    settingsOpen,
+    setSettingsOpen,
+    confirmEndGame,
+    setConfirmEndGame,
+    removingPlayerId,
+    setRemovingPlayerId,
+    viewMode,
+    setViewMode,
+    // Handlers
+    handleCellClick,
+    handleSwapThisRotation,
+    handleSwapAllRemaining,
+    handleStartGame,
+    handleAdvance,
+    handleRetreat,
+    handleEndGame,
+    handleConfirmRemovePlayer,
+    handleAddPlayerBack,
+    handleRegenerate,
+    handleRegenerateWithSettings,
+  };
+}
