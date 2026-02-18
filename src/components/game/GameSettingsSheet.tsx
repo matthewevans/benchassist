@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import {
@@ -38,12 +38,13 @@ export function GameSettingsSheet({
   const [editGoalies, setEditGoalies] = useState<GoalieAssignment[]>([]);
 
   // Sync local state from props when sheet opens
-  const [prevOpen, setPrevOpen] = useState(false);
-  if (open && !prevOpen) {
-    setEditAbsent(new Set(initialAbsentIds));
-    setEditGoalies([...initialGoalieAssignments]);
-  }
-  if (open !== prevOpen) setPrevOpen(open);
+  useEffect(() => {
+    if (open) {
+      setEditAbsent(new Set(initialAbsentIds));
+      setEditGoalies([...initialGoalieAssignments]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   function handleToggleAbsent(playerId: PlayerId) {
     setEditAbsent((prev) => {
