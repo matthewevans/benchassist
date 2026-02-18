@@ -22,12 +22,11 @@ import {
 import { Badge } from '@/components/ui/badge.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { cn } from '@/lib/utils.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
-import { parsePlayerImport } from '@/utils/parsePlayerImport.ts';
+import { PlayerImportDialog, type ImportRow } from '@/components/game/PlayerImportDialog.tsx';
 import { POSITION_LABELS } from '@/types/domain.ts';
 import type { Player, SkillRanking, Position } from '@/types/domain.ts';
 
@@ -55,14 +54,6 @@ const DEFAULT_FORM: PlayerFormData = {
   secondaryPositions: [],
 };
 
-interface ImportRow {
-  name: string;
-  skillRanking: SkillRanking;
-  canPlayGoalie: boolean;
-  existingPlayerId: string | null;
-  error: string | null;
-}
-
 export function RosterEditor() {
   const { teamId, rosterId } = useParams<{ teamId: string; rosterId: string }>();
   const { state, dispatch } = useAppContext();
@@ -71,10 +62,6 @@ export function RosterEditor() {
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [form, setForm] = useState<PlayerFormData>(DEFAULT_FORM);
   const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [importText, setImportText] = useState('');
-  const [importStep, setImportStep] = useState<'paste' | 'preview'>('paste');
-  const [importRows, setImportRows] = useState<ImportRow[]>([]);
 
   const team = teamId ? state.teams[teamId] : undefined;
   const roster = team?.rosters.find((r) => r.id === rosterId);
@@ -141,79 +128,49 @@ export function RosterEditor() {
     dispatchWithUndo({ type: 'DELETE_PLAYER', payload: { teamId, rosterId, playerId } });
   }
 
-  function handleImportParse() {
-    const parsed = parsePlayerImport(importText);
-    const rows: ImportRow[] = parsed.map((p) => {
-      if ('error' in p) {
-        return {
-          name: p.name,
-          skillRanking: 3,
-          canPlayGoalie: false,
-          existingPlayerId: null,
-          error: p.error,
-        };
-      }
-      const existing = roster?.players.find((rp) => rp.name.toLowerCase() === p.name.toLowerCase());
-      return {
-        name: p.name,
-        skillRanking: p.skillRanking,
-        canPlayGoalie: existing?.canPlayGoalie ?? false,
-        existingPlayerId: existing?.id ?? null,
-        error: null,
-      };
-    });
-    setImportRows(rows);
-    setImportStep('preview');
-  }
-
   /* eslint-disable react-hooks/purity -- event handler, not called during render */
-  function handleImportSave() {
+  function handleImportRows(rows: ImportRow[]) {
     if (!teamId || !rosterId) return;
-    const validRows = importRows.filter((r) => !r.error);
-    for (const row of validRows) {
+    for (const row of rows) {
       if (row.existingPlayerId) {
         const existing = roster?.players.find((p) => p.id === row.existingPlayerId);
-        const player: Player = {
-          id: row.existingPlayerId,
-          name: row.name.trim(),
-          skillRanking: row.skillRanking,
-          canPlayGoalie: row.canPlayGoalie,
-          primaryPosition: existing?.primaryPosition ?? null,
-          secondaryPositions: existing?.secondaryPositions ?? [],
-          createdAt: existing?.createdAt ?? Date.now(),
-        };
-        dispatch({ type: 'UPDATE_PLAYER', payload: { teamId, rosterId, player } });
+        dispatch({
+          type: 'UPDATE_PLAYER',
+          payload: {
+            teamId,
+            rosterId,
+            player: {
+              id: row.existingPlayerId,
+              name: row.name.trim(),
+              skillRanking: row.skillRanking,
+              canPlayGoalie: row.canPlayGoalie,
+              primaryPosition: existing?.primaryPosition ?? null,
+              secondaryPositions: existing?.secondaryPositions ?? [],
+              createdAt: existing?.createdAt ?? Date.now(),
+            },
+          },
+        });
       } else {
-        const player: Player = {
-          id: generateId(),
-          name: row.name.trim(),
-          skillRanking: row.skillRanking,
-          canPlayGoalie: row.canPlayGoalie,
-          primaryPosition: null,
-          secondaryPositions: [],
-          createdAt: Date.now(),
-        };
-        dispatch({ type: 'ADD_PLAYER', payload: { teamId, rosterId, player } });
+        dispatch({
+          type: 'ADD_PLAYER',
+          payload: {
+            teamId,
+            rosterId,
+            player: {
+              id: generateId(),
+              name: row.name.trim(),
+              skillRanking: row.skillRanking,
+              canPlayGoalie: row.canPlayGoalie,
+              primaryPosition: null,
+              secondaryPositions: [],
+              createdAt: Date.now(),
+            },
+          },
+        });
       }
     }
-    handleImportClose();
   }
   /* eslint-enable react-hooks/purity */
-
-  function handleImportClose() {
-    setIsImporting(false);
-    setImportText('');
-    setImportStep('paste');
-    setImportRows([]);
-  }
-
-  function updateImportRow(index: number, updates: Partial<ImportRow>) {
-    setImportRows((rows) => rows.map((r, i) => (i === index ? { ...r, ...updates } : r)));
-  }
-
-  function removeImportRow(index: number) {
-    setImportRows((rows) => rows.filter((_, i) => i !== index));
-  }
 
   const sortedPlayers = [...roster.players].sort((a, b) => b.skillRanking - a.skillRanking);
 
@@ -235,129 +192,15 @@ export function RosterEditor() {
           {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
         </p>
         <div className="flex gap-2">
-          <Dialog
-            open={isImporting}
-            onOpenChange={(open) => {
-              if (!open) handleImportClose();
-              else setIsImporting(true);
-            }}
-          >
-            <DialogTrigger asChild>
+          <PlayerImportDialog
+            existingPlayers={roster.players}
+            onImport={handleImportRows}
+            trigger={
               <Button variant="outline" size="sm">
                 Import Players
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {importStep === 'paste' ? 'Import Players' : 'Review Import'}
-                </DialogTitle>
-              </DialogHeader>
-
-              {importStep === 'paste' ? (
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="import-text">Paste player list (Name: Skill per line)</Label>
-                    <textarea
-                      id="import-text"
-                      className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-                      value={importText}
-                      onChange={(e) => setImportText(e.target.value)}
-                      placeholder={'Sloane: 4\nElla: 3\nKendall: 5'}
-                      autoFocus
-                    />
-                  </div>
-                  <Button
-                    onClick={handleImportParse}
-                    className="w-full"
-                    disabled={!importText.trim()}
-                  >
-                    Preview
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    {importRows.map((row, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        {row.error ? (
-                          <div className="flex-1 flex items-center gap-2 text-sm text-destructive">
-                            <span className="truncate">{row.name}</span>
-                            <span className="text-xs">({row.error})</span>
-                          </div>
-                        ) : (
-                          <>
-                            <Input
-                              value={row.name}
-                              onChange={(e) => updateImportRow(i, { name: e.target.value })}
-                              className="flex-1 h-8 text-sm"
-                            />
-                            <Select
-                              value={String(row.skillRanking)}
-                              onValueChange={(v) =>
-                                updateImportRow(i, { skillRanking: Number(v) as SkillRanking })
-                              }
-                            >
-                              <SelectTrigger className="w-16 h-8 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {([1, 2, 3, 4, 5] as const).map((rank) => (
-                                  <SelectItem key={rank} value={String(rank)}>
-                                    {rank}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Checkbox
-                              checked={row.canPlayGoalie}
-                              onCheckedChange={(checked) =>
-                                updateImportRow(i, { canPlayGoalie: checked as boolean })
-                              }
-                              aria-label="Can play goalie"
-                            />
-                            {row.existingPlayerId ? (
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                Update
-                              </Badge>
-                            ) : (
-                              <Badge className="text-xs shrink-0">New</Badge>
-                            )}
-                          </>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive shrink-0"
-                          onClick={() => removeImportRow(i)}
-                          aria-label="Remove player"
-                        >
-                          X
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setImportStep('paste')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={handleImportSave}
-                      className="flex-1"
-                      disabled={importRows.filter((r) => !r.error).length === 0}
-                    >
-                      Import {importRows.filter((r) => !r.error).length} Players
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
+            }
+          />
 
           <Dialog
             open={isAdding}
