@@ -47,7 +47,7 @@ BenchAssist is a free, open-source Progressive Web App that helps youth soccer c
 
 **Live Game Mode** — Track the game in real time with period timers, audio substitution alerts, a Now/Next focus view, and the ability to add or remove players mid-game with automatic schedule re-solving.
 
-**Practice Planner** — Browse 3,000+ curated drills, filtered by age bracket (U6–U18). Generate practice plans by category, duration, and player count. Favorite drills for quick access. Each drill includes a rendered field diagram.
+**Practice Planner** — Browse ~100 curated drills, filtered by age bracket (U6–U18). Generate practice plans by category, duration, and player count. Favorite drills for quick access. Each drill includes a rendered field diagram.
 
 **Data Portability** — Selective export/import (pick which teams, rosters, configs, and game history to include), full-data replacement, and schema migrations across versions. All destructive actions are undoable for 8 seconds via an undo toast.
 
@@ -105,7 +105,7 @@ src/
 │   ├── game/          #   Game-specific components
 │   └── layout/        #   App shell & navigation
 ├── context/           # AppContext (single reducer + Immer)
-├── data/              # Drill library (3,000+ entries)
+├── data/              # Drill library (~100 entries)
 ├── hooks/             # Custom hooks (solver, timer, undo, etc.)
 ├── pages/             # Route-level page components
 ├── storage/           # localStorage persistence & export/import
