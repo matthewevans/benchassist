@@ -1,4 +1,5 @@
 import { normalizeImportedData, type StorageData } from './localStorage.ts';
+import type { TeamSelection } from '@/hooks/useSelectionState.ts';
 
 interface ExportFormat {
   app: 'benchassist';
@@ -60,4 +61,34 @@ export function readJSONFile(file: File): Promise<StorageData> {
     reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsText(file);
   });
+}
+
+export function filterStorageData(
+  data: StorageData,
+  selections: Record<string, TeamSelection>,
+): StorageData {
+  const teams: StorageData['teams'] = {};
+  const games: StorageData['games'] = {};
+
+  for (const [teamId, sel] of Object.entries(selections)) {
+    const team = data.teams[teamId];
+    if (!team) continue;
+    if (!sel.rosters && !sel.configs && !sel.history) continue;
+
+    teams[teamId] = {
+      ...team,
+      rosters: sel.rosters ? team.rosters : [],
+      gameConfigs: sel.configs ? team.gameConfigs : [],
+    };
+
+    if (sel.history) {
+      for (const [gameId, game] of Object.entries(data.games)) {
+        if (game.teamId === teamId) {
+          games[gameId] = game;
+        }
+      }
+    }
+  }
+
+  return { version: data.version, teams, games };
 }
