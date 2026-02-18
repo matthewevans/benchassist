@@ -3,17 +3,16 @@ import { useParams, Link } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
-import { Settings2, ChevronRightIcon, RotateCcwIcon } from 'lucide-react';
-import { SUB_POSITION_LABELS, RotationAssignment } from '@/types/domain.ts';
+import { Settings2, RotateCcwIcon } from 'lucide-react';
+import { RotationAssignment } from '@/types/domain.ts';
 import type { PlayerId, Game, GoalieAssignment } from '@/types/domain.ts';
 import { previewSwap, previewSwapRange } from '@/utils/stats.ts';
-import { getAssignmentDisplay } from '@/utils/positions.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
 import { LiveBottomBar } from '@/components/game/LiveBottomBar.tsx';
 import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
-import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
+import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
@@ -224,7 +223,7 @@ export function RotationGrid() {
     return tips;
   }, [isLive, currentRotation, nextRotation, changingPlayerIds, playerMap]);
 
-  if (!game || !schedule || !roster) {
+  if (!game || !schedule || !roster || !config) {
     return (
       <div className="text-center py-12">
         <p className="text-sm text-muted-foreground">Game or schedule not found</p>
@@ -545,263 +544,25 @@ export function RotationGrid() {
 
       {/* Rotation grid — always shown in setup/completed, toggled in live */}
       {(!isLive || viewMode === 'grid') && (
-        <div className="overflow-x-auto" ref={gridRef}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2 pr-3 sticky left-0 bg-background font-medium z-10">
-                  Player
-                </th>
-                {periodGroups.map((group) => {
-                  if (collapsedPeriods.has(group.periodIndex)) {
-                    return (
-                      <th
-                        key={`collapsed-${group.periodIndex}`}
-                        className="text-center py-2 px-1 font-medium min-w-[36px] cursor-pointer hover:bg-accent/50 transition-colors"
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Expand period ${group.periodIndex + 1}`}
-                        onClick={() => togglePeriod(group.periodIndex)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            togglePeriod(group.periodIndex);
-                          }
-                        }}
-                      >
-                        <div className="flex items-center justify-center gap-0.5 text-muted-foreground">
-                          <span className="text-xs">P{group.periodIndex + 1}</span>
-                          <ChevronRightIcon className="size-3" />
-                        </div>
-                      </th>
-                    );
-                  }
-                  return group.rotations.map((r, i) => {
-                    const isCurrent = isLive && r.index === currentRotationIndex;
-                    const isPast = isLive && r.index < currentRotationIndex;
-                    const isNext = isLive && r.index === currentRotationIndex + 1;
-                    return (
-                      <th
-                        key={r.index}
-                        className={cn(
-                          'text-center py-2 font-medium',
-                          isLive ? 'px-2 min-w-[76px]' : 'px-1 min-w-[60px]',
-                          isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
-                          isNext && 'bg-accent/30',
-                          isPast && 'opacity-40',
-                        )}
-                        {...(isCurrent ? { 'data-current-rotation': '' } : {})}
-                      >
-                        <div className="flex items-center justify-center gap-1">
-                          <span>R{r.index + 1}</span>
-                        </div>
-                        {(isCurrent || isNext) && (
-                          <span
-                            className={cn(
-                              'text-xs font-semibold uppercase tracking-wide',
-                              isCurrent && 'text-primary',
-                              isNext && 'text-muted-foreground',
-                            )}
-                          >
-                            {isCurrent ? 'Now' : 'Next'}
-                          </span>
-                        )}
-                        <div className="text-xs text-muted-foreground font-normal">
-                          {i === 0 && isLive ? (
-                            <button
-                              className="hover:text-foreground transition-colors"
-                              onClick={() => togglePeriod(group.periodIndex)}
-                            >
-                              P{r.periodIndex + 1}
-                            </button>
-                          ) : (
-                            <>P{r.periodIndex + 1}</>
-                          )}
-                        </div>
-                      </th>
-                    );
-                  });
-                })}
-                <th className="text-center py-2 px-2 font-medium">Play%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allDisplayPlayers.map((player) => {
-                const stats = schedule.playerStats[player.id];
-                const isRemoved = game.removedPlayerIds.includes(player.id);
-                const playerNameEl = (
-                  <span className={cn('whitespace-nowrap', isRemoved && 'line-through opacity-50')}>
-                    {player.name}
-                  </span>
-                );
-                return (
-                  <tr key={player.id} className={cn('border-b', isRemoved && 'opacity-60')}>
-                    <td
-                      className={cn(
-                        'pr-3 sticky left-0 bg-background z-10',
-                        isLive ? 'py-2.5' : 'py-1.5',
-                      )}
-                    >
-                      {isLive ? (
-                        <PlayerPopover
-                          playerName={player.name}
-                          stats={stats}
-                          isRemoved={isRemoved}
-                          onRemove={() => setRemovingPlayerId(player.id)}
-                          onAddBack={() => handleAddPlayerBack(player.id)}
-                        >
-                          <button className="text-left hover:text-primary transition-colors">
-                            {playerNameEl}
-                          </button>
-                        </PlayerPopover>
-                      ) : (
-                        playerNameEl
-                      )}
-                    </td>
-                    {periodGroups.map((group) => {
-                      if (collapsedPeriods.has(group.periodIndex)) {
-                        return (
-                          <td
-                            key={`collapsed-${group.periodIndex}`}
-                            className="text-center py-1.5 px-1 cursor-pointer hover:bg-accent/50"
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Expand period ${group.periodIndex + 1}`}
-                            onClick={() => togglePeriod(group.periodIndex)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                togglePeriod(group.periodIndex);
-                              }
-                            }}
-                          />
-                        );
-                      }
-                      return group.rotations.map((rotation) => {
-                        const assignment = rotation.assignments[player.id];
-                        if (!assignment) return <td key={rotation.index} />;
-                        const usePositions = config?.usePositions ?? false;
-                        const fieldPosition = rotation.fieldPositions?.[player.id];
-                        const display = getAssignmentDisplay(
-                          assignment,
-                          fieldPosition,
-                          usePositions,
-                        );
-                        const isCurrent = isLive && rotation.index === currentRotationIndex;
-                        const isPast = isLive && rotation.index < currentRotationIndex;
-                        const isNext = isLive && rotation.index === currentRotationIndex + 1;
-                        const isChanging = isNext && changingPlayerIds.has(player.id);
-                        const isSelected =
-                          swapSource?.rotationIndex === rotation.index &&
-                          swapSource?.playerId === player.id;
-                        const isValidTarget =
-                          swapSource &&
-                          !isSelected &&
-                          swapSource.rotationIndex === rotation.index &&
-                          !isPast &&
-                          !isCompleted;
-                        const subTip = isChanging ? subTooltipMap.get(player.id) : undefined;
-                        const cellTitle =
-                          subTip ??
-                          (fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined);
-                        const isInteractive = !isPast && !isCompleted;
-                        return (
-                          <td
-                            key={rotation.index}
-                            className={cn(
-                              'text-center',
-                              isLive ? 'py-2.5 px-2' : 'py-1.5 px-1',
-                              isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
-                              isNext && 'bg-accent/30',
-                              (isPast || isCompleted) && 'opacity-40 pointer-events-none',
-                            )}
-                            {...(isCurrent ? { 'data-current-rotation': '' } : {})}
-                            {...(isInteractive
-                              ? {
-                                  role: 'button' as const,
-                                  tabIndex: 0,
-                                  'aria-label': `${player.name}: ${display.label}, rotation ${rotation.index + 1}`,
-                                  onKeyDown: (e: React.KeyboardEvent) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      handleCellClick(rotation.index, player.id);
-                                    }
-                                  },
-                                }
-                              : {})}
-                            onClick={() => handleCellClick(rotation.index, player.id)}
-                          >
-                            <span
-                              className={cn(
-                                'inline-block rounded font-medium transition-all',
-                                isLive ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs',
-                                display.className,
-                                isSelected && 'ring-2 ring-primary ring-offset-1 animate-pulse',
-                                isValidTarget &&
-                                  'ring-1 ring-primary/50 hover:ring-2 hover:ring-primary',
-                                isChanging && 'ring-2 ring-dashed ring-accent-foreground/40',
-                                !isPast && !isCompleted && 'cursor-pointer',
-                                swapSource &&
-                                  !isSelected &&
-                                  !isValidTarget &&
-                                  !isPast &&
-                                  !isCompleted &&
-                                  'opacity-70 hover:opacity-100',
-                              )}
-                              title={cellTitle}
-                            >
-                              {display.label}
-                            </span>
-                          </td>
-                        );
-                      });
-                    })}
-                    <td className="text-center py-1.5 px-2">
-                      <span
-                        className={`text-xs font-medium ${
-                          stats && stats.playPercentage < (config?.minPlayPercentage ?? 50)
-                            ? 'text-destructive'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {stats?.playPercentage ?? 0}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot>
-              <tr className="border-t font-medium">
-                <td className="py-2 pr-3 sticky left-0 bg-background text-sm z-10">
-                  Team Strength
-                </td>
-                {periodGroups.map((group) => {
-                  if (collapsedPeriods.has(group.periodIndex)) {
-                    return <td key={`collapsed-${group.periodIndex}`} />;
-                  }
-                  return group.rotations.map((rotation) => {
-                    const isCurrent = isLive && rotation.index === currentRotationIndex;
-                    const isPast = isLive && rotation.index < currentRotationIndex;
-                    return (
-                      <td
-                        key={rotation.index}
-                        className={cn(
-                          'text-center py-2 px-1 text-sm',
-                          isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
-                          isPast && 'opacity-40',
-                        )}
-                      >
-                        {rotation.teamStrength}
-                      </td>
-                    );
-                  });
-                })}
-                <td />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+        <RotationTable
+          ref={gridRef}
+          periodGroups={periodGroups}
+          allDisplayPlayers={allDisplayPlayers}
+          playerStats={schedule.playerStats}
+          config={config}
+          gameRemovedPlayerIds={game.removedPlayerIds}
+          isLive={isLive}
+          isCompleted={isCompleted}
+          currentRotationIndex={currentRotationIndex}
+          changingPlayerIds={changingPlayerIds}
+          subTooltipMap={subTooltipMap}
+          collapsedPeriods={collapsedPeriods}
+          togglePeriod={togglePeriod}
+          swapSource={swapSource}
+          onCellClick={handleCellClick}
+          onRemovePlayer={(pid) => setRemovingPlayerId(pid)}
+          onAddPlayerBack={handleAddPlayerBack}
+        />
       )}
 
       {/* Swap instruction — only in non-live mode */}
