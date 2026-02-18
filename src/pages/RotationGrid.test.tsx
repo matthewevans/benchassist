@@ -270,10 +270,10 @@ describe('RotationGrid', () => {
       return { state: liveState, game: liveGame, ...rest };
     }
 
-    it('shows rotation counter and period', () => {
+    it('shows rotation progress pips with tooltip', () => {
       const { state, game } = buildLiveState();
       renderGrid(state, game.id);
-      expect(screen.getByText(/Rotation 1 of 4/)).toBeInTheDocument();
+      expect(screen.getByTitle(/Rotation 1 of 4/)).toBeInTheDocument();
     });
 
     it('shows End Game button in header', () => {

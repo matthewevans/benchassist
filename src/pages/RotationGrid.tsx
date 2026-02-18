@@ -36,6 +36,48 @@ import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 
+function RotationPips({
+  periodGroups,
+  currentRotationIndex,
+}: {
+  periodGroups: { periodIndex: number; rotations: { index: number }[] }[];
+  currentRotationIndex: number;
+}) {
+  const totalRotations = periodGroups.reduce((sum, g) => sum + g.rotations.length, 0);
+  const currentPeriodIndex =
+    periodGroups.find((g) => g.rotations.some((r) => r.index === currentRotationIndex))
+      ?.periodIndex ?? 0;
+
+  return (
+    <div
+      className="flex items-center gap-1.5"
+      role="status"
+      aria-label={`Rotation ${currentRotationIndex + 1} of ${totalRotations}, Period ${currentPeriodIndex + 1}`}
+      title={`Rotation ${currentRotationIndex + 1} of ${totalRotations} — Period ${currentPeriodIndex + 1}`}
+    >
+      {periodGroups.map((group) => (
+        <div key={group.periodIndex} className="flex items-center gap-0.5">
+          {group.rotations.map((r) => {
+            const isPast = r.index < currentRotationIndex;
+            const isCurrent = r.index === currentRotationIndex;
+            return (
+              <div
+                key={r.index}
+                className={cn(
+                  'h-2 w-3 rounded-sm transition-colors',
+                  isCurrent && 'bg-primary',
+                  isPast && 'bg-primary/40',
+                  !isPast && !isCurrent && 'bg-muted',
+                )}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
   const { state, dispatch } = useAppContext();
@@ -453,14 +495,7 @@ export function RotationGrid() {
         </div>
       ) : isLive ? (
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">
-              Rotation {currentRotationIndex + 1} of {schedule.rotations.length}
-              <span className="text-muted-foreground font-normal text-base ml-2">
-                &middot; Period {currentPeriodIndex + 1}
-              </span>
-            </h1>
-          </div>
+          <RotationPips periodGroups={periodGroups} currentRotationIndex={currentRotationIndex} />
           <div className="flex gap-2">
             <Button
               variant="ghost"
