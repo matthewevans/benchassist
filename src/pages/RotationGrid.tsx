@@ -11,13 +11,6 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet.tsx';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { cn } from '@/lib/utils.ts';
 import { Settings2, ChevronRightIcon, RotateCcwIcon } from 'lucide-react';
@@ -33,6 +26,7 @@ import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { AttendanceList } from '@/components/game/AttendanceList.tsx';
+import { GoalieAssignmentSelector } from '@/components/game/GoalieAssignmentSelector.tsx';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 
@@ -989,34 +983,14 @@ export function RotationGrid() {
             {config?.useGoalie && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Goalie Assignment</Label>
-                <div className="space-y-2">
-                  {Array.from({ length: config.periods }, (_, i) => {
-                    const availableGoalies = roster.players.filter(
-                      (p) => p.canPlayGoalie && !editAbsent.has(p.id),
-                    );
-                    return (
-                      <div key={i} className="flex items-center gap-3">
-                        <Label className="w-20 text-sm">Period {i + 1}</Label>
-                        <Select
-                          value={editGoalies.find((a) => a.periodIndex === i)?.playerId ?? 'auto'}
-                          onValueChange={(v) => handleGoalieChange(i, v)}
-                        >
-                          <SelectTrigger className="flex-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="auto">Auto-assign</SelectItem>
-                            {availableGoalies.map((player) => (
-                              <SelectItem key={player.id} value={player.id}>
-                                {player.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    );
-                  })}
-                </div>
+                <GoalieAssignmentSelector
+                  periods={config.periods}
+                  goalieAssignments={editGoalies}
+                  eligiblePlayers={roster.players.filter(
+                    (p) => p.canPlayGoalie && !editAbsent.has(p.id),
+                  )}
+                  onChange={handleGoalieChange}
+                />
               </div>
             )}
           </div>

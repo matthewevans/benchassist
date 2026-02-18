@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { AttendanceList } from '@/components/game/AttendanceList.tsx';
+import { GoalieAssignmentSelector } from '@/components/game/GoalieAssignmentSelector.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import {
@@ -331,30 +332,13 @@ export function GameSetup() {
               Goalie Assignment
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {Array.from({ length: selectedConfig.periods }, (_, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <Label className="w-24 text-sm">Period {i + 1}</Label>
-                <Select
-                  value={goalieAssignments.find((a) => a.periodIndex === i)?.playerId ?? 'auto'}
-                  onValueChange={(v) => handleGoalieChange(i, v)}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">Auto-assign</SelectItem>
-                    {activePlayers
-                      .filter((p) => p.canPlayGoalie)
-                      .map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ))}
+          <CardContent>
+            <GoalieAssignmentSelector
+              periods={selectedConfig.periods}
+              goalieAssignments={goalieAssignments}
+              eligiblePlayers={activePlayers.filter((p) => p.canPlayGoalie)}
+              onChange={handleGoalieChange}
+            />
           </CardContent>
         </Card>
       )}
