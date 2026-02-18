@@ -23,6 +23,10 @@ BenchAssist is a free, open-source Progressive Web App that helps youth soccer c
 | -------------------------------------------- | ---------------------------------------------------- |
 | ![Dashboard](docs/screenshots/dashboard.png) | ![Rotation Grid](docs/screenshots/rotation-grid.png) |
 
+| Live Focus View                                     | Live Grid View                                    |
+| --------------------------------------------------- | ------------------------------------------------- |
+| ![Live Focus View](docs/screenshots/live-focus.png) | ![Live Grid View](docs/screenshots/live-grid.png) |
+
 | Team Management                                          | Practice Planner                                           |
 | -------------------------------------------------------- | ---------------------------------------------------------- |
 | ![Team Management](docs/screenshots/team-management.png) | ![Practice Planner](docs/screenshots/practice-planner.png) |
