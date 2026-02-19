@@ -107,7 +107,7 @@ export function RotationGrid() {
     <div>
       {/* NavBar — adapts to game state */}
       {g.isCompleted ? (
-        <NavBar title={g.game.name} backTo="/" backLabel="Teams" />
+        <NavBar title={g.game.name} backTo="/games" backLabel="Games" />
       ) : g.isLive ? (
         <NavBar
           title=""
@@ -173,8 +173,8 @@ export function RotationGrid() {
       ) : (
         <NavBar
           title={g.game.name}
-          backTo={`/teams/${g.game.teamId}`}
-          backLabel={g.team?.name ?? 'Team'}
+          backTo="/games"
+          backLabel="Games"
           trailing={
             <div className="flex items-center gap-1.5">
               <Popover>

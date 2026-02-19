@@ -180,12 +180,12 @@ describe('RotationGrid', () => {
   });
 
   describe('setup mode', () => {
-    it('renders game name and team name', () => {
-      const { state, game, team } = buildTestState();
+    it('renders game name and back link to Games', () => {
+      const { state, game } = buildTestState();
       renderGrid(state, game.id);
-      // Game name and team name appear in both breadcrumb and header
       expect(screen.getAllByText('Test Match').length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText(team.name).length).toBeGreaterThanOrEqual(1);
+      const backLink = screen.getByRole('link', { name: 'Back to Games' });
+      expect(backLink).toHaveAttribute('href', '/games');
     });
 
     it('shows Start Game button and Regenerate in overflow menu', async () => {
@@ -481,12 +481,12 @@ describe('RotationGrid', () => {
   });
 
   describe('breadcrumb navigation', () => {
-    it('renders back link to team in setup mode', () => {
-      const { state, game, team } = buildTestState();
+    it('renders back link to Games in setup mode', () => {
+      const { state, game } = buildTestState();
       renderGrid(state, game.id);
-      const backLink = screen.getByRole('link', { name: `Back to ${team.name}` });
+      const backLink = screen.getByRole('link', { name: 'Back to Games' });
       expect(backLink).toBeInTheDocument();
-      expect(backLink).toHaveAttribute('href', `/teams/${team.id}`);
+      expect(backLink).toHaveAttribute('href', '/games');
     });
   });
 

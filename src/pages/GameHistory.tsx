@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2 } from 'lucide-react';
+import { ContextMenu as ContextMenuPrimitive } from 'radix-ui';
+import { ChevronRight, Plus } from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { NavBar } from '@/components/layout/NavBar.tsx';
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
+import { SwipeableRow } from '@/components/ui/swipeable-row.tsx';
 import { GAME_STATUS_LABELS, GAME_STATUS_STYLES } from '@/types/domain.ts';
 
 export function GameHistory() {
@@ -44,7 +46,7 @@ export function GameHistory() {
               <div className="text-center py-4">
                 <div className="text-ios-body font-medium text-muted-foreground">No games yet</div>
                 <div className="text-ios-caption1 text-muted-foreground mt-1">
-                  Create a game from a team page to get started.
+                  Tap + to create your first game.
                 </div>
               </div>
             </GroupedListRow>
@@ -54,37 +56,45 @@ export function GameHistory() {
             {games.map((game, i) => {
               const team = state.teams[game.teamId];
               return (
-                <Link key={game.id} to={`/games/${game.id}/rotations`}>
-                  <GroupedListRow
-                    chevron
-                    last={i === games.length - 1}
-                    trailing={
-                      <div className="flex items-center gap-2">
-                        <Badge className={GAME_STATUS_STYLES[game.status]}>
-                          {GAME_STATUS_LABELS[game.status]}
-                        </Badge>
-                        <Button
-                          variant="plain"
-                          size="icon-xs"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setDeletingGameId(game.id);
-                          }}
+                <SwipeableRow key={game.id} onDelete={() => setDeletingGameId(game.id)}>
+                  <ContextMenuPrimitive.Root>
+                    <ContextMenuPrimitive.Trigger asChild>
+                      <Link
+                        to={`/games/${game.id}/rotations`}
+                        className="block active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
+                      >
+                        <GroupedListRow
+                          last={i === games.length - 1}
+                          trailing={
+                            <div className="flex items-center gap-2">
+                              <Badge className={GAME_STATUS_STYLES[game.status]}>
+                                {GAME_STATUS_LABELS[game.status]}
+                              </Badge>
+                              <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
+                            </div>
+                          }
                         >
-                          <Trash2 className="size-4 text-destructive" />
-                        </Button>
-                      </div>
-                    }
-                  >
-                    <div>
-                      <div className="text-ios-body font-medium">{game.name}</div>
-                      <div className="text-ios-caption1 text-muted-foreground">
-                        {team?.name} &middot; {new Date(game.createdAt).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </GroupedListRow>
-                </Link>
+                          <div>
+                            <div className="text-ios-body font-medium">{game.name}</div>
+                            <div className="text-ios-caption1 text-muted-foreground">
+                              {team?.name} &middot; {new Date(game.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </GroupedListRow>
+                      </Link>
+                    </ContextMenuPrimitive.Trigger>
+                    <ContextMenuPrimitive.Portal>
+                      <ContextMenuPrimitive.Content className="bg-popover text-popover-foreground z-50 min-w-[160px] overflow-hidden rounded-xl border p-1 shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
+                        <ContextMenuPrimitive.Item
+                          className="flex items-center rounded-lg px-3 py-2 text-ios-subheadline text-destructive outline-hidden select-none data-[highlighted]:bg-accent cursor-default"
+                          onSelect={() => setDeletingGameId(game.id)}
+                        >
+                          Delete
+                        </ContextMenuPrimitive.Item>
+                      </ContextMenuPrimitive.Content>
+                    </ContextMenuPrimitive.Portal>
+                  </ContextMenuPrimitive.Root>
+                </SwipeableRow>
               );
             })}
           </GroupedList>
