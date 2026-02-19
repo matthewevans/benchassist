@@ -476,13 +476,12 @@ describe('RotationGrid', () => {
   });
 
   describe('breadcrumb navigation', () => {
-    it('renders breadcrumb links in setup mode', () => {
+    it('renders back link to team in setup mode', () => {
       const { state, game, team } = buildTestState();
       renderGrid(state, game.id);
-      const teamsLinks = screen.getAllByRole('link', { name: 'Teams' });
-      expect(teamsLinks.length).toBeGreaterThanOrEqual(1);
-      const teamLinks = screen.getAllByRole('link', { name: team.name });
-      expect(teamLinks.length).toBeGreaterThanOrEqual(1);
+      const backLink = screen.getByRole('link', { name: `Back to ${team.name}` });
+      expect(backLink).toBeInTheDocument();
+      expect(backLink).toHaveAttribute('href', `/teams/${team.id}`);
     });
   });
 

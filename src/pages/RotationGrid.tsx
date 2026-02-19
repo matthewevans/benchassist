@@ -13,8 +13,9 @@ import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
 import { PlayerStatsCard } from '@/components/game/PlayerStatsCard.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
+import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
+import { NavBar } from '@/components/layout/NavBar.tsx';
 
 function RotationPips({
   periodGroups,
@@ -101,224 +102,233 @@ export function RotationGrid() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm">
-        <Link to="/" className="text-muted-foreground hover:text-foreground">
-          Teams
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <Link
-          to={`/teams/${g.game.teamId}`}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          {g.team?.name}
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <span>{g.game.name}</span>
-      </div>
-
-      {/* Header — adapts to game state */}
+    <div>
+      {/* NavBar — adapts to game state */}
       {g.isCompleted ? (
-        <div>
-          <h1 className="text-2xl font-bold">{g.game.name}</h1>
-          <p className="text-sm text-muted-foreground">Completed</p>
-        </div>
+        <NavBar title={g.game.name} backTo="/" backLabel="Teams" />
       ) : g.isLive ? (
-        <div className="flex items-center justify-between">
-          <RotationPips
-            periodGroups={g.periodGroups}
-            currentRotationIndex={g.currentRotationIndex}
-          />
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => g.setViewMode((v) => (v === 'focus' ? 'grid' : 'focus'))}
-            >
-              {g.viewMode === 'focus' ? 'Grid' : 'Focus'}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={g.handleRegenerate}
-              disabled={g.solver.isRunning}
-            >
-              {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => g.setConfirmEndGame(true)}>
-              End Game
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{g.game.name}</h1>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => g.setSettingsOpen(true)}
-              title="Edit game settings"
-            >
-              <Settings2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={g.handleRegenerate}
-              disabled={g.solver.isRunning}
-            >
-              {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
-            </Button>
-            <Button size="sm" onClick={g.handleStartGame}>
-              Start Game
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Solver progress/error — visible in all modes */}
-      <SolverStatusCard
-        isRunning={g.solver.isRunning}
-        progress={g.solver.progress}
-        message={g.solver.message}
-        error={g.solver.error}
-      />
-
-      {/* Overall stats — setup mode only */}
-      {!g.isLive && !g.isCompleted && <OverallStatsCards stats={g.schedule.overallStats} />}
-
-      {/* Swap hint — setup mode only, hidden once a swap starts */}
-      {!g.isLive && !g.isCompleted && !g.swapSource && (
-        <p className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
-          Tap any player cell to swap their position with another player in the same rotation.
-        </p>
-      )}
-
-      {/* Landscape hint — portrait only, many rotations */}
-      {g.manyRotations && !g.isCompleted && (
-        <p className="hidden portrait:flex text-xs text-muted-foreground text-center items-center justify-center gap-1.5">
-          <RotateCcwIcon className="size-3" />
-          Rotate your phone for a wider view
-        </p>
-      )}
-
-      {/* Live focus view — default in live mode */}
-      {g.isLive && g.viewMode === 'focus' && g.currentRotation && (
-        <LiveFocusView
-          currentRotation={g.currentRotation}
-          nextRotation={g.nextRotation}
-          playerMap={g.playerMap}
-          changingPlayerIds={g.changingPlayerIds}
-          usePositions={g.config?.usePositions ?? false}
-        />
-      )}
-
-      {/* Rotation grid table */}
-      {(!g.isLive || g.viewMode === 'grid') && g.config && (
-        <RotationTable
-          ref={gridRef}
-          periodGroups={g.periodGroups}
-          allDisplayPlayers={g.allDisplayPlayers}
-          playerStats={g.schedule.playerStats}
-          config={g.config}
-          gameRemovedPlayerIds={g.game.removedPlayerIds}
-          isLive={g.isLive}
-          isCompleted={g.isCompleted}
-          currentRotationIndex={g.currentRotationIndex}
-          changingPlayerIds={g.changingPlayerIds}
-          subTooltipMap={g.subTooltipMap}
-          collapsedPeriods={collapsedPeriods}
-          togglePeriod={togglePeriod}
-          swapSource={g.swapSource}
-          onCellClick={g.handleCellClick}
-          onRemovePlayer={(pid) => g.setRemovingPlayerId(pid)}
-          onAddPlayerBack={g.handleAddPlayerBack}
-        />
-      )}
-
-      {/* Swap instruction — only in non-live mode */}
-      {!g.isLive && !g.isCompleted && g.swapSource && (
-        <p className="text-sm text-muted-foreground mt-2">
-          Selected {g.playerMap.get(g.swapSource.playerId)?.name} in R
-          {g.swapSource.rotationIndex + 1}. Click another player in the same rotation to swap, or
-          click again to deselect.
-        </p>
-      )}
-
-      {/* Player statistics — setup mode only */}
-      {!g.isLive && !g.isCompleted && (
-        <PlayerStatsCard
-          players={g.sortedPlayers}
-          playerStats={g.schedule.playerStats}
-          minPlayPercentage={g.config?.minPlayPercentage ?? 50}
-        />
-      )}
-
-      {/* Live bottom bar */}
-      {g.isLive && <div className="h-20" />}
-      {g.isLive && (
-        <LiveBottomBar
-          timer={timer}
-          onAdvance={g.handleAdvance}
-          onRetreat={g.handleRetreat}
-          isFirstRotation={g.currentRotationIndex === 0}
-          isLastRotation={g.isLastRotation}
-          isCrossingPeriod={g.isCrossingPeriod}
-          swapPlayerName={
-            g.swapSource ? (g.playerMap.get(g.swapSource.playerId)?.name ?? null) : null
+        <NavBar
+          title=""
+          trailing={
+            <div className="flex items-center gap-2">
+              <RotationPips
+                periodGroups={g.periodGroups}
+                currentRotationIndex={g.currentRotationIndex}
+              />
+              <Button
+                variant="plain"
+                size="sm"
+                onClick={() => g.setViewMode((v) => (v === 'focus' ? 'grid' : 'focus'))}
+              >
+                {g.viewMode === 'focus' ? 'Grid' : 'Focus'}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={g.handleRegenerate}
+                disabled={g.solver.isRunning}
+              >
+                {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
+              </Button>
+              <Button
+                variant="destructive-plain"
+                size="sm"
+                onClick={() => g.setConfirmEndGame(true)}
+              >
+                End Game
+              </Button>
+            </div>
           }
-          onCancelSwap={() => g.setSwapSource(null)}
+        />
+      ) : (
+        <NavBar
+          title={g.game.name}
+          backTo={`/teams/${g.game.teamId}`}
+          backLabel={g.team?.name ?? 'Team'}
+          trailing={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="plain"
+                size="icon"
+                onClick={() => g.setSettingsOpen(true)}
+                title="Edit game settings"
+              >
+                <Settings2 className="size-5" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={g.handleRegenerate}
+                disabled={g.solver.isRunning}
+              >
+                {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
+              </Button>
+              <Button size="sm" onClick={g.handleStartGame}>
+                Start Game
+              </Button>
+            </div>
+          }
         />
       )}
 
-      {/* Swap scope dialog */}
-      <SwapScopeDialog
-        open={g.pendingSwap !== null}
-        playerA={g.pendingSwap ? (g.playerMap.get(g.pendingSwap.playerAId)?.name ?? 'Player') : ''}
-        playerB={g.pendingSwap ? (g.playerMap.get(g.pendingSwap.playerBId)?.name ?? 'Player') : ''}
-        onThisRotation={g.handleSwapThisRotation}
-        onAllRemaining={g.handleSwapAllRemaining}
-        onCancel={() => g.setPendingSwap(null)}
-      />
+      <div className="space-y-6 pt-4">
+        {/* Completed indicator */}
+        {g.isCompleted && <p className="text-sm text-muted-foreground px-4">Completed</p>}
 
-      {/* End game confirmation */}
-      <ConfirmDialog
-        open={g.confirmEndGame}
-        onConfirm={() => {
-          g.setConfirmEndGame(false);
-          g.handleEndGame();
-        }}
-        onCancel={() => g.setConfirmEndGame(false)}
-        title="End this game?"
-        description="The game will be marked as completed. You won't be able to resume live tracking."
-        confirmLabel="End Game"
-        variant="destructive"
-      />
+        {/* Solver progress/error — visible in all modes */}
+        <SolverStatusCard
+          isRunning={g.solver.isRunning}
+          progress={g.solver.progress}
+          message={g.solver.message}
+          error={g.solver.error}
+        />
 
-      {/* Player removal confirmation */}
-      <ConfirmDialog
-        open={g.removingPlayerId !== null}
-        onConfirm={g.handleConfirmRemovePlayer}
-        onCancel={() => g.setRemovingPlayerId(null)}
-        title={`Remove ${g.removingPlayer?.name ?? 'player'}?`}
-        description="They will be removed from remaining rotations. The schedule will be recalculated."
-        confirmLabel="Remove"
-        variant="destructive"
-      />
+        {/* Overall stats — setup mode only */}
+        {!g.isLive && !g.isCompleted && <OverallStatsCards stats={g.schedule.overallStats} />}
 
-      {/* Settings Sheet — only in setup mode */}
-      <GameSettingsSheet
-        open={g.settingsOpen}
-        onOpenChange={g.setSettingsOpen}
-        players={g.roster.players}
-        initialAbsentIds={g.game.absentPlayerIds}
-        initialGoalieAssignments={g.game.goalieAssignments}
-        periods={g.config?.periods ?? 2}
-        useGoalie={g.config?.useGoalie ?? false}
-        onRegenerate={g.handleRegenerateWithSettings}
-      />
+        {/* Swap hint — setup mode only, hidden once a swap starts */}
+        {!g.isLive && !g.isCompleted && !g.swapSource && (
+          <p className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+            Tap any player cell to swap their position with another player in the same rotation.
+          </p>
+        )}
+
+        {/* Landscape hint — portrait only, many rotations */}
+        {g.manyRotations && !g.isCompleted && (
+          <p className="hidden portrait:flex text-xs text-muted-foreground text-center items-center justify-center gap-1.5">
+            <RotateCcwIcon className="size-3" />
+            Rotate your phone for a wider view
+          </p>
+        )}
+
+        {/* Live focus view — default in live mode */}
+        {g.isLive && g.viewMode === 'focus' && g.currentRotation && (
+          <LiveFocusView
+            currentRotation={g.currentRotation}
+            nextRotation={g.nextRotation}
+            playerMap={g.playerMap}
+            changingPlayerIds={g.changingPlayerIds}
+            usePositions={g.config?.usePositions ?? false}
+          />
+        )}
+
+        {/* Rotation grid table */}
+        {(!g.isLive || g.viewMode === 'grid') && g.config && (
+          <RotationTable
+            ref={gridRef}
+            periodGroups={g.periodGroups}
+            allDisplayPlayers={g.allDisplayPlayers}
+            playerStats={g.schedule.playerStats}
+            config={g.config}
+            gameRemovedPlayerIds={g.game.removedPlayerIds}
+            isLive={g.isLive}
+            isCompleted={g.isCompleted}
+            currentRotationIndex={g.currentRotationIndex}
+            changingPlayerIds={g.changingPlayerIds}
+            subTooltipMap={g.subTooltipMap}
+            collapsedPeriods={collapsedPeriods}
+            togglePeriod={togglePeriod}
+            swapSource={g.swapSource}
+            onCellClick={g.handleCellClick}
+            onRemovePlayer={(pid) => g.setRemovingPlayerId(pid)}
+            onAddPlayerBack={g.handleAddPlayerBack}
+          />
+        )}
+
+        {/* Swap instruction — only in non-live mode */}
+        {!g.isLive && !g.isCompleted && g.swapSource && (
+          <p className="text-sm text-muted-foreground mt-2">
+            Selected {g.playerMap.get(g.swapSource.playerId)?.name} in R
+            {g.swapSource.rotationIndex + 1}. Click another player in the same rotation to swap, or
+            click again to deselect.
+          </p>
+        )}
+
+        {/* Player statistics — setup mode only */}
+        {!g.isLive && !g.isCompleted && (
+          <PlayerStatsCard
+            players={g.sortedPlayers}
+            playerStats={g.schedule.playerStats}
+            minPlayPercentage={g.config?.minPlayPercentage ?? 50}
+          />
+        )}
+
+        {/* Live bottom bar */}
+        {g.isLive && <div className="h-20" />}
+        {g.isLive && (
+          <LiveBottomBar
+            timer={timer}
+            onAdvance={g.handleAdvance}
+            onRetreat={g.handleRetreat}
+            isFirstRotation={g.currentRotationIndex === 0}
+            isLastRotation={g.isLastRotation}
+            isCrossingPeriod={g.isCrossingPeriod}
+            swapPlayerName={
+              g.swapSource ? (g.playerMap.get(g.swapSource.playerId)?.name ?? null) : null
+            }
+            onCancelSwap={() => g.setSwapSource(null)}
+          />
+        )}
+
+        {/* Swap scope dialog */}
+        <SwapScopeDialog
+          open={g.pendingSwap !== null}
+          playerA={
+            g.pendingSwap ? (g.playerMap.get(g.pendingSwap.playerAId)?.name ?? 'Player') : ''
+          }
+          playerB={
+            g.pendingSwap ? (g.playerMap.get(g.pendingSwap.playerBId)?.name ?? 'Player') : ''
+          }
+          onThisRotation={g.handleSwapThisRotation}
+          onAllRemaining={g.handleSwapAllRemaining}
+          onCancel={() => g.setPendingSwap(null)}
+        />
+
+        {/* End game confirmation */}
+        <IOSAlert
+          open={g.confirmEndGame}
+          onOpenChange={(open) => {
+            if (!open) g.setConfirmEndGame(false);
+          }}
+          title="End this game?"
+          message="The game will be marked as completed. You won't be able to resume live tracking."
+          confirmLabel="End Game"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            g.setConfirmEndGame(false);
+            g.handleEndGame();
+          }}
+          onCancel={() => g.setConfirmEndGame(false)}
+          destructive
+        />
+
+        {/* Player removal confirmation */}
+        <IOSAlert
+          open={g.removingPlayerId !== null}
+          onOpenChange={(open) => {
+            if (!open) g.setRemovingPlayerId(null);
+          }}
+          title={`Remove ${g.removingPlayer?.name ?? 'player'}?`}
+          message="They will be removed from remaining rotations. The schedule will be recalculated."
+          confirmLabel="Remove"
+          cancelLabel="Cancel"
+          onConfirm={g.handleConfirmRemovePlayer}
+          onCancel={() => g.setRemovingPlayerId(null)}
+          destructive
+        />
+
+        {/* Settings Sheet — only in setup mode */}
+        <GameSettingsSheet
+          open={g.settingsOpen}
+          onOpenChange={g.setSettingsOpen}
+          players={g.roster.players}
+          initialAbsentIds={g.game.absentPlayerIds}
+          initialGoalieAssignments={g.game.goalieAssignments}
+          periods={g.config?.periods ?? 2}
+          useGoalie={g.config?.useGoalie ?? false}
+          onRegenerate={g.handleRegenerateWithSettings}
+        />
+      </div>
     </div>
   );
 }
