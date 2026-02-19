@@ -4,12 +4,13 @@ import { ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 
 interface NavBarProps {
-  title: string;
+  title?: string;
   backTo?: string;
   backLabel?: string;
   leading?: ReactNode;
   trailing?: ReactNode;
   largeTitle?: boolean;
+  compact?: boolean;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export function NavBar({
   leading,
   trailing,
   largeTitle = false,
+  compact = false,
   className,
 }: NavBarProps) {
   return (
@@ -33,40 +35,63 @@ export function NavBar({
         className,
       )}
     >
-      {/* Standard bar: 44px — three-column grid like iOS UINavigationBar */}
-      <div className="grid grid-cols-3 items-center h-12 px-4 max-w-5xl mx-auto">
-        {/* Leading: back button or custom leading content */}
-        <div className="flex items-center min-w-0">
-          {backTo ? (
-            <Link
-              to={backTo}
-              aria-label={`Back to ${backLabel ?? 'previous page'}`}
-              className="flex items-center gap-0.5 text-primary -ml-2 pr-2 py-2 min-w-0"
-            >
-              <ChevronLeft className="size-[22px] stroke-[2.5] shrink-0" />
-              {backLabel && <span className="text-ios-body truncate">{backLabel}</span>}
-            </Link>
-          ) : leading ? (
-            leading
-          ) : null}
+      {compact ? (
+        /* Compact bar: reduced height, flex layout for activity/live views */
+        <div className="flex items-center justify-between h-10 px-4 max-w-5xl mx-auto">
+          <div className="flex items-center min-w-0">
+            {backTo ? (
+              <Link
+                to={backTo}
+                aria-label={`Back to ${backLabel ?? 'previous page'}`}
+                className="flex items-center gap-0.5 text-primary -ml-2 pr-2 py-2 min-w-0"
+              >
+                <ChevronLeft className="size-[22px] stroke-[2.5] shrink-0" />
+                {backLabel && <span className="text-ios-body truncate">{backLabel}</span>}
+              </Link>
+            ) : leading ? (
+              leading
+            ) : null}
+          </div>
+          <div className="flex items-center gap-1.5">{trailing}</div>
         </div>
+      ) : (
+        <>
+          {/* Standard bar: 44px — three-column grid like iOS UINavigationBar */}
+          <div className="grid grid-cols-3 items-center h-12 px-4 max-w-5xl mx-auto">
+            {/* Leading: back button or custom leading content */}
+            <div className="flex items-center min-w-0">
+              {backTo ? (
+                <Link
+                  to={backTo}
+                  aria-label={`Back to ${backLabel ?? 'previous page'}`}
+                  className="flex items-center gap-0.5 text-primary -ml-2 pr-2 py-2 min-w-0"
+                >
+                  <ChevronLeft className="size-[22px] stroke-[2.5] shrink-0" />
+                  {backLabel && <span className="text-ios-body truncate">{backLabel}</span>}
+                </Link>
+              ) : leading ? (
+                leading
+              ) : null}
+            </div>
 
-        {/* Center title (standard mode only) */}
-        {!largeTitle ? (
-          <h1 className="text-ios-headline text-center truncate">{title}</h1>
-        ) : (
-          <div />
-        )}
+            {/* Center title (standard mode only) */}
+            {!largeTitle && title ? (
+              <h1 className="text-ios-headline text-center truncate">{title}</h1>
+            ) : (
+              <div />
+            )}
 
-        {/* Trailing actions */}
-        <div className="flex items-center justify-end gap-2">{trailing}</div>
-      </div>
+            {/* Trailing actions */}
+            <div className="flex items-center justify-end gap-2">{trailing}</div>
+          </div>
 
-      {/* Large title row */}
-      {largeTitle && (
-        <div className="px-4 pb-2 max-w-5xl mx-auto">
-          <h1 className="text-ios-large-title">{title}</h1>
-        </div>
+          {/* Large title row */}
+          {largeTitle && (
+            <div className="px-4 pb-2 max-w-5xl mx-auto">
+              <h1 className="text-ios-large-title">{title}</h1>
+            </div>
+          )}
+        </>
       )}
     </header>
   );

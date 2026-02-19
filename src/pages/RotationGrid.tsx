@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
-import { RotateCcwIcon, EllipsisIcon } from 'lucide-react';
+import { EllipsisIcon } from 'lucide-react';
 import { useRotationGame } from '@/hooks/useRotationGame.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
@@ -109,78 +109,31 @@ export function RotationGrid() {
         <NavBar title={g.game.name} backTo="/games" backLabel="Games" />
       ) : g.isLive ? (
         <NavBar
-          title={g.game.name}
-          leading={
-            <RotationPips
-              periodGroups={g.periodGroups}
-              currentRotationIndex={g.currentRotationIndex}
-            />
-          }
+          compact
+          backTo="/games"
           trailing={
-            <div className="flex items-center gap-1.5">
-              {/* Grid/Focus segmented toggle */}
-              <div
-                className="inline-flex rounded-lg bg-secondary/80 p-0.5"
-                role="tablist"
-                aria-label="View mode"
-              >
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="plain" size="icon-sm" aria-label="Game actions">
+                  <EllipsisIcon className="size-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-48 p-1.5">
                 <button
-                  type="button"
-                  role="tab"
-                  aria-selected={g.viewMode === 'focus'}
-                  aria-pressed={g.viewMode === 'focus'}
-                  aria-label="Focus view"
-                  className={cn(
-                    'min-h-11 min-w-11 px-3 text-ios-footnote font-medium rounded-md transition-colors',
-                    g.viewMode === 'focus'
-                      ? 'bg-background shadow-sm text-foreground'
-                      : 'text-muted-foreground',
-                  )}
-                  onClick={() => g.setViewMode('focus')}
+                  className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                  onClick={g.handleRegenerate}
+                  disabled={g.solver.isRunning}
                 >
-                  Focus
+                  {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
                 </button>
                 <button
-                  type="button"
-                  role="tab"
-                  aria-selected={g.viewMode === 'grid'}
-                  aria-pressed={g.viewMode === 'grid'}
-                  aria-label="Grid view"
-                  className={cn(
-                    'min-h-11 min-w-11 px-3 text-ios-footnote font-medium rounded-md transition-colors',
-                    g.viewMode === 'grid'
-                      ? 'bg-background shadow-sm text-foreground'
-                      : 'text-muted-foreground',
-                  )}
-                  onClick={() => g.setViewMode('grid')}
+                  className="flex items-center w-full h-11 px-3 text-ios-body text-destructive rounded-lg active:bg-accent/80 transition-colors"
+                  onClick={() => g.setConfirmEndGame(true)}
                 >
-                  Grid
+                  End Game
                 </button>
-              </div>
-              {/* Overflow menu for infrequent actions */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="plain" size="icon-sm" aria-label="Game actions">
-                    <EllipsisIcon className="size-5" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-48 p-1.5">
-                  <button
-                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                    onClick={g.handleRegenerate}
-                    disabled={g.solver.isRunning}
-                  >
-                    {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
-                  </button>
-                  <button
-                    className="flex items-center w-full h-11 px-3 text-ios-body text-destructive rounded-lg active:bg-accent/80 transition-colors"
-                    onClick={() => g.setConfirmEndGame(true)}
-                  >
-                    End Game
-                  </button>
-                </PopoverContent>
-              </Popover>
-            </div>
+              </PopoverContent>
+            </Popover>
           }
         />
       ) : (
@@ -258,12 +211,48 @@ export function RotationGrid() {
           </div>
         )}
 
-        {/* Landscape hint — portrait only, many rotations */}
-        {g.manyRotations && !g.isCompleted && (
-          <p className="hidden portrait:flex text-ios-caption1 text-muted-foreground text-center items-center justify-center gap-1.5 px-4">
-            <RotateCcwIcon className="size-3" />
-            Rotate your phone for a wider view
-          </p>
+        {/* Live toolbar: pips + view toggle — inline in content area */}
+        {g.isLive && (
+          <div className="flex items-center justify-between px-4 max-w-4xl mx-auto">
+            <RotationPips
+              periodGroups={g.periodGroups}
+              currentRotationIndex={g.currentRotationIndex}
+            />
+            <div
+              className="inline-flex rounded-lg bg-secondary/80 p-0.5"
+              role="tablist"
+              aria-label="View mode"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={g.viewMode === 'focus'}
+                className={cn(
+                  'min-h-8 min-w-8 px-2.5 text-ios-caption1 font-medium rounded-md transition-colors',
+                  g.viewMode === 'focus'
+                    ? 'bg-background shadow-sm text-foreground'
+                    : 'text-muted-foreground',
+                )}
+                onClick={() => g.setViewMode('focus')}
+              >
+                Focus
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={g.viewMode === 'grid'}
+                className={cn(
+                  'min-h-8 min-w-8 px-2.5 text-ios-caption1 font-medium rounded-md transition-colors',
+                  g.viewMode === 'grid'
+                    ? 'bg-background shadow-sm text-foreground'
+                    : 'text-muted-foreground',
+                )}
+                onClick={() => g.setViewMode('grid')}
+              >
+                Grid
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Live focus view — default in live mode */}
