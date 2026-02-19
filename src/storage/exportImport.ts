@@ -47,6 +47,14 @@ export function downloadJSON(data: StorageData, filename?: string): void {
   URL.revokeObjectURL(url);
 }
 
+export function exportToBase64(data: StorageData): string {
+  return btoa(exportToJSON(data));
+}
+
+export function importFromBase64(text: string): StorageData {
+  return importFromJSON(atob(text.trim()));
+}
+
 export function readJSONFile(file: File): Promise<StorageData> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

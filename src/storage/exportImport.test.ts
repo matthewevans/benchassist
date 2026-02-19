@@ -1,4 +1,4 @@
-import { filterStorageData } from './exportImport.ts';
+import { filterStorageData, exportToBase64, importFromBase64 } from './exportImport.ts';
 import {
   teamFactory,
   gameFactory,
@@ -105,5 +105,60 @@ describe('filterStorageData', () => {
     expect(result.version).toBe(CURRENT_VERSION);
     expect(result).toHaveProperty('teams');
     expect(result).toHaveProperty('games');
+  });
+});
+
+describe('exportToBase64', () => {
+  beforeEach(() => resetFactories());
+
+  it('returns a base64 string that decodes to valid export JSON', () => {
+    const team = teamFactory.build({ id: 'team-1' });
+    const data: StorageData = {
+      version: CURRENT_VERSION,
+      teams: { 'team-1': team },
+      games: {},
+    };
+    const result = exportToBase64(data);
+    const decoded = JSON.parse(atob(result));
+    expect(decoded.app).toBe('benchassist');
+    expect(decoded.data.teams['team-1'].id).toBe('team-1');
+  });
+});
+
+describe('importFromBase64', () => {
+  beforeEach(() => resetFactories());
+
+  it('decodes valid base64 and returns StorageData', () => {
+    const team = teamFactory.build({ id: 'team-1' });
+    const data: StorageData = {
+      version: CURRENT_VERSION,
+      teams: { 'team-1': team },
+      games: {},
+    };
+    const base64 = exportToBase64(data);
+    const result = importFromBase64(base64);
+    expect(result.teams['team-1'].id).toBe('team-1');
+    expect(result.version).toBe(CURRENT_VERSION);
+  });
+
+  it('trims whitespace before decoding', () => {
+    const team = teamFactory.build({ id: 'team-1' });
+    const data: StorageData = {
+      version: CURRENT_VERSION,
+      teams: { 'team-1': team },
+      games: {},
+    };
+    const base64 = '  ' + exportToBase64(data) + '\n';
+    const result = importFromBase64(base64);
+    expect(result.teams['team-1'].id).toBe('team-1');
+  });
+
+  it('throws on invalid base64', () => {
+    expect(() => importFromBase64('not-valid-base64!!!')).toThrow();
+  });
+
+  it('throws on valid base64 but invalid app data', () => {
+    const base64 = btoa(JSON.stringify({ app: 'wrong', data: {} }));
+    expect(() => importFromBase64(base64)).toThrow('Invalid BenchAssist export file');
   });
 });
