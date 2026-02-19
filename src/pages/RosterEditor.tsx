@@ -1,17 +1,10 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
-import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog.tsx';
 import {
   Select,
   SelectContent,
@@ -22,7 +15,10 @@ import {
 import { Badge } from '@/components/ui/badge.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
+import { NavBar } from '@/components/layout/NavBar.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
+import { IOSAlert } from '@/components/ui/ios-alert.tsx';
+import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { cn } from '@/lib/utils.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
@@ -175,224 +171,217 @@ export function RosterEditor() {
   const sortedPlayers = [...roster.players].sort((a, b) => b.skillRanking - a.skillRanking);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link
-          to={`/teams/${teamId}`}
-          className="text-muted-foreground hover:text-foreground text-sm"
-        >
-          {team.name}
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <h1 className="text-2xl font-bold">{roster.name}</h1>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
-        </p>
-        <div className="flex gap-2">
-          <PlayerImportDialog
-            existingPlayers={roster.players}
-            onImport={handleImportRows}
-            trigger={
-              <Button variant="outline" size="sm">
-                Import Players
-              </Button>
-            }
-          />
-
-          <Dialog
-            open={isAdding}
-            onOpenChange={(open) => {
-              setIsAdding(open);
-              if (!open) {
-                setForm(DEFAULT_FORM);
-                setEditingPlayerId(null);
-              }
+    <div>
+      <NavBar
+        title={roster.name}
+        backTo={`/teams/${teamId}`}
+        backLabel={team.name}
+        trailing={
+          <Button
+            variant="plain"
+            size="icon"
+            onClick={() => {
+              setForm(DEFAULT_FORM);
+              setEditingPlayerId(null);
+              setIsAdding(true);
             }}
           >
-            <DialogTrigger asChild>
-              <Button size="sm">Add Player</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{editingPlayerId ? 'Edit Player' : 'Add Player'}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label htmlFor="player-name">Name</Label>
-                  <Input
-                    id="player-name"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Player name"
-                    autoFocus
-                  />
-                </div>
+            <Plus className="size-[22px]" />
+          </Button>
+        }
+      />
 
-                <div className="space-y-2">
-                  <Label>Skill Ranking</Label>
-                  <Select
-                    value={String(form.skillRanking)}
-                    onValueChange={(v) =>
-                      setForm({ ...form, skillRanking: Number(v) as SkillRanking })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {([1, 2, 3, 4, 5] as const).map((rank) => (
-                        <SelectItem key={rank} value={String(rank)}>
-                          {SKILL_LABELS[rank]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      <div className="px-4 space-y-4 pt-4">
+        <p className="text-ios-footnote text-muted-foreground">
+          {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
+        </p>
 
-                <div className="space-y-2">
-                  <Label>Primary Position</Label>
-                  <Select
-                    value={form.primaryPosition ?? 'none'}
-                    onValueChange={(v) =>
-                      setForm({ ...form, primaryPosition: v === 'none' ? null : (v as Position) })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="None" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      {(Object.keys(POSITION_LABELS) as Position[]).map((pos) => (
-                        <SelectItem key={pos} value={pos}>
-                          {POSITION_LABELS[pos]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        {sortedPlayers.length === 0 ? (
+          <GroupedList>
+            <GroupedListRow last>
+              <span className="text-muted-foreground">
+                No players yet. Add players to this roster.
+              </span>
+            </GroupedListRow>
+          </GroupedList>
+        ) : (
+          <GroupedList>
+            {sortedPlayers.map((player, index) => (
+              <GroupedListRow
+                key={player.id}
+                last={index === sortedPlayers.length - 1}
+                trailing={
+                  <div className="flex items-center gap-1">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold hover:bg-primary/20 transition-colors cursor-pointer"
+                          aria-label={`Skill ${player.skillRanking}, click to change`}
+                        >
+                          {player.skillRanking}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-1" align="end">
+                        <div className="flex flex-col">
+                          {([1, 2, 3, 4, 5] as const).map((rank) => (
+                            <button
+                              key={rank}
+                              className={cn(
+                                'px-3 py-1.5 text-sm text-left rounded hover:bg-accent transition-colors',
+                                rank === player.skillRanking && 'bg-accent font-medium',
+                              )}
+                              onClick={() => {
+                                dispatch({
+                                  type: 'UPDATE_PLAYER',
+                                  payload: {
+                                    teamId: teamId!,
+                                    rosterId: rosterId!,
+                                    player: { ...player, skillRanking: rank },
+                                  },
+                                });
+                              }}
+                            >
+                              {SKILL_LABELS[rank]}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => setDeletingPlayerId(player.id)}
+                    >
+                      <span className="text-destructive text-ios-caption1">Remove</span>
+                    </Button>
+                  </div>
+                }
+              >
+                <button className="text-left w-full" onClick={() => handleEditPlayer(player)}>
+                  <div className="text-ios-body font-medium">{player.name}</div>
+                  <div className="flex gap-1 mt-0.5">
+                    {player.primaryPosition && (
+                      <Badge variant="secondary" className="text-xs">
+                        {player.primaryPosition}
+                      </Badge>
+                    )}
+                    {player.canPlayGoalie && (
+                      <Badge variant="outline" className="text-xs">
+                        GK
+                      </Badge>
+                    )}
+                  </div>
+                </button>
+              </GroupedListRow>
+            ))}
+          </GroupedList>
+        )}
 
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="can-play-goalie"
-                    checked={form.canPlayGoalie}
-                    onCheckedChange={(checked) =>
-                      setForm({ ...form, canPlayGoalie: checked as boolean })
-                    }
-                  />
-                  <Label htmlFor="can-play-goalie">Can play goalkeeper</Label>
-                </div>
-
-                <Button onClick={handleSavePlayer} className="w-full" disabled={!form.name.trim()}>
-                  {editingPlayerId ? 'Save Changes' : 'Add Player'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <PlayerImportDialog
+          existingPlayers={roster.players}
+          onImport={handleImportRows}
+          trigger={
+            <Button variant="secondary" size="sm">
+              Import Players
+            </Button>
+          }
+        />
       </div>
 
-      {sortedPlayers.length === 0 ? (
-        <Card>
-          <CardContent className="py-6 text-center text-muted-foreground text-sm">
-            No players yet. Add players to this roster.
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            {sortedPlayers.map((player, index) => (
-              <div
-                key={player.id}
-                className={cn(
-                  'flex items-center justify-between px-4 py-3',
-                  index < sortedPlayers.length - 1 && 'border-b',
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold hover:bg-primary/20 transition-colors cursor-pointer"
-                        aria-label={`Skill ${player.skillRanking}, click to change`}
-                      >
-                        {player.skillRanking}
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-1" align="start">
-                      <div className="flex flex-col">
-                        {([1, 2, 3, 4, 5] as const).map((rank) => (
-                          <button
-                            key={rank}
-                            className={cn(
-                              'px-3 py-1.5 text-sm text-left rounded hover:bg-accent transition-colors',
-                              rank === player.skillRanking && 'bg-accent font-medium',
-                            )}
-                            onClick={() => {
-                              dispatch({
-                                type: 'UPDATE_PLAYER',
-                                payload: {
-                                  teamId: teamId!,
-                                  rosterId: rosterId!,
-                                  player: { ...player, skillRanking: rank },
-                                },
-                              });
-                            }}
-                          >
-                            {SKILL_LABELS[rank]}
-                          </button>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  <div>
-                    <p className="font-medium">{player.name}</p>
-                    <div className="flex gap-1 mt-0.5">
-                      {player.primaryPosition && (
-                        <Badge variant="secondary" className="text-xs">
-                          {player.primaryPosition}
-                        </Badge>
-                      )}
-                      {player.canPlayGoalie && (
-                        <Badge variant="outline" className="text-xs">
-                          GK
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => handleEditPlayer(player)}>
-                    Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive"
-                    onClick={() => setDeletingPlayerId(player.id)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      <BottomSheet
+        open={isAdding}
+        onOpenChange={(open) => {
+          setIsAdding(open);
+          if (!open) {
+            setForm(DEFAULT_FORM);
+            setEditingPlayerId(null);
+          }
+        }}
+        title={editingPlayerId ? 'Edit Player' : 'Add Player'}
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="player-name">Name</Label>
+            <Input
+              id="player-name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Player name"
+              autoFocus
+            />
+          </div>
 
-      <ConfirmDialog
+          <div className="space-y-2">
+            <Label>Skill Ranking</Label>
+            <Select
+              value={String(form.skillRanking)}
+              onValueChange={(v) => setForm({ ...form, skillRanking: Number(v) as SkillRanking })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {([1, 2, 3, 4, 5] as const).map((rank) => (
+                  <SelectItem key={rank} value={String(rank)}>
+                    {SKILL_LABELS[rank]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Primary Position</Label>
+            <Select
+              value={form.primaryPosition ?? 'none'}
+              onValueChange={(v) =>
+                setForm({ ...form, primaryPosition: v === 'none' ? null : (v as Position) })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="None" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {(Object.keys(POSITION_LABELS) as Position[]).map((pos) => (
+                  <SelectItem key={pos} value={pos}>
+                    {POSITION_LABELS[pos]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Switch
+              id="can-play-goalie"
+              checked={form.canPlayGoalie}
+              onCheckedChange={(checked) => setForm({ ...form, canPlayGoalie: checked as boolean })}
+            />
+            <Label htmlFor="can-play-goalie">Can play goalkeeper</Label>
+          </div>
+
+          <Button onClick={handleSavePlayer} className="w-full" disabled={!form.name.trim()}>
+            {editingPlayerId ? 'Save Changes' : 'Add Player'}
+          </Button>
+        </div>
+      </BottomSheet>
+
+      <IOSAlert
         open={deletingPlayerId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingPlayerId(null);
+        }}
+        title={`Remove ${roster.players.find((p) => p.id === deletingPlayerId)?.name ?? 'player'}?`}
+        message="This player will be permanently removed from this roster."
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
         onConfirm={() => {
           if (deletingPlayerId) handleDeletePlayer(deletingPlayerId);
           setDeletingPlayerId(null);
         }}
         onCancel={() => setDeletingPlayerId(null)}
-        title={`Remove ${roster.players.find((p) => p.id === deletingPlayerId)?.name ?? 'player'}?`}
-        description="This player will be permanently removed from this roster."
-        confirmLabel="Remove"
-        variant="destructive"
+        destructive
       />
     </div>
   );
