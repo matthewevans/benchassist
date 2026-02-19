@@ -4,7 +4,6 @@ import { Plus } from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import {
   Select,
   SelectContent,
@@ -196,7 +195,7 @@ export function RosterEditor() {
         }
       />
 
-      <div className="max-w-4xl mx-auto px-4 space-y-4 pt-4">
+      <div className="max-w-4xl mx-auto px-4 space-y-4 py-4 mb-2">
         <p className="text-ios-footnote text-muted-foreground">
           {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
         </p>
@@ -292,27 +291,31 @@ export function RosterEditor() {
         }}
         title={editingPlayerId ? 'Edit Player' : 'Add Player'}
       >
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="player-name">Name</Label>
-            <Input
-              id="player-name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Player name"
-              autoFocus
-            />
-          </div>
+        <div className="space-y-6">
+          <GroupedList className="-mx-4">
+            <GroupedListRow>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Name"
+                autoFocus
+                className="h-auto rounded-none bg-transparent px-0 py-0 focus-visible:ring-0"
+              />
+            </GroupedListRow>
 
-          <div className="space-y-2">
-            <Label>Skill Ranking</Label>
             <Select
               value={String(form.skillRanking)}
               onValueChange={(v) => setForm({ ...form, skillRanking: Number(v) as SkillRanking })}
             >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <GroupedListRow
+                trailing={
+                  <SelectTrigger className="border-0 shadow-none h-auto p-0 text-[17px] text-muted-foreground focus-visible:ring-0 w-auto">
+                    <SelectValue />
+                  </SelectTrigger>
+                }
+              >
+                Skill Ranking
+              </GroupedListRow>
               <SelectContent>
                 {([1, 2, 3, 4, 5] as const).map((rank) => (
                   <SelectItem key={rank} value={String(rank)}>
@@ -321,19 +324,22 @@ export function RosterEditor() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="space-y-2">
-            <Label>Primary Position</Label>
             <Select
               value={form.primaryPosition ?? 'none'}
               onValueChange={(v) =>
                 setForm({ ...form, primaryPosition: v === 'none' ? null : (v as Position) })
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
+              <GroupedListRow
+                trailing={
+                  <SelectTrigger className="border-0 shadow-none h-auto p-0 text-[17px] text-muted-foreground focus-visible:ring-0 w-auto">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                }
+              >
+                Position
+              </GroupedListRow>
               <SelectContent>
                 <SelectItem value="none">None</SelectItem>
                 {(Object.keys(POSITION_LABELS) as Position[]).map((pos) => (
@@ -343,33 +349,40 @@ export function RosterEditor() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Switch
-              id="can-play-goalie"
-              checked={form.canPlayGoalie}
-              onCheckedChange={(checked) => setForm({ ...form, canPlayGoalie: checked as boolean })}
-            />
-            <Label htmlFor="can-play-goalie">Can play goalkeeper</Label>
-          </div>
+            <GroupedListRow
+              last
+              trailing={
+                <Switch
+                  checked={form.canPlayGoalie}
+                  onCheckedChange={(checked) =>
+                    setForm({ ...form, canPlayGoalie: checked as boolean })
+                  }
+                />
+              }
+            >
+              Can Play Goalkeeper
+            </GroupedListRow>
+          </GroupedList>
 
           <Button onClick={handleSavePlayer} className="w-full" disabled={!form.name.trim()}>
             {editingPlayerId ? 'Save Changes' : 'Add Player'}
           </Button>
+
           {editingPlayerId && (
-            <Button
-              variant="destructive-plain"
-              className="w-full mt-2"
-              onClick={() => {
-                setIsAdding(false);
-                setEditingPlayerId(null);
-                setForm(DEFAULT_FORM);
-                setDeletingPlayerId(editingPlayerId);
-              }}
-            >
-              Delete Player
-            </Button>
+            <GroupedList className="-mx-4">
+              <GroupedListRow
+                last
+                onClick={() => {
+                  setIsAdding(false);
+                  setEditingPlayerId(null);
+                  setForm(DEFAULT_FORM);
+                  setDeletingPlayerId(editingPlayerId);
+                }}
+              >
+                <span className="text-destructive block text-center">Delete Player</span>
+              </GroupedListRow>
+            </GroupedList>
           )}
         </div>
       </BottomSheet>
