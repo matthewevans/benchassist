@@ -53,11 +53,15 @@ export async function shareOrDownloadJSON(data: StorageData, filename?: string):
   const file = new File([json], name, { type: 'application/json' });
 
   if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file] });
-    return;
+    try {
+      await navigator.share({ files: [file] });
+      return;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') throw e;
+      // Share failed (e.g. macOS restrictions) — fall through to download
+    }
   }
 
-  // Fallback for browsers without Web Share API file support
   downloadJSON(data, name);
 }
 
