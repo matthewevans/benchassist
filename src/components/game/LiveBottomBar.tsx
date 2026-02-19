@@ -49,7 +49,7 @@ export function LiveBottomBar({
       )}
     >
       {/* Progress strip along top edge */}
-      <div className="relative h-1 bg-secondary">
+      <div className="relative h-0.5 bg-secondary/80">
         <div
           className={cn(
             'absolute inset-y-0 left-0 transition-all duration-1000',
@@ -60,7 +60,7 @@ export function LiveBottomBar({
         {timer.markers.map((marker, i) => (
           <div
             key={i}
-            className="absolute top-0 bottom-0 w-0.5 bg-foreground/40"
+            className="absolute -top-0.5 -bottom-0.5 w-0.5 bg-foreground/30"
             style={{ left: `${marker.progress * 100}%` }}
           />
         ))}
@@ -68,7 +68,7 @@ export function LiveBottomBar({
 
       <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 max-w-5xl mx-auto">
         {/* Left: Timer + controls */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           <span
             className={cn(
               'font-mono font-bold tabular-nums text-base',
@@ -77,38 +77,38 @@ export function LiveBottomBar({
           >
             {timer.formattedElapsed}
           </span>
-          <span className="text-xs text-muted-foreground hidden sm:inline">
+          <span className="text-[11px] text-muted-foreground hidden sm:inline ml-0.5">
             / {timer.formattedDuration}
           </span>
           {timer.isRunning ? (
             <Button
-              variant="ghost"
+              variant="plain"
               size="icon"
-              className="size-9"
+              className="size-11"
               onClick={timer.pause}
               aria-label="Pause timer"
             >
-              <PauseIcon className="size-4" />
+              <PauseIcon className="size-[18px]" />
             </Button>
           ) : (
             <Button
-              variant="ghost"
+              variant="plain"
               size="icon"
-              className="size-9"
+              className="size-11"
               onClick={timer.play}
               aria-label="Start timer"
             >
-              <PlayIcon className="size-4" />
+              <PlayIcon className="size-[18px]" />
             </Button>
           )}
           <Button
-            variant="ghost"
+            variant="plain"
             size="icon"
-            className="size-9"
+            className="size-11"
             onClick={timer.reset}
             aria-label="Reset timer"
           >
-            <RotateCcwIcon className="size-3.5" />
+            <RotateCcwIcon className="size-4" />
           </Button>
         </div>
 
@@ -116,11 +116,13 @@ export function LiveBottomBar({
         <div className="flex-1 min-w-0 text-center text-sm">
           {swapPlayerName ? (
             <div className="flex items-center justify-center gap-2">
-              <span className="font-medium text-primary truncate">Swapping {swapPlayerName}</span>
+              <span className="font-medium text-primary truncate text-ios-subheadline">
+                Swapping {swapPlayerName}
+              </span>
               <Button
-                variant="ghost"
+                variant="plain"
                 size="sm"
-                className="h-6 px-2 text-xs shrink-0"
+                className="h-7 px-2 text-ios-caption1 shrink-0"
                 onClick={onCancelSwap}
                 aria-label="Cancel swap"
               >
@@ -129,28 +131,28 @@ export function LiveBottomBar({
               </Button>
             </div>
           ) : nextSubMin != null && !timer.isOvertime ? (
-            <span className="text-muted-foreground whitespace-nowrap hidden sm:inline">
-              Next sub ~{nextSubMin} min
+            <span className="text-muted-foreground whitespace-nowrap text-ios-caption1">
+              Sub ~{nextSubMin}m
             </span>
           ) : null}
         </div>
 
         {/* Right: Navigation buttons */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
-            variant="outline"
+            variant="secondary"
             size="icon"
-            className="size-10"
+            className="size-11 rounded-full"
             onClick={onRetreat}
             disabled={isFirstRotation}
             aria-label="Previous rotation"
           >
-            <ChevronLeftIcon className="size-4" />
+            <ChevronLeftIcon className="size-5" />
           </Button>
           {isLastRotation ? (
             <Button
               variant="destructive"
-              className="h-10 px-4 text-sm font-semibold"
+              className="h-11 px-5 text-ios-subheadline font-semibold rounded-full"
               onClick={onAdvance}
               aria-label="End Game"
             >
@@ -158,12 +160,12 @@ export function LiveBottomBar({
             </Button>
           ) : (
             <Button
-              className="h-10 px-4 text-sm font-semibold"
+              className="h-11 px-5 text-ios-subheadline font-semibold rounded-full"
               onClick={onAdvance}
               aria-label={advanceLabel}
             >
               {advanceLabel}
-              <ChevronRightIcon className="size-4 ml-1" />
+              <ChevronRightIcon className="size-4 ml-0.5" />
             </Button>
           )}
         </div>

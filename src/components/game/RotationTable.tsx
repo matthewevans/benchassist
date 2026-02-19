@@ -1,10 +1,61 @@
 import { forwardRef } from 'react';
-import { ChevronRightIcon } from 'lucide-react';
+import { ChevronRightIcon, ChevronDownIcon } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { SUB_POSITION_LABELS } from '@/types/domain.ts';
 import type { Player, PlayerId, Rotation, PlayerStats, GameConfig } from '@/types/domain.ts';
 import { getAssignmentDisplay } from '@/utils/positions.ts';
+
+function PlayPercentageCell({
+  percentage,
+  belowMinimum,
+}: {
+  percentage: number;
+  belowMinimum: boolean;
+}) {
+  const size = 24;
+  const strokeWidth = 2.5;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+  const color = belowMinimum
+    ? 'stroke-orange-500 dark:stroke-orange-400'
+    : 'stroke-green-500 dark:stroke-green-400';
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className="stroke-secondary"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className={color}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span
+        className={cn(
+          'text-[10px] tabular-nums leading-none',
+          belowMinimum ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground',
+        )}
+      >
+        {percentage}
+      </span>
+    </div>
+  );
+}
 
 interface PeriodGroup {
   periodIndex: number;
@@ -76,9 +127,11 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         }
                       }}
                     >
-                      <div className="flex items-center justify-center gap-0.5 text-muted-foreground">
-                        <span className="text-xs">P{group.periodIndex + 1}</span>
-                        <ChevronRightIcon className="size-3" />
+                      <div className="flex items-center justify-center gap-0.5">
+                        <span className="text-ios-caption1 text-muted-foreground bg-secondary/50 rounded px-2 py-0.5">
+                          P{group.periodIndex + 1}
+                        </span>
+                        <ChevronRightIcon className="size-3 text-muted-foreground" />
                       </div>
                     </th>
                   );
@@ -87,26 +140,30 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                   const isCurrent = isLive && r.index === currentRotationIndex;
                   const isPast = isLive && r.index < currentRotationIndex;
                   const isNext = isLive && r.index === currentRotationIndex + 1;
+                  const isFirstInPeriod = i === 0 && group.periodIndex > 0;
                   return (
                     <th
                       key={r.index}
                       className={cn(
                         'text-center py-2 font-medium',
                         isLive ? 'px-2 min-w-[76px]' : 'px-1 min-w-[60px]',
-                        isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
+                        isCurrent && 'bg-primary/10 border-x-2 border-primary/50',
                         isNext && 'bg-accent/30',
                         isPast && 'opacity-40',
+                        isFirstInPeriod && !isCurrent && 'border-l-2 border-border',
                       )}
                       {...(isCurrent ? { 'data-current-rotation': '' } : {})}
                     >
                       <div className="flex items-center justify-center gap-1">
-                        <span>R{r.index + 1}</span>
+                        <span className={cn('text-ios-caption1', isCurrent && 'font-bold')}>
+                          R{r.index + 1}
+                        </span>
                       </div>
                       {(isCurrent || isNext) && (
                         <span
                           className={cn(
                             'text-xs font-semibold uppercase tracking-wide',
-                            isCurrent && 'text-primary',
+                            isCurrent && 'text-primary font-bold',
                             isNext && 'text-muted-foreground',
                           )}
                         >
@@ -116,10 +173,11 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       <div className="text-xs text-muted-foreground font-normal">
                         {i === 0 && isLive ? (
                           <button
-                            className="hover:text-foreground transition-colors"
+                            className="flex items-center justify-center gap-0.5 hover:text-foreground transition-colors mx-auto"
                             onClick={() => togglePeriod(group.periodIndex)}
                           >
                             P{r.periodIndex + 1}
+                            <ChevronDownIcon className="size-3" />
                           </button>
                         ) : (
                           <>P{r.periodIndex + 1}</>
@@ -129,7 +187,9 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                   );
                 });
               })}
-              <th className="text-center py-2 px-2 font-medium">Play%</th>
+              <th className="text-center py-2 px-2 font-medium text-ios-caption1 text-muted-foreground">
+                %
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -137,19 +197,27 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
               const stats = playerStats[player.id];
               const isRemoved = gameRemovedPlayerIds.includes(player.id);
               const playerNameEl = (
-                <span className={cn('whitespace-nowrap', isRemoved && 'line-through opacity-50')}>
+                <span
+                  className={cn(
+                    'whitespace-nowrap text-ios-subheadline',
+                    isRemoved && 'line-through opacity-50',
+                  )}
+                >
                   {player.name}
                 </span>
               );
               return (
                 <tr
                   key={player.id}
-                  className={cn('border-b border-border/30', isRemoved && 'opacity-60')}
+                  className={cn(
+                    'border-b border-border/30 min-h-[44px]',
+                    isRemoved && 'opacity-60',
+                  )}
                 >
                   <td
                     className={cn(
                       'pr-3 pl-1 sticky left-0 bg-background z-10',
-                      isLive ? 'py-2.5' : 'py-1.5',
+                      isLive ? 'py-3' : 'py-2',
                     )}
                   >
                     {isLive ? (
@@ -187,7 +255,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         />
                       );
                     }
-                    return group.rotations.map((rotation) => {
+                    return group.rotations.map((rotation, rotIdx) => {
                       const assignment = rotation.assignments[player.id];
                       if (!assignment) return <td key={rotation.index} />;
                       const fieldPosition = rotation.fieldPositions?.[player.id];
@@ -213,15 +281,17 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       const cellTitle =
                         subTip ?? (fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined);
                       const isInteractive = !isPast && !isCompleted;
+                      const isFirstInPeriod = rotIdx === 0 && group.periodIndex > 0;
                       return (
                         <td
                           key={rotation.index}
                           className={cn(
                             'text-center',
-                            isLive ? 'py-2.5 px-2' : 'py-1.5 px-1',
-                            isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
+                            isLive ? 'py-3 px-2' : 'py-2 px-1',
+                            isCurrent && 'bg-primary/10 border-x-2 border-primary/50',
                             isNext && 'bg-accent/30',
                             (isPast || isCompleted) && 'opacity-40 pointer-events-none',
+                            isFirstInPeriod && !isCurrent && 'border-l-2 border-border',
                           )}
                           {...(isCurrent ? { 'data-current-rotation': '' } : {})}
                           {...(isInteractive
@@ -241,8 +311,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         >
                           <span
                             className={cn(
-                              'inline-block rounded font-medium transition-all',
-                              isLive ? 'px-3 py-1 text-sm' : 'px-2 py-0.5 text-xs',
+                              'inline-flex items-center justify-center w-8 h-7 rounded-md text-sm font-medium transition-all',
                               display.className,
                               isSelected && 'ring-2 ring-primary ring-offset-1 animate-pulse',
                               isValidTarget &&
@@ -265,15 +334,12 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                     });
                   })}
                   <td className="text-center py-1.5 px-2">
-                    <span
-                      className={`text-xs font-medium ${
-                        stats && stats.playPercentage < config.minPlayPercentage
-                          ? 'text-destructive'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      {stats?.playPercentage ?? 0}%
-                    </span>
+                    <PlayPercentageCell
+                      percentage={stats?.playPercentage ?? 0}
+                      belowMinimum={
+                        stats != null && stats.playPercentage < config.minPlayPercentage
+                      }
+                    />
                   </td>
                 </tr>
               );
@@ -288,16 +354,18 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                 if (collapsedPeriods.has(group.periodIndex)) {
                   return <td key={`collapsed-${group.periodIndex}`} />;
                 }
-                return group.rotations.map((rotation) => {
+                return group.rotations.map((rotation, rotIdx) => {
                   const isCurrent = isLive && rotation.index === currentRotationIndex;
                   const isPast = isLive && rotation.index < currentRotationIndex;
+                  const isFirstInPeriod = rotIdx === 0 && group.periodIndex > 0;
                   return (
                     <td
                       key={rotation.index}
                       className={cn(
-                        'text-center py-2 px-1 text-sm',
-                        isCurrent && 'bg-primary/10 border-l-2 border-r-2 border-primary/30',
+                        'text-center py-2 px-1 text-ios-footnote',
+                        isCurrent && 'bg-primary/10 border-x-2 border-primary/50',
                         isPast && 'opacity-40',
+                        isFirstInPeriod && !isCurrent && 'border-l-2 border-border',
                       )}
                     >
                       {rotation.teamStrength}

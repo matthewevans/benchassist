@@ -16,7 +16,7 @@ describe('TabBar', () => {
     expect(screen.getByText('Teams')).toBeInTheDocument();
     expect(screen.getByText('New Game')).toBeInTheDocument();
     expect(screen.getByText('Practice')).toBeInTheDocument();
-    expect(screen.getByText('History')).toBeInTheDocument();
+    expect(screen.getByText('Games')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 
@@ -31,7 +31,7 @@ describe('TabBar', () => {
     expect(screen.getByText('Teams').closest('a')).toHaveAttribute('href', '/');
     expect(screen.getByText('New Game').closest('a')).toHaveAttribute('href', '/games/new');
     expect(screen.getByText('Practice').closest('a')).toHaveAttribute('href', '/practice');
-    expect(screen.getByText('History').closest('a')).toHaveAttribute('href', '/games');
+    expect(screen.getByText('Games').closest('a')).toHaveAttribute('href', '/games');
     expect(screen.getByText('Settings').closest('a')).toHaveAttribute('href', '/settings');
   });
 });

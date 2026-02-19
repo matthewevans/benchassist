@@ -47,87 +47,104 @@ export function Practice() {
       <NavBar title="Practice" largeTitle />
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
-        {/* Birth year input row */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            <Input
-              type="number"
-              placeholder="Birth year"
-              value={p.birthYear ?? ''}
-              onChange={(e) => p.handleBirthYearInput(e.target.value)}
-              className="w-32"
-            />
-            {p.birthYear && p.drillBracket && (
-              <span className="text-ios-footnote text-muted-foreground">
-                U{getUAge(p.birthYear)} &middot; {DRILL_BRACKET_LABELS[p.drillBracket]} drills
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {U_AGE_CHIPS.map((uAge) => {
-              const chipBirthYear = uAgeToBirthYear(uAge);
-              const isSelected = p.birthYear === chipBirthYear;
-              return (
-                <Button
-                  key={uAge}
-                  size="capsule"
-                  variant={isSelected ? 'default' : 'secondary'}
-                  onClick={() => p.selectUAge(uAge)}
-                >
-                  U{uAge}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
+        {/* Age group section */}
+        <GroupedList header="Age Group">
+          <GroupedListRow last>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  placeholder="Birth year"
+                  value={p.birthYear ?? ''}
+                  onChange={(e) => p.handleBirthYearInput(e.target.value)}
+                  className="w-32"
+                />
+                {p.birthYear && p.drillBracket && (
+                  <span className="text-ios-footnote text-muted-foreground">
+                    U{getUAge(p.birthYear)} · {DRILL_BRACKET_LABELS[p.drillBracket]} drills
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5 pb-0.5">
+                {U_AGE_CHIPS.map((uAge) => {
+                  const chipBirthYear = uAgeToBirthYear(uAge);
+                  const isSelected = p.birthYear === chipBirthYear;
+                  return (
+                    <Button
+                      key={uAge}
+                      size="capsule"
+                      variant={isSelected ? 'default' : 'secondary'}
+                      onClick={() => p.selectUAge(uAge)}
+                    >
+                      U{uAge}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          </GroupedListRow>
+        </GroupedList>
 
-        {/* Settings row */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-ios-footnote text-muted-foreground">Players</span>
-            <Input
-              type="number"
-              min={1}
-              max={30}
-              value={p.playerCount}
-              onChange={(e) => p.setPlayerCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
-              className="w-20"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-ios-footnote text-muted-foreground">Duration</span>
-            <Select
-              value={String(p.targetDuration)}
-              onValueChange={(v) => p.setTargetDuration(parseInt(v, 10))}
-            >
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DURATION_OPTIONS.map((mins) => (
-                  <SelectItem key={mins} value={String(mins)}>
-                    {mins}m
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Button
-            size="capsule"
-            variant={p.favoritesOnly ? 'default' : 'secondary'}
-            onClick={() => p.setFavoritesOnly((prev) => !prev)}
+        {/* Settings section */}
+        <GroupedList header="Settings">
+          <GroupedListRow
+            trailing={
+              <Input
+                type="number"
+                min={1}
+                max={30}
+                value={p.playerCount}
+                onChange={(e) => p.setPlayerCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                className="w-20 text-right"
+              />
+            }
           >
-            <StarIcon filled={p.favoritesOnly} className="size-4" />
-            Favorites
-          </Button>
-        </div>
+            <span className="text-ios-body">Players</span>
+          </GroupedListRow>
+          <GroupedListRow
+            trailing={
+              <Select
+                value={String(p.targetDuration)}
+                onValueChange={(v) => p.setTargetDuration(parseInt(v, 10))}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DURATION_OPTIONS.map((mins) => (
+                    <SelectItem key={mins} value={String(mins)}>
+                      {mins} min
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          >
+            <span className="text-ios-body">Duration</span>
+          </GroupedListRow>
+          <GroupedListRow
+            last
+            trailing={
+              <Button
+                size="capsule"
+                variant={p.favoritesOnly ? 'default' : 'secondary'}
+                onClick={() => p.setFavoritesOnly((prev) => !prev)}
+              >
+                <StarIcon filled={p.favoritesOnly} className="size-3.5" />
+                {p.favoritesOnly ? 'On' : 'Off'}
+              </Button>
+            }
+          >
+            <span className="text-ios-body">Favorites only</span>
+          </GroupedListRow>
+        </GroupedList>
 
-        {/* Practice theme quick-select */}
+        {/* Practice themes */}
         {p.drillBracket && (
           <div className="space-y-2">
-            <span className="text-ios-footnote font-medium">Practice themes</span>
+            <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4">
+              Practice Themes
+            </h3>
             <div className="flex flex-wrap gap-1.5">
               {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(p.drillBracket!)).map(
                 (template) => (
@@ -151,10 +168,12 @@ export function Practice() {
           </div>
         )}
 
-        {/* Category chips */}
+        {/* Focus areas */}
         {p.drillBracket && (
           <div className="space-y-2">
-            <span className="text-ios-footnote font-medium">Focus areas</span>
+            <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4">
+              Focus Areas
+            </h3>
             <div className="flex flex-wrap gap-1.5">
               {p.availableCategories.map((cat) => {
                 const isSelected = p.selectedCategories.includes(cat);
@@ -173,12 +192,14 @@ export function Practice() {
           </div>
         )}
 
-        {/* Output section */}
+        {/* Practice plan output */}
         {p.displayDrills && p.plan && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-ios-title3">Practice Plan &middot; {p.totalDuration} min</h2>
-              <Button size="sm" variant="plain" onClick={() => p.setSeed(Date.now())}>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-ios-title3 font-semibold">
+                Practice Plan · {p.totalDuration} min
+              </h2>
+              <Button size="xs" variant="plain" onClick={() => p.setSeed(Date.now())}>
                 Shuffle All
               </Button>
             </div>
@@ -200,15 +221,15 @@ export function Practice() {
           </div>
         )}
 
+        {/* Browse mode */}
         {p.groupedBrowseDrills && !p.plan && (
           <div className="space-y-4">
             {/* Browse filters */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="space-y-3">
               <Input
-                placeholder="Search drills..."
+                placeholder="Search drills…"
                 value={p.browseSearch}
                 onChange={(e) => p.setBrowseSearch(e.target.value)}
-                className="w-64"
               />
               <div className="flex flex-wrap gap-1.5">
                 <Button
@@ -229,19 +250,20 @@ export function Practice() {
                   </Button>
                 ))}
               </div>
+              <p className="text-ios-footnote text-muted-foreground px-1">
+                {p.browseDrills!.length} drill{p.browseDrills!.length !== 1 ? 's' : ''}
+              </p>
             </div>
 
-            <p className="text-ios-footnote text-muted-foreground">
-              {p.browseDrills!.length} drills
-            </p>
-
-            {/* Grouped drills */}
+            {/* Grouped drills by phase */}
             {PHASE_ORDER.map((phase) => {
               const drills = p.groupedBrowseDrills![phase];
               if (drills.length === 0) return null;
               return (
                 <div key={phase} className="space-y-3">
-                  <h2 className="text-ios-title3">{DRILL_PHASE_LABELS[phase]}</h2>
+                  <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-1">
+                    {DRILL_PHASE_LABELS[phase]}
+                  </h2>
                   <div className="space-y-3">
                     {drills.map((drill) => (
                       <DrillCard
@@ -260,7 +282,7 @@ export function Practice() {
           </div>
         )}
 
-        {/* Empty state: no bracket selected */}
+        {/* Empty state */}
         {!p.drillBracket && (
           <GroupedList>
             <GroupedListRow last>

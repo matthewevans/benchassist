@@ -41,7 +41,7 @@ export function Settings() {
     <div>
       <NavBar title="Settings" largeTitle />
 
-      <div className="max-w-4xl mx-auto px-4 md:px-5 space-y-9">
+      <div className="max-w-4xl mx-auto px-4 md:px-5 space-y-9 pt-4">
         {/* Appearance Section */}
         <section>
           <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">

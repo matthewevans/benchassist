@@ -37,3 +37,14 @@ const PHASE_BADGE_COLORS: Record<DrillPhase, string> = {
 export function getPhaseBadgeColor(phase: DrillPhase): string {
   return PHASE_BADGE_COLORS[phase];
 }
+
+const PHASE_DOT_COLORS: Record<DrillPhase, string> = {
+  'warm-up': 'bg-amber-400',
+  main: 'bg-blue-400',
+  scrimmage: 'bg-emerald-400',
+  'cool-down': 'bg-slate-400',
+};
+
+export function getPhaseDotColor(phase: DrillPhase): string {
+  return PHASE_DOT_COLORS[phase];
+}

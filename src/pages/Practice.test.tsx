@@ -14,9 +14,9 @@ function renderPractice(route = '/practice') {
   );
 }
 
-/** Returns the "Focus areas" section container (the category chips area). */
+/** Returns the "Focus Areas" section container (the category chips area). */
 function getFocusAreasSection() {
-  const heading = screen.getByText('Focus areas');
+  const heading = screen.getByText('Focus Areas');
   // The heading's closest div is the space-y-2 wrapper containing both the label and the chip row
   return heading.closest('div')!;
 }
@@ -38,7 +38,7 @@ describe('Practice page', () => {
     const input = screen.getByPlaceholderText('Birth year');
     await user.clear(input);
     await user.type(input, '2016');
-    expect(screen.getByText('Focus areas')).toBeInTheDocument();
+    expect(screen.getByText('Focus Areas')).toBeInTheDocument();
     // Category chip buttons should appear
     const section = getFocusAreasSection();
     expect(within(section).getByRole('button', { name: 'Passing' })).toBeInTheDocument();
@@ -49,7 +49,7 @@ describe('Practice page', () => {
     const user = userEvent.setup();
     renderPractice();
     await user.click(screen.getByRole('button', { name: 'U10' }));
-    expect(screen.getByText('Focus areas')).toBeInTheDocument();
+    expect(screen.getByText('Focus Areas')).toBeInTheDocument();
     const section = getFocusAreasSection();
     expect(within(section).getByRole('button', { name: 'Passing' })).toBeInTheDocument();
     expect(within(section).getByRole('button', { name: 'Dribbling' })).toBeInTheDocument();
@@ -150,7 +150,7 @@ describe('Practice page', () => {
     await user.click(within(section).getByRole('button', { name: 'Passing' }));
     expect(screen.getByText(/Practice Plan/)).toBeInTheDocument();
     // Deselect passing -- the button still exists (now it's in the plan view too,
-    // but the Focus areas section button is still there)
+    // but the Focus Areas section button is still there)
     await user.click(within(section).getByRole('button', { name: 'Passing' }));
     // Plan should disappear, browse mode should show
     expect(screen.queryByText(/Practice Plan/)).not.toBeInTheDocument();
@@ -162,29 +162,26 @@ describe('Practice page', () => {
     expect(screen.getByText('Duration')).toBeInTheDocument();
   });
 
-  it('shows Favorites button', () => {
+  it('shows Favorites only toggle', () => {
     renderPractice();
-    expect(screen.getByText('Favorites')).toBeInTheDocument();
+    expect(screen.getByText('Favorites only')).toBeInTheDocument();
   });
 
-  it('shows phase-colored borders on drill cards when plan is generated', async () => {
+  it('shows phase-colored dots on drill cards when plan is generated', async () => {
     const user = userEvent.setup();
     renderPractice();
     await user.click(screen.getByRole('button', { name: 'U10' }));
     const section = getFocusAreasSection();
     await user.click(within(section).getByRole('button', { name: 'Passing' }));
-    // Cards should be rendered
-    const cards = document.querySelectorAll('[data-slot="card"]');
+    // Cards should be rendered (bg-card divs with rounded corners)
+    const cards = document.querySelectorAll('.bg-card.rounded-\\[10px\\]');
     expect(cards.length).toBeGreaterThanOrEqual(3);
-    // At least one card should have a phase border class
-    const hasPhaseClass = Array.from(cards).some(
-      (c) =>
-        c.className.includes('border-l-amber') ||
-        c.className.includes('border-l-blue') ||
-        c.className.includes('border-l-emerald') ||
-        c.className.includes('border-l-slate'),
-    );
-    expect(hasPhaseClass).toBe(true);
+    // At least one card should have a phase dot
+    const hasPhaseDot = Array.from(cards).some((c) => {
+      const dot = c.querySelector('.bg-amber-400, .bg-blue-400, .bg-emerald-400, .bg-slate-400');
+      return dot !== null;
+    });
+    expect(hasPhaseDot).toBe(true);
   });
 
   it('shows intensity badges on drill cards', async () => {

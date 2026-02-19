@@ -6,7 +6,7 @@ const SIDEBAR_ITEMS = [
   { path: '/', label: 'Teams', icon: Users },
   { path: '/games/new', label: 'New Game', icon: PlusCircle },
   { path: '/practice', label: 'Practice', icon: ClipboardList },
-  { path: '/games', label: 'History', icon: Clock },
+  { path: '/games', label: 'Games', icon: Clock },
   { path: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 

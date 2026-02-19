@@ -230,9 +230,9 @@ describe('RotationGrid', () => {
     it('shows play percentage per player', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
-      // Each player sits out 1 of 4 rotations = 75%
-      const percentCells = screen.getAllByText('75%');
-      expect(percentCells.length).toBeGreaterThanOrEqual(5);
+      // 4 of 5 players sit out 1 of 4 rotations = 75% (shown as number in ring)
+      const percentCells = screen.getAllByText('75');
+      expect(percentCells.length).toBeGreaterThanOrEqual(4);
     });
 
     it('dispatches UPDATE_GAME to start the game', async () => {
@@ -339,8 +339,8 @@ describe('RotationGrid', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
 
-      // Labels are "Field" and "Bench" when usePositions is false
-      const fieldBadges = screen.getAllByText('Field');
+      // Labels are "●" (field) and "○" (bench) when usePositions is false
+      const fieldBadges = screen.getAllByText('●');
       await userEvent.click(fieldBadges[0]);
 
       expect(screen.getByText(/Selected .+ in R1/)).toBeInTheDocument();
@@ -351,7 +351,7 @@ describe('RotationGrid', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
 
-      const fieldBadges = screen.getAllByText('Field');
+      const fieldBadges = screen.getAllByText('●');
       await userEvent.click(fieldBadges[0]);
       expect(screen.getByText(/Selected/)).toBeInTheDocument();
 
@@ -366,12 +366,12 @@ describe('RotationGrid', () => {
 
       // Sorted by skill: Alice(5), Bob(4), Carol(3), Dave(2), Eve(1)
       // R1 assignments: Alice=Field, Bob=Field, Carol=Field, Dave=Field, Eve=Bench
-      // In DOM order, "Bench" elements appear row-by-row:
+      // In DOM order, "○" (bench) elements appear row-by-row:
       //   [0] Alice/R3, [1] Bob/R4, [2] Carol/R2, [3] Eve/R1
       // fieldBadges[0] = Alice/R1 (rotation 0)
       // benchBadges[3] = Eve/R1 (rotation 0) — same rotation
-      const fieldBadges = screen.getAllByText('Field');
-      const benchBadges = screen.getAllByText('Bench');
+      const fieldBadges = screen.getAllByText('●');
+      const benchBadges = screen.getAllByText('○');
       await userEvent.click(fieldBadges[0]);
       await userEvent.click(benchBadges[3]);
 
@@ -392,8 +392,8 @@ describe('RotationGrid', () => {
       const { state, game } = buildTestState();
       const { dispatch } = renderGrid(state, game.id);
 
-      const fieldBadges = screen.getAllByText('Field');
-      const benchBadges = screen.getAllByText('Bench');
+      const fieldBadges = screen.getAllByText('●');
+      const benchBadges = screen.getAllByText('○');
       await userEvent.click(fieldBadges[0]);
       await userEvent.click(benchBadges[3]);
 
@@ -431,10 +431,11 @@ describe('RotationGrid', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Grid' }));
 
       // R1 (current rotation, index 0): Alice=Field, Bob=Field, Carol=Field, Dave=Field, Eve=Bench
-      // Field badges in DOM order: [0]=Alice/R1, [3]=Bob/R1
-      const fieldBadges = screen.getAllByText('Field');
+      // In live mode, period 1 is collapsed (future), so only R1 and R2 are visible.
+      // Field badges in DOM order (row by row): [0]=Alice/R1, [1]=Alice/R2, [2]=Bob/R1, [3]=Bob/R2
+      const fieldBadges = screen.getAllByText('●');
       await userEvent.click(fieldBadges[0]); // Alice in R1
-      await userEvent.click(fieldBadges[3]); // Bob in R1
+      await userEvent.click(fieldBadges[2]); // Bob in R1
 
       // Swap dialog should appear — both are field players on current rotation
       expect(screen.getByText(/Swap Alice and Bob/)).toBeInTheDocument();

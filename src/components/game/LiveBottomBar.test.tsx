@@ -73,7 +73,7 @@ describe('LiveBottomBar', () => {
         timer={buildTimer({ elapsedMs: 330000, markers: [{ progress: 0.5, timeMs: 750000 }] })}
       />,
     );
-    expect(screen.getByText(/Next sub ~7 min/)).toBeInTheDocument();
+    expect(screen.getByText(/Sub ~7m/)).toBeInTheDocument();
   });
 
   it('calls onAdvance when advance button clicked', async () => {

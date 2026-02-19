@@ -48,7 +48,7 @@ function RotationPips({
                   'h-2 w-3 rounded-sm transition-colors',
                   isCurrent && 'bg-primary',
                   isPast && 'bg-primary/40',
-                  !isPast && !isCurrent && 'bg-muted',
+                  !isPast && !isCurrent && 'bg-muted-foreground/25',
                 )}
               />
             );
@@ -75,6 +75,7 @@ export function RotationGrid() {
   const { collapsedPeriods, togglePeriod } = usePeriodCollapse({
     currentPeriodIndex: g.currentPeriodIndex,
     isLive: g.isLive,
+    totalPeriods: g.config?.periods ?? 2,
   });
 
   // Auto-scroll to current rotation column in live mode
@@ -216,7 +217,7 @@ export function RotationGrid() {
 
         {/* Swap hint — setup mode only, hidden once a swap starts */}
         {!g.isLive && !g.isCompleted && !g.swapSource && (
-          <p className="max-w-4xl mx-auto px-4 text-sm text-muted-foreground bg-muted/50 rounded-md py-2">
+          <p className="max-w-4xl mx-auto mx-4 px-4 text-ios-footnote text-muted-foreground bg-card rounded-[10px] py-3 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
             Tap any player cell to swap their position with another player in the same rotation.
           </p>
         )}

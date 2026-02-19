@@ -25,7 +25,7 @@ export function GameHistory() {
 
   return (
     <div>
-      <NavBar title="History" largeTitle />
+      <NavBar title="Games" largeTitle />
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {games.length === 0 ? (

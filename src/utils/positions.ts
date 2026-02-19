@@ -146,12 +146,12 @@ export interface AssignmentDisplay {
   className: string;
 }
 
-const FIELD_CLASS = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-const BENCH_CLASS = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
-const GOALIE_CLASS = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-const DEF_CLASS = 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
-const MID_CLASS = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-const FWD_CLASS = 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+const FIELD_CLASS = 'text-green-600 dark:text-green-400';
+const BENCH_CLASS = 'text-muted-foreground/60';
+const GOALIE_CLASS = 'text-blue-600 dark:text-blue-400 font-semibold';
+const DEF_CLASS = 'text-purple-600 dark:text-purple-400';
+const MID_CLASS = 'text-green-600 dark:text-green-400';
+const FWD_CLASS = 'text-orange-600 dark:text-orange-400';
 
 /**
  * Get display label and CSS class for a player's assignment in a rotation.
@@ -163,7 +163,7 @@ export function getAssignmentDisplay(
   fieldPosition: SubPosition | undefined,
   usePositions: boolean,
 ): AssignmentDisplay {
-  if (assignment === RotationAssignment.Bench) return { label: 'Bench', className: BENCH_CLASS };
+  if (assignment === RotationAssignment.Bench) return { label: '○', className: BENCH_CLASS };
   if (assignment === RotationAssignment.Goalie) return { label: 'GK', className: GOALIE_CLASS };
 
   // Field assignment
@@ -173,5 +173,5 @@ export function getAssignmentDisplay(
     return { label: fieldPosition, className };
   }
 
-  return { label: 'Field', className: FIELD_CLASS };
+  return { label: '●', className: FIELD_CLASS };
 }

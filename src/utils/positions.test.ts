@@ -273,7 +273,7 @@ describe('autoAssignPositions', () => {
 describe('getAssignmentDisplay', () => {
   it('returns Bench for bench assignment', () => {
     const display = getAssignmentDisplay(RotationAssignment.Bench, undefined, true);
-    expect(display.label).toBe('Bench');
+    expect(display.label).toBe('○');
   });
 
   it('returns GK for goalie assignment', () => {
@@ -283,7 +283,7 @@ describe('getAssignmentDisplay', () => {
 
   it('returns Field when usePositions is false', () => {
     const display = getAssignmentDisplay(RotationAssignment.Field, 'LB', false);
-    expect(display.label).toBe('Field');
+    expect(display.label).toBe('●');
   });
 
   it('returns sub-position when usePositions is true', () => {
@@ -293,7 +293,7 @@ describe('getAssignmentDisplay', () => {
 
   it('returns Field when usePositions is true but no fieldPosition', () => {
     const display = getAssignmentDisplay(RotationAssignment.Field, undefined, true);
-    expect(display.label).toBe('Field');
+    expect(display.label).toBe('●');
   });
 
   it('uses purple class for DEF positions', () => {
