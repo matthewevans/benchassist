@@ -1,10 +1,4 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { TeamSelectionTree } from '@/components/TeamSelectionTree.tsx';
 import { useSelectionState } from '@/hooks/useSelectionState.ts';
@@ -32,23 +26,17 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Export Backup</DialogTitle>
-        </DialogHeader>
+    <BottomSheet open={open} onOpenChange={onOpenChange} title="Export Backup">
+      <TeamSelectionTree teams={teamList} games={games} selectionState={selectionState} />
 
-        <TeamSelectionTree teams={teamList} games={games} selectionState={selectionState} />
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleExport} disabled={!hasAnySelected}>
-            Export
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <div className="flex flex-col gap-2 pt-4">
+        <Button onClick={handleExport} disabled={!hasAnySelected} className="w-full">
+          Export
+        </Button>
+        <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
+          Cancel
+        </Button>
+      </div>
+    </BottomSheet>
   );
 }

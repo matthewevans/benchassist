@@ -37,7 +37,16 @@ export function LiveBottomBar({
   const advanceLabel = isLastRotation ? 'End Game' : isCrossingPeriod ? 'Next Period' : 'Next';
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg animate-in slide-in-from-bottom duration-300">
+    <div
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-50',
+        'bg-[rgba(249,249,249,0.72)] dark:bg-[rgba(29,29,31,0.72)]',
+        'backdrop-blur-xl backdrop-saturate-[180%]',
+        'border-t border-border/50',
+        'pb-[env(safe-area-inset-bottom)]',
+        'animate-in slide-in-from-bottom duration-300',
+      )}
+    >
       {/* Progress strip along top edge */}
       <div className="relative h-1 bg-secondary">
         <div

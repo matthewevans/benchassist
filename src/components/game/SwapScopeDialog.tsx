@@ -1,11 +1,4 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
 
 interface SwapScopeDialogProps {
@@ -26,26 +19,27 @@ export function SwapScopeDialog({
   onCancel,
 }: SwapScopeDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
-      <DialogContent showCloseButton={false}>
-        <DialogHeader>
-          <DialogTitle>
-            Swap {playerA} and {playerB}
-          </DialogTitle>
-          <DialogDescription>
-            Apply this swap to just this rotation, or to all remaining rotations?
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button variant="secondary" onClick={onThisRotation}>
-            Just This Rotation
-          </Button>
-          <Button onClick={onAllRemaining}>All Remaining</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <BottomSheet
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) onCancel();
+      }}
+      title={`Swap ${playerA} and ${playerB}`}
+    >
+      <p className="text-sm text-muted-foreground text-center pb-4">
+        Apply this swap to just this rotation, or to all remaining rotations?
+      </p>
+      <div className="flex flex-col gap-2">
+        <Button onClick={onAllRemaining} className="w-full">
+          All Remaining
+        </Button>
+        <Button variant="secondary" onClick={onThisRotation} className="w-full">
+          Just This Rotation
+        </Button>
+        <Button variant="outline" onClick={onCancel} className="w-full">
+          Cancel
+        </Button>
+      </div>
+    </BottomSheet>
   );
 }

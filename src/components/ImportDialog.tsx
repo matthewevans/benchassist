@@ -1,14 +1,7 @@
 import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
-import { Separator } from '@/components/ui/separator.tsx';
+import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { TeamSelectionTree } from '@/components/TeamSelectionTree.tsx';
 import { useSelectionState } from '@/hooks/useSelectionState.ts';
 import { filterStorageData } from '@/storage/exportImport.ts';
@@ -48,45 +41,35 @@ export function ImportDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Backup</DialogTitle>
-          </DialogHeader>
+      <BottomSheet open={open} onOpenChange={onOpenChange} title="Import Backup">
+        <TeamSelectionTree
+          teams={teamList}
+          games={importData.games}
+          selectionState={selectionState}
+        />
 
-          <TeamSelectionTree
-            teams={teamList}
-            games={importData.games}
-            selectionState={selectionState}
-          />
+        <div className="flex flex-col gap-2 pt-4">
+          <Button onClick={handleImportSelected} disabled={!hasAnySelected} className="w-full">
+            Import Selected
+          </Button>
+          <Button variant="destructive" onClick={() => setConfirmReplace(true)} className="w-full">
+            Replace All Data
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">
+            Deletes all current data and replaces with this backup.
+          </p>
+        </div>
+      </BottomSheet>
 
-          <DialogFooter className="flex-col gap-2 sm:flex-col">
-            <Button onClick={handleImportSelected} disabled={!hasAnySelected} className="w-full">
-              Import Selected
-            </Button>
-            <Separator />
-            <Button
-              variant="destructive"
-              onClick={() => setConfirmReplace(true)}
-              className="w-full"
-            >
-              Replace All Data
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              Deletes all current data and replaces with this backup.
-            </p>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <ConfirmDialog
+      <IOSAlert
         open={confirmReplace}
+        onOpenChange={setConfirmReplace}
+        title="Replace all data?"
+        message="This will delete all your current teams, rosters, and game history and replace them with the imported backup. This action can be undone."
+        confirmLabel="Replace All"
         onConfirm={handleReplaceAll}
         onCancel={() => setConfirmReplace(false)}
-        title="Replace all data?"
-        description="This will delete all your current teams, rosters, and game history and replace them with the imported backup. This action can be undone."
-        confirmLabel="Replace All"
-        variant="destructive"
+        destructive
       />
     </>
   );

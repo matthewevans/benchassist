@@ -1,14 +1,8 @@
-import { useState } from 'react';
+import { cloneElement, isValidElement, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import {
   Select,
   SelectContent,
@@ -92,18 +86,20 @@ export function PlayerImportDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        if (!o) handleClose();
-      }}
-    >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{importStep === 'paste' ? 'Import Players' : 'Review Import'}</DialogTitle>
-        </DialogHeader>
+    <>
+      {isValidElement(trigger)
+        ? cloneElement(trigger as React.ReactElement<{ onClick?: () => void }>, {
+            onClick: () => setOpen(true),
+          })
+        : trigger}
 
+      <BottomSheet
+        open={open}
+        onOpenChange={(o) => {
+          if (!o) handleClose();
+        }}
+        title={importStep === 'paste' ? 'Import Players' : 'Review Import'}
+      >
         {importStep === 'paste' ? (
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
@@ -198,7 +194,7 @@ export function PlayerImportDialog({
             </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </BottomSheet>
+    </>
   );
 }
