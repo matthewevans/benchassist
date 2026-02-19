@@ -161,4 +161,16 @@ describe('importFromBase64', () => {
     const base64 = btoa(JSON.stringify({ app: 'wrong', data: {} }));
     expect(() => importFromBase64(base64)).toThrow('Invalid BenchAssist export file');
   });
+
+  it('handles non-ASCII characters in data', () => {
+    const team = teamFactory.build({ id: 'team-1', name: 'FC José ⚽' });
+    const data: StorageData = {
+      version: CURRENT_VERSION,
+      teams: { 'team-1': team },
+      games: {},
+    };
+    const base64 = exportToBase64(data);
+    const result = importFromBase64(base64);
+    expect(result.teams['team-1'].name).toBe('FC José ⚽');
+  });
 });

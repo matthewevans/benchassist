@@ -48,11 +48,17 @@ export function downloadJSON(data: StorageData, filename?: string): void {
 }
 
 export function exportToBase64(data: StorageData): string {
-  return btoa(exportToJSON(data));
+  const bytes = new TextEncoder().encode(exportToJSON(data));
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
 }
 
 export function importFromBase64(text: string): StorageData {
-  return importFromJSON(atob(text.trim()));
+  const binary = atob(text.trim());
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return importFromJSON(new TextDecoder().decode(bytes));
 }
 
 export function readJSONFile(file: File): Promise<StorageData> {
