@@ -1,8 +1,10 @@
+import { useState } from 'react';
+import { Check } from 'lucide-react';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { TeamSelectionTree } from '@/components/TeamSelectionTree.tsx';
 import { useSelectionState } from '@/hooks/useSelectionState.ts';
-import { downloadJSON, filterStorageData } from '@/storage/exportImport.ts';
+import { downloadJSON, exportToBase64, filterStorageData } from '@/storage/exportImport.ts';
 import { CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
 import type { Game, Team, TeamId } from '@/types/domain.ts';
 
@@ -17,26 +19,85 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
   const teamList = Object.values(teams).sort((a, b) => b.updatedAt - a.updatedAt);
   const selectionState = useSelectionState(teamList);
   const { selections, hasAnySelected } = selectionState;
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) setCopiedText(null);
+    onOpenChange(nextOpen);
+  }
 
   function handleExport() {
     const data: StorageData = { version: CURRENT_VERSION, teams, games };
     const filtered = filterStorageData(data, selections);
     downloadJSON(filtered, `benchassist-backup-${new Date().toISOString().slice(0, 10)}.json`);
-    onOpenChange(false);
+    handleOpenChange(false);
+  }
+
+  async function handleCopyAsText() {
+    const data: StorageData = { version: CURRENT_VERSION, teams, games };
+    const filtered = filterStorageData(data, selections);
+    const base64 = exportToBase64(filtered);
+    try {
+      await navigator.clipboard.writeText(base64);
+    } catch {
+      // silently ignore clipboard errors
+    }
+    setCopiedText(base64);
+  }
+
+  async function handleCopyAgain() {
+    if (!copiedText) return;
+    try {
+      await navigator.clipboard.writeText(copiedText);
+    } catch {
+      // silently ignore clipboard errors
+    }
   }
 
   return (
-    <BottomSheet open={open} onOpenChange={onOpenChange} title="Export Backup">
-      <TeamSelectionTree teams={teamList} games={games} selectionState={selectionState} />
+    <BottomSheet open={open} onOpenChange={handleOpenChange} title="Export Backup">
+      {copiedText === null ? (
+        <>
+          <TeamSelectionTree teams={teamList} games={games} selectionState={selectionState} />
 
-      <div className="flex flex-col gap-2 pt-4">
-        <Button onClick={handleExport} disabled={!hasAnySelected} className="w-full">
-          Export
-        </Button>
-        <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full">
-          Cancel
-        </Button>
-      </div>
+          <div className="flex flex-col gap-2 pt-4">
+            <Button onClick={handleExport} disabled={!hasAnySelected} className="w-full">
+              Save to Files
+            </Button>
+            <Button
+              variant="plain"
+              onClick={handleCopyAsText}
+              disabled={!hasAnySelected}
+              className="w-full"
+            >
+              Copy as Text
+            </Button>
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-1 py-2">
+            <Check className="size-6 text-primary" />
+            <p className="text-ios-body font-medium">Copied to Clipboard</p>
+          </div>
+
+          <textarea
+            readOnly
+            value={copiedText}
+            onFocus={(e) => e.currentTarget.select()}
+            className="bg-secondary rounded-lg p-3 font-mono text-ios-footnote text-secondary-foreground h-32 w-full resize-none outline-none"
+          />
+
+          <div className="flex flex-col gap-2">
+            <Button variant="outline" onClick={handleCopyAgain} className="w-full">
+              Copy Again
+            </Button>
+            <Button variant="plain" onClick={() => handleOpenChange(false)} className="w-full">
+              Done
+            </Button>
+          </div>
+        </div>
+      )}
     </BottomSheet>
   );
 }
