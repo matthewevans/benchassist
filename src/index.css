@@ -153,3 +153,72 @@
     }
   }
 }
+
+@layer utilities {
+  .text-ios-large-title {
+    font-size: 34px;
+    line-height: 41px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+  }
+  .text-ios-title1 {
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 400;
+    letter-spacing: 0.36px;
+  }
+  .text-ios-title2 {
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: 400;
+    letter-spacing: -0.26px;
+  }
+  .text-ios-title3 {
+    font-size: 20px;
+    line-height: 25px;
+    font-weight: 400;
+    letter-spacing: -0.45px;
+  }
+  .text-ios-headline {
+    font-size: 17px;
+    line-height: 22px;
+    font-weight: 600;
+    letter-spacing: -0.41px;
+  }
+  .text-ios-body {
+    font-size: 17px;
+    line-height: 22px;
+    font-weight: 400;
+    letter-spacing: -0.41px;
+  }
+  .text-ios-callout {
+    font-size: 16px;
+    line-height: 21px;
+    font-weight: 400;
+    letter-spacing: -0.32px;
+  }
+  .text-ios-subheadline {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 400;
+    letter-spacing: -0.24px;
+  }
+  .text-ios-footnote {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 400;
+    letter-spacing: -0.08px;
+  }
+  .text-ios-caption1 {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    letter-spacing: 0px;
+  }
+  .text-ios-caption2 {
+    font-size: 11px;
+    line-height: 13px;
+    font-weight: 400;
+    letter-spacing: 0.07px;
+  }
+}
