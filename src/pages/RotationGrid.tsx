@@ -109,7 +109,7 @@ export function RotationGrid() {
         <NavBar title={g.game.name} backTo="/games" backLabel="Games" />
       ) : g.isLive ? (
         <NavBar
-          title=""
+          title={g.game.name}
           leading={
             <RotationPips
               periodGroups={g.periodGroups}
@@ -119,10 +119,19 @@ export function RotationGrid() {
           trailing={
             <div className="flex items-center gap-1.5">
               {/* Grid/Focus segmented toggle */}
-              <div className="inline-flex rounded-lg bg-secondary/80 p-0.5">
+              <div
+                className="inline-flex rounded-lg bg-secondary/80 p-0.5"
+                role="tablist"
+                aria-label="View mode"
+              >
                 <button
+                  type="button"
+                  role="tab"
+                  aria-selected={g.viewMode === 'focus'}
+                  aria-pressed={g.viewMode === 'focus'}
+                  aria-label="Focus view"
                   className={cn(
-                    'min-h-[34px] px-3 text-ios-footnote font-medium rounded-md transition-colors',
+                    'min-h-11 min-w-11 px-3 text-ios-footnote font-medium rounded-md transition-colors',
                     g.viewMode === 'focus'
                       ? 'bg-background shadow-sm text-foreground'
                       : 'text-muted-foreground',
@@ -132,8 +141,13 @@ export function RotationGrid() {
                   Focus
                 </button>
                 <button
+                  type="button"
+                  role="tab"
+                  aria-selected={g.viewMode === 'grid'}
+                  aria-pressed={g.viewMode === 'grid'}
+                  aria-label="Grid view"
                   className={cn(
-                    'min-h-[34px] px-3 text-ios-footnote font-medium rounded-md transition-colors',
+                    'min-h-11 min-w-11 px-3 text-ios-footnote font-medium rounded-md transition-colors',
                     g.viewMode === 'grid'
                       ? 'bg-background shadow-sm text-foreground'
                       : 'text-muted-foreground',
@@ -200,7 +214,7 @@ export function RotationGrid() {
                   </button>
                 </PopoverContent>
               </Popover>
-              <Button size="sm" onClick={g.handleStartGame}>
+              <Button size="sm" className="my-0.5" onClick={g.handleStartGame}>
                 Start Game
               </Button>
             </div>
@@ -233,11 +247,13 @@ export function RotationGrid() {
           </div>
         )}
 
-        {/* Swap hint — setup mode only, hidden once a swap starts */}
-        {!g.isLive && !g.isCompleted && !g.swapSource && (
+        {/* Swap hint/instruction — stable slot in setup mode to avoid layout shift */}
+        {!g.isLive && !g.isCompleted && (
           <div className="max-w-4xl mx-auto px-4">
-            <p className="text-ios-footnote text-muted-foreground bg-card rounded-[10px] py-3 px-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
-              Tap any player cell to swap their position with another player in the same rotation.
+            <p className="min-h-[56px] flex items-center text-ios-footnote text-muted-foreground bg-card rounded-[10px] py-3 px-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
+              {g.swapSource
+                ? `Selected ${g.playerMap.get(g.swapSource.playerId)?.name} in R${g.swapSource.rotationIndex + 1}. Tap another player in the same rotation to swap, or tap again to deselect.`
+                : 'Tap any player cell to swap their position with another player in the same rotation.'}
             </p>
           </div>
         )}
@@ -284,15 +300,6 @@ export function RotationGrid() {
             onRemovePlayer={(pid) => g.setRemovingPlayerId(pid)}
             onAddPlayerBack={g.handleAddPlayerBack}
           />
-        )}
-
-        {/* Swap instruction — only in non-live mode */}
-        {!g.isLive && !g.isCompleted && g.swapSource && (
-          <p className="max-w-4xl mx-auto px-4 text-ios-footnote text-muted-foreground">
-            Selected {g.playerMap.get(g.swapSource.playerId)?.name} in R
-            {g.swapSource.rotationIndex + 1}. Tap another player in the same rotation to swap, or
-            tap again to deselect.
-          </p>
         )}
 
         {/* Live bottom bar */}

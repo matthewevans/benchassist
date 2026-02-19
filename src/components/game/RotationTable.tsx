@@ -115,24 +115,19 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                   return (
                     <th
                       key={`collapsed-${group.periodIndex}`}
-                      className="text-center py-2 px-1 font-medium min-w-[36px] cursor-pointer hover:bg-accent/50 transition-colors"
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Expand period ${group.periodIndex + 1}`}
-                      onClick={() => togglePeriod(group.periodIndex)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          togglePeriod(group.periodIndex);
-                        }
-                      }}
+                      className="text-center py-2 px-1 font-medium min-w-[44px] hover:bg-accent/50 transition-colors"
                     >
-                      <div className="flex items-center justify-center gap-0.5">
+                      <button
+                        type="button"
+                        className="mx-auto inline-flex min-h-11 min-w-11 items-center justify-center gap-0.5 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80"
+                        aria-label={`Expand period ${group.periodIndex + 1}`}
+                        onClick={() => togglePeriod(group.periodIndex)}
+                      >
                         <span className="text-ios-caption1 text-muted-foreground bg-secondary/50 rounded px-2 py-0.5">
                           P{group.periodIndex + 1}
                         </span>
                         <ChevronRightIcon className="size-3 text-muted-foreground" />
-                      </div>
+                      </button>
                     </th>
                   );
                 }
@@ -241,18 +236,15 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       return (
                         <td
                           key={`collapsed-${group.periodIndex}`}
-                          className="text-center py-1.5 px-1 cursor-pointer hover:bg-accent/50"
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Expand period ${group.periodIndex + 1}`}
-                          onClick={() => togglePeriod(group.periodIndex)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              togglePeriod(group.periodIndex);
-                            }
-                          }}
-                        />
+                          className="text-center py-1.5 px-1 hover:bg-accent/50 min-w-[44px]"
+                        >
+                          <button
+                            type="button"
+                            className="mx-auto min-h-11 min-w-11 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80"
+                            aria-label={`Expand period ${group.periodIndex + 1}`}
+                            onClick={() => togglePeriod(group.periodIndex)}
+                          />
+                        </td>
                       );
                     }
                     return group.rotations.map((rotation, rotIdx) => {

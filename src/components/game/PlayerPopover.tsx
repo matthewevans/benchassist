@@ -24,14 +24,16 @@ export function PlayerPopover({
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-56 p-3" align="start">
         <div className="space-y-2">
-          <p className="font-medium text-sm">{playerName}</p>
+          <p className="text-ios-subheadline font-medium">{playerName}</p>
           {stats && (
-            <div className="text-xs text-muted-foreground space-y-0.5">
+            <div className="text-ios-caption1 text-muted-foreground space-y-0.5">
               <p>
                 {stats.rotationsPlayed} played &middot; {stats.rotationsBenched} bench
                 {stats.rotationsGoalie > 0 ? ` \u00b7 ${stats.rotationsGoalie} GK` : ''}
               </p>
-              <p className="font-medium text-foreground text-sm">{stats.playPercentage}%</p>
+              <p className="text-ios-subheadline font-medium text-foreground">
+                {stats.playPercentage}%
+              </p>
             </div>
           )}
           {isRemoved ? (
