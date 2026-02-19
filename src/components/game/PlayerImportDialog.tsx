@@ -109,7 +109,7 @@ export function PlayerImportDialog({
                 className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
-                placeholder={'Sloane: 4\nElla: 3\nKendall: 5'}
+                placeholder={'Alex: 4\nJordan: 3\nSam: 5'}
                 autoFocus
               />
             </div>
