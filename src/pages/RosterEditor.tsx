@@ -13,13 +13,18 @@ import {
   SelectValue,
 } from '@/components/ui/select.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+} from '@/components/ui/dropdown-menu.tsx';
+import { SwipeableRow } from '@/components/ui/swipeable-row.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
-import { cn } from '@/lib/utils.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { PlayerImportDialog, type ImportRow } from '@/components/game/PlayerImportDialog.tsx';
@@ -207,72 +212,60 @@ export function RosterEditor() {
         ) : (
           <GroupedList>
             {sortedPlayers.map((player, index) => (
-              <GroupedListRow
-                key={player.id}
-                last={index === sortedPlayers.length - 1}
-                trailing={
-                  <div className="flex items-center gap-1">
-                    <Popover>
-                      <PopoverTrigger asChild>
+              <SwipeableRow key={player.id} onDelete={() => setDeletingPlayerId(player.id)}>
+                <GroupedListRow
+                  last={index === sortedPlayers.length - 1}
+                  trailing={
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <button
-                          className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold hover:bg-primary/20 transition-colors cursor-pointer"
-                          aria-label={`Skill ${player.skillRanking}, click to change`}
+                          className="text-ios-subheadline text-muted-foreground active:text-foreground transition-colors cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Skill ${player.skillRanking}, tap to change`}
                         >
-                          {player.skillRanking}
+                          Skill {player.skillRanking}
                         </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-1" align="end">
-                        <div className="flex flex-col">
-                          {([1, 2, 3, 4, 5] as const).map((rank) => (
-                            <button
-                              key={rank}
-                              className={cn(
-                                'px-3 py-1.5 text-sm text-left rounded hover:bg-accent transition-colors',
-                                rank === player.skillRanking && 'bg-accent font-medium',
-                              )}
-                              onClick={() => {
-                                dispatch({
-                                  type: 'UPDATE_PLAYER',
-                                  payload: {
-                                    teamId: teamId!,
-                                    rosterId: rosterId!,
-                                    player: { ...player, skillRanking: rank },
-                                  },
-                                });
-                              }}
-                            >
-                              {SKILL_LABELS[rank]}
-                            </button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      onClick={() => setDeletingPlayerId(player.id)}
-                    >
-                      <span className="text-destructive text-ios-caption1">Remove</span>
-                    </Button>
-                  </div>
-                }
-              >
-                <button className="text-left w-full" onClick={() => handleEditPlayer(player)}>
-                  <div className="text-ios-body font-medium">{player.name}</div>
-                  <div className="flex gap-1 mt-0.5">
-                    {player.primaryPosition && (
-                      <Badge variant="secondary" className="text-xs">
-                        {player.primaryPosition}
-                      </Badge>
-                    )}
-                    {player.canPlayGoalie && (
-                      <Badge variant="outline" className="text-xs">
-                        GK
-                      </Badge>
-                    )}
-                  </div>
-                </button>
-              </GroupedListRow>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {([1, 2, 3, 4, 5] as const).map((rank) => (
+                          <DropdownMenuCheckboxItem
+                            key={rank}
+                            checked={rank === player.skillRanking}
+                            onSelect={() => {
+                              dispatch({
+                                type: 'UPDATE_PLAYER',
+                                payload: {
+                                  teamId: teamId!,
+                                  rosterId: rosterId!,
+                                  player: { ...player, skillRanking: rank },
+                                },
+                              });
+                            }}
+                          >
+                            {SKILL_LABELS[rank]}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  }
+                >
+                  <button className="text-left w-full" onClick={() => handleEditPlayer(player)}>
+                    <div className="text-ios-body font-medium">{player.name}</div>
+                    <div className="flex gap-1 mt-0.5">
+                      {player.primaryPosition && (
+                        <Badge variant="secondary" className="text-xs">
+                          {player.primaryPosition}
+                        </Badge>
+                      )}
+                      {player.canPlayGoalie && (
+                        <Badge variant="outline" className="text-xs">
+                          GK
+                        </Badge>
+                      )}
+                    </div>
+                  </button>
+                </GroupedListRow>
+              </SwipeableRow>
             ))}
           </GroupedList>
         )}
@@ -364,6 +357,20 @@ export function RosterEditor() {
           <Button onClick={handleSavePlayer} className="w-full" disabled={!form.name.trim()}>
             {editingPlayerId ? 'Save Changes' : 'Add Player'}
           </Button>
+          {editingPlayerId && (
+            <Button
+              variant="destructive-plain"
+              className="w-full mt-2"
+              onClick={() => {
+                setIsAdding(false);
+                setEditingPlayerId(null);
+                setForm(DEFAULT_FORM);
+                setDeletingPlayerId(editingPlayerId);
+              }}
+            >
+              Delete Player
+            </Button>
+          )}
         </div>
       </BottomSheet>
 
