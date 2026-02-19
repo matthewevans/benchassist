@@ -39,11 +39,12 @@ export function LiveBottomBar({
   return (
     <div
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-50',
+        'fixed left-0 right-0 z-50',
+        'bottom-[calc(49px+env(safe-area-inset-bottom))] lg:bottom-0',
         'bg-[rgba(249,249,249,0.72)] dark:bg-[rgba(29,29,31,0.72)]',
         'backdrop-blur-xl backdrop-saturate-[180%]',
         'border-t border-border/50',
-        'pb-[env(safe-area-inset-bottom)]',
+        'lg:pb-[env(safe-area-inset-bottom)]',
         'animate-in slide-in-from-bottom duration-300',
       )}
     >
@@ -147,7 +148,13 @@ export function LiveBottomBar({
             <ChevronLeftIcon className="size-4" />
           </Button>
           {isLastRotation ? (
-            <Button size="lg" className="px-4 sm:px-6" onClick={onAdvance} aria-label="End Game">
+            <Button
+              variant="destructive"
+              size="lg"
+              className="px-4 sm:px-6"
+              onClick={onAdvance}
+              aria-label="End Game"
+            >
               End Game
             </Button>
           ) : (

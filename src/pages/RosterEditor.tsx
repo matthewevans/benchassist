@@ -191,7 +191,7 @@ export function RosterEditor() {
         }
       />
 
-      <div className="px-4 space-y-4 pt-4">
+      <div className="max-w-4xl mx-auto px-4 space-y-4 pt-4">
         <p className="text-ios-footnote text-muted-foreground">
           {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
         </p>

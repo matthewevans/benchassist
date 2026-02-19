@@ -27,7 +27,7 @@ export function GameHistory() {
     <div>
       <NavBar title="History" largeTitle />
 
-      <div className="px-4 space-y-6 pt-4">
+      <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {games.length === 0 ? (
           <GroupedList>
             <GroupedListRow last>

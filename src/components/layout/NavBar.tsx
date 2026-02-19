@@ -7,6 +7,7 @@ interface NavBarProps {
   title: string;
   backTo?: string;
   backLabel?: string;
+  leading?: ReactNode;
   trailing?: ReactNode;
   largeTitle?: boolean;
   className?: string;
@@ -16,6 +17,7 @@ export function NavBar({
   title,
   backTo,
   backLabel,
+  leading,
   trailing,
   largeTitle = false,
   className,
@@ -33,7 +35,7 @@ export function NavBar({
     >
       {/* Standard bar: 44px — three-column grid like iOS UINavigationBar */}
       <div className="grid grid-cols-3 items-center h-11 px-4">
-        {/* Leading: back button */}
+        {/* Leading: back button or custom leading content */}
         <div className="flex items-center min-w-0">
           {backTo ? (
             <Link
@@ -44,6 +46,8 @@ export function NavBar({
               <ChevronLeft className="size-[22px] stroke-[2.5] shrink-0" />
               {backLabel && <span className="text-ios-body truncate">{backLabel}</span>}
             </Link>
+          ) : leading ? (
+            leading
           ) : null}
         </div>
 

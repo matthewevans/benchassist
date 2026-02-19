@@ -173,29 +173,37 @@ export function RotationGrid() {
 
       <div className="space-y-6 pt-4">
         {/* Completed indicator */}
-        {g.isCompleted && <p className="text-sm text-muted-foreground px-4">Completed</p>}
+        {g.isCompleted && (
+          <p className="max-w-4xl mx-auto text-sm text-muted-foreground px-4">Completed</p>
+        )}
 
         {/* Solver progress/error — visible in all modes */}
-        <SolverStatusCard
-          isRunning={g.solver.isRunning}
-          progress={g.solver.progress}
-          message={g.solver.message}
-          error={g.solver.error}
-        />
+        <div className="max-w-4xl mx-auto px-4">
+          <SolverStatusCard
+            isRunning={g.solver.isRunning}
+            progress={g.solver.progress}
+            message={g.solver.message}
+            error={g.solver.error}
+          />
+        </div>
 
         {/* Overall stats — setup mode only */}
-        {!g.isLive && !g.isCompleted && <OverallStatsCards stats={g.schedule.overallStats} />}
+        {!g.isLive && !g.isCompleted && (
+          <div className="max-w-4xl mx-auto px-4">
+            <OverallStatsCards stats={g.schedule.overallStats} />
+          </div>
+        )}
 
         {/* Swap hint — setup mode only, hidden once a swap starts */}
         {!g.isLive && !g.isCompleted && !g.swapSource && (
-          <p className="text-sm text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+          <p className="max-w-4xl mx-auto px-4 text-sm text-muted-foreground bg-muted/50 rounded-md py-2">
             Tap any player cell to swap their position with another player in the same rotation.
           </p>
         )}
 
         {/* Landscape hint — portrait only, many rotations */}
         {g.manyRotations && !g.isCompleted && (
-          <p className="hidden portrait:flex text-xs text-muted-foreground text-center items-center justify-center gap-1.5">
+          <p className="hidden portrait:flex text-xs text-muted-foreground text-center items-center justify-center gap-1.5 px-4">
             <RotateCcwIcon className="size-3" />
             Rotate your phone for a wider view
           </p>
@@ -203,16 +211,18 @@ export function RotationGrid() {
 
         {/* Live focus view — default in live mode */}
         {g.isLive && g.viewMode === 'focus' && g.currentRotation && (
-          <LiveFocusView
-            currentRotation={g.currentRotation}
-            nextRotation={g.nextRotation}
-            playerMap={g.playerMap}
-            changingPlayerIds={g.changingPlayerIds}
-            usePositions={g.config?.usePositions ?? false}
-          />
+          <div className="max-w-4xl mx-auto px-4">
+            <LiveFocusView
+              currentRotation={g.currentRotation}
+              nextRotation={g.nextRotation}
+              playerMap={g.playerMap}
+              changingPlayerIds={g.changingPlayerIds}
+              usePositions={g.config?.usePositions ?? false}
+            />
+          </div>
         )}
 
-        {/* Rotation grid table */}
+        {/* Rotation grid table — full width for horizontal scrolling */}
         {(!g.isLive || g.viewMode === 'grid') && g.config && (
           <RotationTable
             ref={gridRef}
@@ -237,7 +247,7 @@ export function RotationGrid() {
 
         {/* Swap instruction — only in non-live mode */}
         {!g.isLive && !g.isCompleted && g.swapSource && (
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="max-w-4xl mx-auto px-4 text-sm text-muted-foreground mt-2">
             Selected {g.playerMap.get(g.swapSource.playerId)?.name} in R
             {g.swapSource.rotationIndex + 1}. Click another player in the same rotation to swap, or
             click again to deselect.
@@ -246,11 +256,13 @@ export function RotationGrid() {
 
         {/* Player statistics — setup mode only */}
         {!g.isLive && !g.isCompleted && (
-          <PlayerStatsCard
-            players={g.sortedPlayers}
-            playerStats={g.schedule.playerStats}
-            minPlayPercentage={g.config?.minPlayPercentage ?? 50}
-          />
+          <div className="max-w-4xl mx-auto px-4">
+            <PlayerStatsCard
+              players={g.sortedPlayers}
+              playerStats={g.schedule.playerStats}
+              minPlayPercentage={g.config?.minPlayPercentage ?? 50}
+            />
+          </div>
         )}
 
         {/* Live bottom bar */}

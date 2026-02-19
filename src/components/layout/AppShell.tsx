@@ -13,7 +13,7 @@ export function AppShell() {
       <Sidebar />
 
       {/* Main content area */}
-      <main className="flex-1 max-w-4xl mx-auto w-full pb-[calc(49px+env(safe-area-inset-bottom))] lg:pb-0">
+      <main className="flex-1 w-full pb-[calc(49px+env(safe-area-inset-bottom))] lg:pb-0">
         <Outlet />
       </main>
 

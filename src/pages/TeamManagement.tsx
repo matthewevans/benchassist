@@ -124,7 +124,7 @@ export function TeamManagement() {
         }
       />
 
-      <div className="px-4 space-y-6 pt-4">
+      <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {/* Team Details */}
         <GroupedList header="Details">
           <GroupedListRow

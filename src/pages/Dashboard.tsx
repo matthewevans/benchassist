@@ -75,6 +75,16 @@ export function Dashboard() {
       <NavBar
         title="Teams"
         largeTitle
+        leading={
+          <>
+            <img
+              src="/benchassist/small_logo_light_square.png"
+              alt=""
+              className="size-7 dark:hidden"
+            />
+            <img src="/benchassist/small_logo.png" alt="" className="size-7 hidden dark:block" />
+          </>
+        }
         trailing={
           <Button variant="plain" size="icon" onClick={() => setIsCreating(true)}>
             <Plus className="size-[22px]" />
@@ -82,7 +92,7 @@ export function Dashboard() {
         }
       />
 
-      <div className="px-4 space-y-6 pt-4">
+      <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {activeGame && (
           <Link to={`/games/${activeGame.id}/rotations`}>
             <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors">
