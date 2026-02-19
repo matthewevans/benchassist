@@ -133,7 +133,7 @@ export function TeamManagement() {
                 value={team.gender}
                 onValueChange={(v) => handleChangeGender(v as TeamGender)}
               >
-                <SelectTrigger className="w-28 h-8">
+                <SelectTrigger className="w-32 min-h-11 text-ios-body">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -170,7 +170,7 @@ export function TeamManagement() {
                     });
                   }}
                   placeholder="e.g., 2017"
-                  className="w-24 h-8"
+                  className="w-24 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
                 />
                 {team.birthYear && (
                   <span className="text-muted-foreground text-ios-footnote">

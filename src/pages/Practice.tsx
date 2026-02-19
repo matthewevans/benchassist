@@ -1,11 +1,12 @@
 import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { usePracticePlan, PHASE_ORDER } from '@/hooks/usePracticePlan.ts';
-import { DrillCard, StarIcon } from '@/components/DrillCard.tsx';
+import { DrillCard } from '@/components/DrillCard.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { Input } from '@/components/ui/input.tsx';
+import { Switch } from '@/components/ui/switch.tsx';
 import {
   Select,
   SelectContent,
@@ -16,12 +17,43 @@ import {
 import { TRAINING_FOCUSES } from '@/data/training-focuses.ts';
 import { getUAge, uAgeToBirthYear, DRILL_BRACKET_LABELS } from '@/utils/age.ts';
 import { DRILL_CATEGORY_LABELS, DRILL_PHASE_LABELS } from '@/types/drill.ts';
+import { cn } from '@/lib/utils.ts';
 import type { DrillCategory } from '@/types/drill.ts';
 
 const DURATION_OPTIONS = [30, 45, 60, 75, 90];
 
 /** U-age values to display as quick-select chips */
 const U_AGE_CHIPS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+
+interface PracticeChipProps {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+function PracticeChip({ selected, onClick, children }: PracticeChipProps) {
+  return (
+    <Button
+      type="button"
+      variant="plain"
+      size="sm"
+      aria-pressed={selected}
+      className="h-11 rounded-full px-1.5 active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C]"
+      onClick={onClick}
+    >
+      <span
+        className={cn(
+          'inline-flex h-8 items-center rounded-full border px-3 text-ios-footnote font-medium transition-colors',
+          selected
+            ? 'border-primary/25 bg-primary/12 text-primary'
+            : 'border-border/60 bg-transparent text-muted-foreground',
+        )}
+      >
+        {children}
+      </span>
+    </Button>
+  );
+}
 
 export function Practice() {
   const { state, dispatch } = useAppContext();
@@ -49,7 +81,12 @@ export function Practice() {
         largeTitle
         trailing={
           p.birthYear != null ? (
-            <Button variant="plain" size="xs" onClick={p.reset}>
+            <Button
+              variant="plain"
+              size="xs"
+              className="h-11 px-2 text-ios-footnote"
+              onClick={p.reset}
+            >
               Reset
             </Button>
           ) : undefined
@@ -80,14 +117,13 @@ export function Practice() {
                   const chipBirthYear = uAgeToBirthYear(uAge);
                   const isSelected = p.birthYear === chipBirthYear;
                   return (
-                    <Button
+                    <PracticeChip
                       key={uAge}
-                      size="capsule"
-                      variant={isSelected ? 'default' : 'secondary'}
+                      selected={isSelected}
                       onClick={() => p.selectUAge(uAge)}
                     >
                       U{uAge}
-                    </Button>
+                    </PracticeChip>
                   );
                 })}
               </div>
@@ -105,7 +141,7 @@ export function Practice() {
                 max={30}
                 value={p.playerCount}
                 onChange={(e) => p.setPlayerCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-20 text-right"
+                className="w-20 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
               />
             }
           >
@@ -117,7 +153,7 @@ export function Practice() {
                 value={String(p.targetDuration)}
                 onValueChange={(v) => p.setTargetDuration(parseInt(v, 10))}
               >
-                <SelectTrigger className="w-24">
+                <SelectTrigger className="w-24 border-none shadow-none bg-transparent px-0 focus:ring-0 text-right">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -134,50 +170,44 @@ export function Practice() {
           </GroupedListRow>
           <GroupedListRow
             last
-            trailing={
-              <Button
-                size="capsule"
-                variant={p.favoritesOnly ? 'default' : 'secondary'}
-                onClick={() => p.setFavoritesOnly((prev) => !prev)}
-              >
-                <StarIcon filled={p.favoritesOnly} className="size-3.5" />
-                {p.favoritesOnly ? 'On' : 'Off'}
-              </Button>
-            }
+            trailing={<Switch checked={p.favoritesOnly} onCheckedChange={p.setFavoritesOnly} />}
           >
-            <span className="text-ios-body">Favorites only</span>
+            <div>
+              <div className="text-ios-body">Favorites only</div>
+            </div>
           </GroupedListRow>
         </GroupedList>
 
         {/* Practice themes */}
         {p.drillBracket && (
-          <section>
-            <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
-              Practice Themes
-            </h3>
-            <div className="bg-card rounded-[10px] px-3 py-3">
-              <div className="flex flex-wrap gap-1.5">
-                {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(p.drillBracket!)).map(
-                  (template) => (
-                    <Button
-                      key={template.id}
-                      size="capsule"
-                      variant="secondary"
-                      onClick={() => {
-                        const cats = [
-                          ...new Set(template.slots.flatMap((s) => s.preferredCategories)),
-                        ].filter((c) => p.availableCategories.includes(c)) as DrillCategory[];
-                        p.setSelectedCategories(cats);
-                        p.setSeed(Date.now());
-                      }}
-                    >
-                      {template.name}
-                    </Button>
-                  ),
-                )}
-              </div>
-            </div>
-          </section>
+          <GroupedList
+            header="Practice Presets"
+            footer="Tap a preset to apply its focus mix and regenerate the plan."
+          >
+            {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(p.drillBracket!)).map(
+              (template, index, list) => (
+                <GroupedListRow
+                  key={template.id}
+                  chevron
+                  last={index === list.length - 1}
+                  onClick={() => {
+                    const cats = [
+                      ...new Set(template.slots.flatMap((s) => s.preferredCategories)),
+                    ].filter((c) => p.availableCategories.includes(c)) as DrillCategory[];
+                    p.setSelectedCategories(cats);
+                    p.setSeed(Date.now());
+                  }}
+                >
+                  <div>
+                    <div className="text-ios-body font-medium">{template.name}</div>
+                    <div className="text-ios-caption1 text-muted-foreground">
+                      {template.description}
+                    </div>
+                  </div>
+                </GroupedListRow>
+              ),
+            )}
+          </GroupedList>
         )}
 
         {/* Focus areas */}
@@ -191,14 +221,13 @@ export function Practice() {
                 {p.availableCategories.map((cat) => {
                   const isSelected = p.selectedCategories.includes(cat);
                   return (
-                    <Button
+                    <PracticeChip
                       key={cat}
-                      size="capsule"
-                      variant={isSelected ? 'default' : 'secondary'}
+                      selected={isSelected}
                       onClick={() => p.toggleCategory(cat)}
                     >
                       {DRILL_CATEGORY_LABELS[cat]}
-                    </Button>
+                    </PracticeChip>
                   );
                 })}
               </div>
@@ -213,7 +242,12 @@ export function Practice() {
               <h2 className="text-ios-title3 font-semibold">
                 Practice Plan · {p.totalDuration} min
               </h2>
-              <Button size="xs" variant="plain" onClick={() => p.setSeed(Date.now())}>
+              <Button
+                size="xs"
+                variant="plain"
+                className="h-11 px-2 text-ios-footnote"
+                onClick={() => p.setSeed(Date.now())}
+              >
                 Shuffle All
               </Button>
             </div>
@@ -250,22 +284,20 @@ export function Practice() {
                   onChange={(e) => p.setBrowseSearch(e.target.value)}
                 />
                 <div className="flex flex-wrap gap-1.5">
-                  <Button
-                    size="capsule"
-                    variant={p.browseCategory === null ? 'default' : 'secondary'}
+                  <PracticeChip
+                    selected={p.browseCategory === null}
                     onClick={() => p.setBrowseCategory(null)}
                   >
                     All
-                  </Button>
+                  </PracticeChip>
                   {p.availableCategories.map((cat) => (
-                    <Button
+                    <PracticeChip
                       key={cat}
-                      size="capsule"
-                      variant={p.browseCategory === cat ? 'default' : 'secondary'}
+                      selected={p.browseCategory === cat}
                       onClick={() => p.setBrowseCategory(p.browseCategory === cat ? null : cat)}
                     >
                       {DRILL_CATEGORY_LABELS[cat]}
-                    </Button>
+                    </PracticeChip>
                   ))}
                 </div>
               </div>

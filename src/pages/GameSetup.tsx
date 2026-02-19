@@ -1,22 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { AttendanceList } from '@/components/game/AttendanceList.tsx';
 import { GoalieAssignmentSelector } from '@/components/game/GoalieAssignmentSelector.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select.tsx';
 import { generateId } from '@/utils/id.ts';
 import { validateRosterForGame } from '@/utils/validation.ts';
 import { createConfigFromTemplate } from '@/utils/gameConfig.ts';
@@ -38,6 +32,9 @@ export function GameSetup() {
   const [gameName, setGameName] = useState('');
   const [absentPlayerIds, setAbsentPlayerIds] = useState<Set<PlayerId>>(new Set());
   const [goalieAssignments, setGoalieAssignments] = useState<GoalieAssignment[]>([]);
+  const [isTeamPickerOpen, setIsTeamPickerOpen] = useState(false);
+  const [isRosterPickerOpen, setIsRosterPickerOpen] = useState(false);
+  const [isConfigPickerOpen, setIsConfigPickerOpen] = useState(false);
 
   const teams = Object.values(state.teams);
   const selectedTeam = teamId ? state.teams[teamId] : undefined;
@@ -68,10 +65,6 @@ export function GameSetup() {
     const benchPerRotation = Math.max(0, playerCount - fieldSlots);
     return `${playerCount} players \u00b7 ${selectedConfig.fieldSize}v${selectedConfig.fieldSize} \u00b7 ${totalRotations} rotations \u00b7 ~${benchPerRotation} benched per rotation`;
   }, [selectedRoster, selectedConfig, activePlayers]);
-
-  const [configExpanded, setConfigExpanded] = useState(false);
-  const configComplete = !!(teamId && rosterId && configId);
-  const showConfigCollapsed = configComplete && !configExpanded && !!summaryText;
 
   function handleToggleAbsent(playerId: PlayerId) {
     setAbsentPlayerIds((prev) => {
@@ -132,6 +125,23 @@ export function GameSetup() {
     });
   }
 
+  function handleSelectTeam(nextTeamId: string) {
+    setTeamId(nextTeamId);
+    setRosterId('');
+    setConfigId('');
+    setIsTeamPickerOpen(false);
+  }
+
+  function handleSelectRoster(nextRosterId: string) {
+    setRosterId(nextRosterId);
+    setIsRosterPickerOpen(false);
+  }
+
+  function handleSelectConfig(nextConfigId: string) {
+    setConfigId(nextConfigId);
+    setIsConfigPickerOpen(false);
+  }
+
   // Navigate when solver completes
   useEffect(() => {
     const gameId = pendingGameIdRef.current;
@@ -157,148 +167,67 @@ export function GameSetup() {
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {/* Step 1: Team & Configuration */}
-        {showConfigCollapsed ? (
-          <GroupedList header="Team & Configuration">
-            <GroupedListRow
-              last
-              trailing={
-                <Button variant="plain" size="sm" onClick={() => setConfigExpanded(true)}>
-                  Edit
-                </Button>
-              }
-            >
-              <div>
-                <div className="text-ios-body font-medium">
-                  {selectedTeam?.name} &middot; {selectedRoster?.name}
-                </div>
-                <div className="text-ios-caption1 text-muted-foreground">{summaryText}</div>
-              </div>
-            </GroupedListRow>
-          </GroupedList>
-        ) : (
-          <GroupedList header="Team & Configuration">
-            <GroupedListRow>
-              <div className="w-full space-y-2 py-1">
-                <Label>Team</Label>
-                <Select
-                  value={teamId}
-                  onValueChange={(v) => {
-                    setTeamId(v);
-                    setRosterId('');
-                    setConfigId('');
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </GroupedListRow>
+        <GroupedList header="Team & Configuration">
+          <GroupedListRow onClick={() => setIsTeamPickerOpen(true)} chevron>
+            <div className="flex w-full items-center justify-between gap-3 pr-2">
+              <span className="text-ios-body">Team</span>
+              <span className="text-ios-subheadline text-muted-foreground truncate">
+                {selectedTeam?.name ?? 'Select'}
+              </span>
+            </div>
+          </GroupedListRow>
 
-            {selectedTeam && (
-              <>
-                <GroupedListRow>
-                  <div className="w-full space-y-2 py-1">
-                    <Label>Roster</Label>
-                    <Select value={rosterId} onValueChange={setRosterId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select roster" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectedTeam.rosters.map((roster) => (
-                          <SelectItem key={roster.id} value={roster.id}>
-                            {roster.name} ({roster.players.length} players)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedTeam.rosters.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No rosters yet.{' '}
-                        <Link
-                          to={`/teams/${teamId}`}
-                          className="text-primary underline hover:no-underline"
-                        >
-                          Add players to a roster
-                        </Link>{' '}
-                        first.
-                      </p>
-                    )}
-                  </div>
-                </GroupedListRow>
+          <GroupedListRow
+            onClick={selectedTeam ? () => setIsRosterPickerOpen(true) : undefined}
+            chevron={!!selectedTeam}
+          >
+            <div className="flex w-full items-center justify-between gap-3 pr-2">
+              <span className="text-ios-body">Roster</span>
+              <span className="text-ios-subheadline text-muted-foreground truncate">
+                {!selectedTeam
+                  ? 'Choose team first'
+                  : (selectedRoster?.name ??
+                    (selectedTeam.rosters.length === 0 ? 'No rosters yet' : 'Select'))}
+              </span>
+            </div>
+          </GroupedListRow>
 
-                <GroupedListRow>
-                  <div className="w-full space-y-2 py-1">
-                    <Label>Game Configuration</Label>
-                    <Select value={configId} onValueChange={setConfigId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select configuration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectedTeam.gameConfigs.map((config) => (
-                          <SelectItem key={config.id} value={config.id}>
-                            {config.name} ({config.fieldSize}v{config.fieldSize})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedTeam.gameConfigs.length === 0 && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">
-                          No configurations yet. Quick-create one:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {GAME_CONFIG_TEMPLATES.map((template) => (
-                            <Button
-                              key={template.name}
-                              variant="secondary"
-                              size="capsule"
-                              onClick={() => {
-                                const config = createConfigFromTemplate(teamId, template);
-                                dispatch({
-                                  type: 'ADD_GAME_CONFIG',
-                                  payload: { teamId, config },
-                                });
-                                setConfigId(config.id);
-                              }}
-                            >
-                              {template.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </GroupedListRow>
+          <GroupedListRow
+            onClick={selectedTeam ? () => setIsConfigPickerOpen(true) : undefined}
+            chevron={!!selectedTeam}
+          >
+            <div className="flex w-full items-center justify-between gap-3 pr-2">
+              <span className="text-ios-body">Game Configuration</span>
+              <span className="text-ios-subheadline text-muted-foreground truncate">
+                {!selectedTeam
+                  ? 'Choose team first'
+                  : (selectedConfig?.name ??
+                    (selectedTeam.gameConfigs.length === 0 ? 'No configurations yet' : 'Select'))}
+              </span>
+            </div>
+          </GroupedListRow>
 
-                <GroupedListRow last>
-                  <div className="w-full space-y-2 py-1">
-                    <Label htmlFor="game-name">Game Name (optional)</Label>
-                    <Input
-                      id="game-name"
-                      value={gameName}
-                      onChange={(e) => setGameName(e.target.value)}
-                      placeholder="e.g., vs Thunder - Feb 15"
-                    />
-                  </div>
-                </GroupedListRow>
-              </>
-            )}
+          <GroupedListRow last>
+            <div className="flex w-full items-center justify-between gap-3 py-1">
+              <label htmlFor="game-name" className="text-ios-body">
+                Game Name
+              </label>
+              <Input
+                id="game-name"
+                value={gameName}
+                onChange={(e) => setGameName(e.target.value)}
+                placeholder="Optional"
+                className="w-44 border-none bg-transparent px-0 py-0 text-right shadow-none focus-visible:ring-0"
+              />
+            </div>
+          </GroupedListRow>
 
-            {summaryText && (
-              <div className="px-4 py-2 text-ios-footnote text-muted-foreground border-t border-border/50">
-                {summaryText}
-              </div>
-            )}
-          </GroupedList>
-        )}
+          {summaryText && (
+            <div className="px-4 py-2 text-ios-footnote text-muted-foreground border-t border-border/50">
+              {summaryText}
+            </div>
+          )}
+        </GroupedList>
 
         {/* Step 2: Attendance */}
         {selectedRoster && (
@@ -353,6 +282,148 @@ export function GameSetup() {
           {solver.isRunning ? 'Generating...' : 'Generate Rotations'}
         </Button>
       </div>
+
+      <BottomSheet open={isTeamPickerOpen} onOpenChange={setIsTeamPickerOpen} title="Team">
+        {teams.length === 0 ? (
+          <div className="space-y-4 pt-2">
+            <p className="text-ios-footnote text-muted-foreground">
+              Create a team before starting a game.
+            </p>
+            <Button asChild size="lg">
+              <Link to="/">Go to Teams</Link>
+            </Button>
+          </div>
+        ) : (
+          <GroupedList>
+            {teams.map((team, index) => (
+              <GroupedListRow
+                key={team.id}
+                onClick={() => handleSelectTeam(team.id)}
+                last={index === teams.length - 1}
+                trailing={
+                  team.id === teamId ? (
+                    <Check className="size-5 text-primary" aria-hidden />
+                  ) : undefined
+                }
+              >
+                <div className="min-w-0">
+                  <div className="text-ios-body truncate">{team.name}</div>
+                  <div className="text-ios-caption1 text-muted-foreground">
+                    {team.rosters.length} roster{team.rosters.length !== 1 ? 's' : ''} &middot;{' '}
+                    {team.gameConfigs.length} config{team.gameConfigs.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </GroupedListRow>
+            ))}
+          </GroupedList>
+        )}
+      </BottomSheet>
+
+      <BottomSheet open={isRosterPickerOpen} onOpenChange={setIsRosterPickerOpen} title="Roster">
+        {!selectedTeam ? (
+          <p className="pt-2 text-ios-footnote text-muted-foreground">Select a team first.</p>
+        ) : selectedTeam.rosters.length === 0 ? (
+          <div className="space-y-4 pt-2">
+            <p className="text-ios-footnote text-muted-foreground">
+              No rosters yet. Add players to a roster first.
+            </p>
+            <Button asChild size="lg">
+              <Link to={`/teams/${teamId}`}>Manage Team</Link>
+            </Button>
+          </div>
+        ) : (
+          <GroupedList>
+            {selectedTeam.rosters.map((roster, index) => (
+              <GroupedListRow
+                key={roster.id}
+                onClick={() => handleSelectRoster(roster.id)}
+                last={index === selectedTeam.rosters.length - 1}
+                trailing={
+                  roster.id === rosterId ? (
+                    <Check className="size-5 text-primary" aria-hidden />
+                  ) : undefined
+                }
+              >
+                <div className="min-w-0">
+                  <div className="text-ios-body truncate">{roster.name}</div>
+                  <div className="text-ios-caption1 text-muted-foreground">
+                    {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </GroupedListRow>
+            ))}
+          </GroupedList>
+        )}
+      </BottomSheet>
+
+      <BottomSheet
+        open={isConfigPickerOpen}
+        onOpenChange={setIsConfigPickerOpen}
+        title="Game Configuration"
+      >
+        {!selectedTeam ? (
+          <p className="pt-2 text-ios-footnote text-muted-foreground">Select a team first.</p>
+        ) : (
+          <div className="space-y-4">
+            {selectedTeam.gameConfigs.length > 0 && (
+              <GroupedList header="Saved Configurations">
+                {selectedTeam.gameConfigs.map((config, index) => (
+                  <GroupedListRow
+                    key={config.id}
+                    onClick={() => handleSelectConfig(config.id)}
+                    last={index === selectedTeam.gameConfigs.length - 1}
+                    trailing={
+                      config.id === configId ? (
+                        <Check className="size-5 text-primary" aria-hidden />
+                      ) : undefined
+                    }
+                  >
+                    <div className="min-w-0">
+                      <div className="text-ios-body truncate">{config.name}</div>
+                      <div className="text-ios-caption1 text-muted-foreground">
+                        {config.fieldSize}v{config.fieldSize} &middot; {config.periods} periods
+                        &middot; {config.rotationsPerPeriod} rot/period
+                      </div>
+                    </div>
+                  </GroupedListRow>
+                ))}
+              </GroupedList>
+            )}
+
+            <GroupedList header="Quick Create">
+              {GAME_CONFIG_TEMPLATES.map((template, index) => (
+                <GroupedListRow
+                  key={template.name}
+                  onClick={() => {
+                    const config = createConfigFromTemplate(teamId, template);
+                    dispatch({
+                      type: 'ADD_GAME_CONFIG',
+                      payload: { teamId, config },
+                    });
+                    setConfigId(config.id);
+                    setIsConfigPickerOpen(false);
+                  }}
+                  last={index === GAME_CONFIG_TEMPLATES.length - 1}
+                >
+                  <div className="w-full flex items-center justify-between gap-2">
+                    <span className="text-ios-body">{template.name}</span>
+                    <span className="text-ios-caption1 text-muted-foreground">
+                      {template.fieldSize}v{template.fieldSize}
+                    </span>
+                  </div>
+                </GroupedListRow>
+              ))}
+            </GroupedList>
+
+            <p className="px-4 text-ios-footnote text-muted-foreground">
+              Need a custom setup? Create one from Team settings.
+            </p>
+            <Button asChild size="lg" variant="secondary">
+              <Link to={`/teams/${teamId}`}>Manage Team Configurations</Link>
+            </Button>
+          </div>
+        )}
+      </BottomSheet>
     </div>
   );
 }

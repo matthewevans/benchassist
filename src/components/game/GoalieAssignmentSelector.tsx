@@ -24,13 +24,13 @@ export function GoalieAssignmentSelector({
   return (
     <div className="space-y-2">
       {Array.from({ length: periods }, (_, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <Label className="w-20 text-sm">Period {i + 1}</Label>
+        <div key={i} className="flex min-h-11 items-center gap-3">
+          <Label className="w-20 text-ios-body">Period {i + 1}</Label>
           <Select
             value={goalieAssignments.find((a) => a.periodIndex === i)?.playerId ?? 'auto'}
             onValueChange={(v) => onChange(i, v)}
           >
-            <SelectTrigger className="flex-1">
+            <SelectTrigger className="h-11 flex-1 text-ios-body">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

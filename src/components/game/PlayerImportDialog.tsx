@@ -121,18 +121,18 @@ export function PlayerImportDialog({
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               {importRows.map((row, i) => (
-                <div key={i} className="flex items-center gap-2">
+                <div key={i} className="flex min-h-11 items-center gap-2">
                   {row.error ? (
-                    <div className="flex-1 flex items-center gap-2 text-sm text-destructive">
+                    <div className="flex-1 flex items-center gap-2 text-ios-body text-destructive">
                       <span className="truncate">{row.name}</span>
-                      <span className="text-xs">({row.error})</span>
+                      <span className="text-ios-caption1">({row.error})</span>
                     </div>
                   ) : (
                     <>
                       <Input
                         value={row.name}
                         onChange={(e) => updateRow(i, { name: e.target.value })}
-                        className="flex-1 h-8 text-sm"
+                        className="flex-1 text-ios-body"
                       />
                       <Select
                         value={String(row.skillRanking)}
@@ -140,7 +140,7 @@ export function PlayerImportDialog({
                           updateRow(i, { skillRanking: Number(v) as SkillRanking })
                         }
                       >
-                        <SelectTrigger className="w-16 h-8 text-sm">
+                        <SelectTrigger className="w-16 min-h-11 text-ios-body">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -159,11 +159,11 @@ export function PlayerImportDialog({
                         aria-label="Can play goalie"
                       />
                       {row.existingPlayerId ? (
-                        <Badge variant="secondary" className="text-xs shrink-0">
+                        <Badge variant="secondary" className="text-ios-caption2 shrink-0">
                           Update
                         </Badge>
                       ) : (
-                        <Badge className="text-xs shrink-0">New</Badge>
+                        <Badge className="text-ios-caption2 shrink-0">New</Badge>
                       )}
                     </>
                   )}

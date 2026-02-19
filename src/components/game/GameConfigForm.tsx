@@ -344,7 +344,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
               value={balancePriority}
               onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}
             >
-              <SelectTrigger className="w-32 h-8 border-none shadow-none bg-transparent px-0 focus:ring-0">
+              <SelectTrigger className="w-32 min-h-11 border-none shadow-none bg-transparent px-0 focus:ring-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

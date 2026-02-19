@@ -1,42 +1,22 @@
-import type { ComponentType } from 'react';
-import {
-  Clock,
-  Users,
-  Triangle,
-  Circle,
-  Shirt,
-  RectangleHorizontal,
-  Hand,
-  Fence,
-  RefreshCw,
-} from 'lucide-react';
+import { Clock, RefreshCw, Users } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { DrillDiagram } from '@/components/DrillDiagram.tsx';
-import { getIntensityDisplay, getPhaseDotColor } from '@/utils/drillDisplay.ts';
+import { getIntensityDisplay } from '@/utils/drillDisplay.ts';
 import { DRILL_CATEGORY_LABELS, DRILL_PHASE_LABELS } from '@/types/drill.ts';
-import type { Drill, DrillCategory } from '@/types/drill.ts';
+import type { Drill } from '@/types/drill.ts';
 
-const CATEGORY_COLORS: Record<DrillCategory, string> = {
-  passing: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300',
-  dribbling: 'bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-300',
-  shooting: 'bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300',
-  'first-touch': 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300',
-  goalkeeping: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-300',
-  attacking: 'bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300',
-  defending: 'bg-slate-100 text-slate-800 dark:bg-slate-900/60 dark:text-slate-300',
-  possession: 'bg-teal-100 text-teal-800 dark:bg-teal-900/60 dark:text-teal-300',
-  transition: 'bg-pink-100 text-pink-800 dark:bg-pink-900/60 dark:text-pink-300',
-  'set-pieces': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300',
-};
-
-const EQUIPMENT_ICONS: Record<string, ComponentType<{ className?: string }> | undefined> = {
-  balls: Circle,
-  cones: Triangle,
-  pinnies: Shirt,
-  goals: RectangleHorizontal,
-  gloves: Hand,
-  'agility ladder': Fence,
+const CATEGORY_ACCENT_CLASSES: Record<Drill['category'], string> = {
+  passing: 'bg-blue-500/12 text-blue-700 dark:text-blue-300',
+  dribbling: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300',
+  shooting: 'bg-orange-500/12 text-orange-700 dark:text-orange-300',
+  'first-touch': 'bg-violet-500/12 text-violet-700 dark:text-violet-300',
+  goalkeeping: 'bg-yellow-500/12 text-yellow-700 dark:text-yellow-300',
+  attacking: 'bg-rose-500/12 text-rose-700 dark:text-rose-300',
+  defending: 'bg-slate-500/12 text-slate-700 dark:text-slate-300',
+  possession: 'bg-cyan-500/12 text-cyan-700 dark:text-cyan-300',
+  transition: 'bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-300',
+  'set-pieces': 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-300',
 };
 
 const EQUIPMENT_LABELS: Record<string, string> = {
@@ -71,8 +51,10 @@ export function DrillCard({
 }: DrillCardProps) {
   const hasExpandContent =
     drill.diagram ||
-    (drill.coachingTips && drill.coachingTips.length > 1) ||
-    (drill.variations && drill.variations.length > 0);
+    (drill.coachingTips && drill.coachingTips.length > 0) ||
+    !!drill.setup ||
+    (drill.variations && drill.variations.length > 0) ||
+    drill.equipment.length > 0;
 
   const {
     filled,
@@ -83,10 +65,9 @@ export function DrillCard({
   return (
     <div className="bg-card rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
       <div className="px-4 py-3 space-y-2.5">
-        {/* Header: phase dot + index + name (left), star (right) */}
+        {/* Header: index + name (left), star (right) */}
         <div className="flex items-start gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1 pt-0.5">
-            <span className={cn('size-2.5 rounded-full shrink-0', getPhaseDotColor(drill.phase))} />
             {index !== undefined && (
               <span className="text-ios-footnote font-medium text-muted-foreground shrink-0">
                 {index}
@@ -96,68 +77,61 @@ export function DrillCard({
           </div>
           <button
             onClick={onToggleFavorite}
-            className="p-1.5 -m-1.5 shrink-0"
+            className="flex size-11 -m-2 shrink-0 items-center justify-center rounded-full active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C]"
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <StarIcon filled={isFavorite} className="size-[18px]" />
           </button>
         </div>
 
-        {/* Tags row: phase + category + metadata */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-ios-caption1 px-2 py-0.5 rounded-full font-medium bg-secondary text-secondary-foreground">
-            {DRILL_PHASE_LABELS[drill.phase]}
-          </span>
+        {/* Compact summary line */}
+        <div className="flex flex-wrap items-center gap-1.5 text-ios-caption1 text-muted-foreground">
+          <span>{DRILL_PHASE_LABELS[drill.phase]}</span>
+          <span aria-hidden>&middot;</span>
+          <span className="text-muted-foreground/80">Category</span>
           <span
             className={cn(
-              'text-ios-caption1 px-2 py-0.5 rounded-full font-medium',
-              CATEGORY_COLORS[drill.category],
+              'inline-flex items-center rounded-full px-2 py-0.5 font-medium',
+              CATEGORY_ACCENT_CLASSES[drill.category],
             )}
           >
             {DRILL_CATEGORY_LABELS[drill.category]}
           </span>
-          <span className="text-ios-caption1 text-muted-foreground flex items-center gap-1">
+          <span aria-hidden>&middot;</span>
+          <span className="inline-flex items-center gap-1">
             <Clock className="size-3" />
             {drill.durationMinutes}m
           </span>
-          <span className="text-ios-caption1 text-muted-foreground flex items-center gap-1">
+          <span aria-hidden>&middot;</span>
+          <span className="inline-flex items-center gap-1">
             <Users className="size-3" />
             {drill.minPlayers}+
           </span>
-          <span
-            className={cn('text-ios-caption1 inline-flex items-center gap-0.5', intensityColor)}
-          >
-            {[0, 1, 2].map((i) => (
-              <span key={i} className="text-[7px]" aria-hidden="true">
-                {i < filled ? '\u25CF' : '\u25CB'}
-              </span>
-            ))}
-            <span className="ml-0.5">{intensityLabel}</span>
+          <span aria-hidden>&middot;</span>
+          <span className="inline-flex items-center gap-1">
+            <span>Pace:</span>
+            <span className="inline-flex items-center gap-0.5" aria-hidden>
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    'text-[7px]',
+                    i < filled ? intensityColor : 'text-muted-foreground/45',
+                  )}
+                >
+                  {i < filled ? '\u25CF' : '\u25CB'}
+                </span>
+              ))}
+            </span>
+            <span>{intensityLabel}</span>
           </span>
         </div>
 
-        {/* Equipment row (only if present) */}
-        {drill.equipment.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {drill.equipment.map((eq) => {
-              const Icon = EQUIPMENT_ICONS[eq];
-              const label = EQUIPMENT_LABELS[eq] ?? eq;
-              return (
-                <span
-                  key={eq}
-                  className="text-ios-caption1 text-muted-foreground flex items-center gap-1"
-                >
-                  {Icon && <Icon className="size-3" />}
-                  {label}
-                </span>
-              );
-            })}
-          </div>
-        )}
-
         {/* Description + diagram */}
         <div className={drill.diagram ? 'flex gap-3 items-start' : ''}>
-          <p className="text-ios-subheadline text-muted-foreground flex-1">{drill.description}</p>
+          <p className="text-ios-subheadline text-muted-foreground flex-1 line-clamp-2">
+            {drill.description}
+          </p>
           {drill.diagram && (
             <DrillDiagram
               diagram={drill.diagram}
@@ -166,27 +140,25 @@ export function DrillCard({
           )}
         </div>
 
-        {/* Setup */}
-        {drill.setup && (
-          <div className="text-ios-subheadline">
-            <span className="font-medium">Setup: </span>
-            <span className="text-muted-foreground">{drill.setup}</span>
-          </div>
-        )}
-
-        {/* First coaching tip */}
-        {drill.coachingTips.length > 0 && (
-          <div className="text-ios-subheadline">
-            <span className="font-medium">Tip: </span>
-            <span className="text-muted-foreground">{drill.coachingTips[0]}</span>
-          </div>
-        )}
-
         {/* Expanded section */}
         {isExpanded && hasExpandContent && (
           <div className="space-y-3 pt-2.5 border-t border-border/50">
             {drill.diagram && (
               <DrillDiagram diagram={drill.diagram} className="w-full h-48 rounded-lg sm:hidden" />
+            )}
+
+            {drill.setup && (
+              <div className="text-ios-subheadline">
+                <span className="font-medium">Setup: </span>
+                <span className="text-muted-foreground">{drill.setup}</span>
+              </div>
+            )}
+
+            {drill.coachingTips.length > 0 && (
+              <div className="text-ios-subheadline">
+                <span className="font-medium">Tip: </span>
+                <span className="text-muted-foreground">{drill.coachingTips[0]}</span>
+              </div>
             )}
 
             {drill.coachingTips.length > 1 && (
@@ -197,6 +169,15 @@ export function DrillCard({
                     <li key={i}>{tip}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {drill.equipment.length > 0 && (
+              <div className="text-ios-subheadline">
+                <span className="font-medium">Equipment: </span>
+                <span className="text-muted-foreground">
+                  {drill.equipment.map((eq) => EQUIPMENT_LABELS[eq] ?? eq).join(', ')}
+                </span>
               </div>
             )}
 
