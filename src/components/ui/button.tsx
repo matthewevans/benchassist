@@ -37,6 +37,11 @@ const buttonVariants = cva(
   },
 );
 
+function hasPrimaryBackground(className?: string): boolean {
+  if (!className) return false;
+  return /\bbg-primary(?:\/[^\s]+)?\b/.test(className);
+}
+
 function Button({
   className,
   variant = 'default',
@@ -54,7 +59,11 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(
+        buttonVariants({ variant, size }),
+        hasPrimaryBackground(className) && 'text-primary-foreground',
+        className,
+      )}
       {...props}
     />
   );

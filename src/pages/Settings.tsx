@@ -4,6 +4,7 @@ import { useTheme } from '@/hooks/useTheme.ts';
 import type { ThemePreference } from '@/hooks/useTheme.ts';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
+import { usePwaUpdate } from '@/hooks/usePwaUpdate.ts';
 import { ExportDialog } from '@/components/ExportDialog.tsx';
 import { ImportDialog } from '@/components/ImportDialog.tsx';
 import { ImportMethodDialog } from '@/components/ImportMethodDialog.tsx';
@@ -20,6 +21,7 @@ const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
 export function Settings() {
   const { preference, setPreference } = useTheme();
   const { state } = useAppContext();
+  const { isUpdateAvailable, applyUpdate } = usePwaUpdate();
   const dispatchWithUndo = useUndoToast();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -85,10 +87,26 @@ export function Settings() {
               <span>Version</span>
               <span className="text-muted-foreground">1.0</span>
             </div>
-            <div className="flex items-center justify-between h-11 px-4 text-ios-body">
+            <div className="flex items-center justify-between h-11 px-4 text-ios-body border-b border-border/50">
               <span>Build</span>
               <span className="text-muted-foreground">{__BUILD_HASH__}</span>
             </div>
+            {isUpdateAvailable ? (
+              <button
+                onClick={() => {
+                  void applyUpdate();
+                }}
+                className="flex items-center justify-between w-full h-11 px-4 text-ios-body text-left active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
+              >
+                <span>Update Available</span>
+                <span className="text-primary font-medium">Refresh</span>
+              </button>
+            ) : (
+              <div className="flex items-center justify-between h-11 px-4 text-ios-body">
+                <span>App Update</span>
+                <span className="text-muted-foreground">Up to date</span>
+              </div>
+            )}
           </div>
         </section>
       </div>
