@@ -52,11 +52,11 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
     } = props;
 
     return (
-      <div className="overflow-x-auto" ref={ref}>
+      <div className="overflow-x-auto px-4" ref={ref}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b">
-              <th className="text-left py-2 pr-3 sticky left-0 bg-background font-medium z-10">
+            <tr className="border-b border-border/50">
+              <th className="text-left py-2.5 pr-3 pl-1 sticky left-0 bg-background font-semibold text-ios-footnote uppercase tracking-wide text-muted-foreground z-10">
                 Player
               </th>
               {periodGroups.map((group) => {
@@ -142,10 +142,13 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                 </span>
               );
               return (
-                <tr key={player.id} className={cn('border-b', isRemoved && 'opacity-60')}>
+                <tr
+                  key={player.id}
+                  className={cn('border-b border-border/30', isRemoved && 'opacity-60')}
+                >
                   <td
                     className={cn(
-                      'pr-3 sticky left-0 bg-background z-10',
+                      'pr-3 pl-1 sticky left-0 bg-background z-10',
                       isLive ? 'py-2.5' : 'py-1.5',
                     )}
                   >
@@ -277,8 +280,10 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
             })}
           </tbody>
           <tfoot>
-            <tr className="border-t font-medium">
-              <td className="py-2 pr-3 sticky left-0 bg-background text-sm z-10">Team Strength</td>
+            <tr className="border-t border-border/50 font-medium">
+              <td className="py-2.5 pr-3 pl-1 sticky left-0 bg-background text-ios-footnote text-muted-foreground z-10">
+                Team Strength
+              </td>
               {periodGroups.map((group) => {
                 if (collapsedPeriods.has(group.periodIndex)) {
                   return <td key={`collapsed-${group.periodIndex}`} />;

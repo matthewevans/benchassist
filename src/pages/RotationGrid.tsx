@@ -109,19 +109,39 @@ export function RotationGrid() {
       ) : g.isLive ? (
         <NavBar
           title=""
+          leading={
+            <RotationPips
+              periodGroups={g.periodGroups}
+              currentRotationIndex={g.currentRotationIndex}
+            />
+          }
           trailing={
-            <div className="flex items-center gap-2">
-              <RotationPips
-                periodGroups={g.periodGroups}
-                currentRotationIndex={g.currentRotationIndex}
-              />
-              <Button
-                variant="plain"
-                size="sm"
-                onClick={() => g.setViewMode((v) => (v === 'focus' ? 'grid' : 'focus'))}
-              >
-                {g.viewMode === 'focus' ? 'Grid' : 'Focus'}
-              </Button>
+            <div className="flex items-center gap-1.5">
+              {/* Grid/Focus segmented toggle */}
+              <div className="inline-flex rounded-lg bg-secondary/80 p-0.5">
+                <button
+                  className={cn(
+                    'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
+                    g.viewMode === 'focus'
+                      ? 'bg-background shadow-sm text-foreground'
+                      : 'text-muted-foreground',
+                  )}
+                  onClick={() => g.setViewMode('focus')}
+                >
+                  Focus
+                </button>
+                <button
+                  className={cn(
+                    'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
+                    g.viewMode === 'grid'
+                      ? 'bg-background shadow-sm text-foreground'
+                      : 'text-muted-foreground',
+                  )}
+                  onClick={() => g.setViewMode('grid')}
+                >
+                  Grid
+                </button>
+              </div>
               <Button
                 variant="secondary"
                 size="sm"
@@ -211,7 +231,7 @@ export function RotationGrid() {
 
         {/* Live focus view — default in live mode */}
         {g.isLive && g.viewMode === 'focus' && g.currentRotation && (
-          <div className="max-w-4xl mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
             <LiveFocusView
               currentRotation={g.currentRotation}
               nextRotation={g.nextRotation}

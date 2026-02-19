@@ -1,5 +1,4 @@
 import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
 import { cn } from '@/lib/utils.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { PlayerId, Player, Rotation, SubPosition } from '@/types/domain.ts';
@@ -60,46 +59,24 @@ function positionSortKey(
   return [2, 0, -skillRanking];
 }
 
-interface Props {
-  currentRotation: Rotation;
-  nextRotation: Rotation | undefined;
-  playerMap: Map<PlayerId, Player>;
-  changingPlayerIds: Set<PlayerId>;
-  usePositions: boolean;
-}
-
-interface RotationCardProps {
-  rotation: Rotation;
-  label: string;
-  isCurrent: boolean;
-  playerMap: Map<PlayerId, Player>;
-  changingPlayerIds: Set<PlayerId>;
-  usePositions: boolean;
-}
-
-function RotationCard({
-  rotation,
-  label,
-  isCurrent,
-  playerMap,
-  changingPlayerIds,
-  usePositions,
-}: RotationCardProps) {
-  const fieldPlayers: Player[] = [];
-  const benchPlayers: Player[] = [];
+function sortPlayers(
+  rotation: Rotation,
+  playerMap: Map<PlayerId, Player>,
+): { field: Player[]; bench: Player[] } {
+  const field: Player[] = [];
+  const bench: Player[] = [];
 
   for (const [playerId, assignment] of Object.entries(rotation.assignments)) {
     const player = playerMap.get(playerId as PlayerId);
     if (!player) continue;
     if (assignment === RotationAssignment.Bench) {
-      benchPlayers.push(player);
+      bench.push(player);
     } else {
-      fieldPlayers.push(player);
+      field.push(player);
     }
   }
 
-  // Sort field players by pitch position: FWD → MID → DEF → GK, then by skill within group
-  fieldPlayers.sort((a, b) => {
+  field.sort((a, b) => {
     const aAssign = rotation.assignments[a.id as PlayerId];
     const bAssign = rotation.assignments[b.id as PlayerId];
     const aPos = rotation.fieldPositions?.[a.id as PlayerId];
@@ -108,82 +85,143 @@ function RotationCard({
     const [bg, bw, bs] = positionSortKey(bAssign, bPos, b.skillRanking);
     return ag - bg || aw - bw || as_ - bs;
   });
-  benchPlayers.sort((a, b) => b.skillRanking - a.skillRanking);
+  bench.sort((a, b) => b.skillRanking - a.skillRanking);
+
+  return { field, bench };
+}
+
+interface PlayerRowProps {
+  player: Player;
+  assignment: RotationAssignment;
+  fieldPos: SubPosition | undefined;
+  usePositions: boolean;
+  isComingIn?: boolean;
+  isGoingOut?: boolean;
+  isLast: boolean;
+}
+
+function PlayerRow({
+  player,
+  assignment,
+  fieldPos,
+  usePositions,
+  isComingIn,
+  isGoingOut,
+  isLast,
+}: PlayerRowProps) {
+  const display = getAssignmentDisplay(assignment, fieldPos, usePositions);
+  const isBench = assignment === RotationAssignment.Bench;
 
   return (
-    <Card className={cn('flex-1', isCurrent && 'border-primary/60 shadow-sm')}>
-      <CardHeader className="pb-2 pt-3 px-3">
-        <CardTitle
+    <div
+      className={cn(
+        'flex items-center gap-3 px-4 min-h-[44px]',
+        !isLast && 'border-b border-border/30',
+        isComingIn && 'bg-green-500/10 dark:bg-green-500/8',
+        isGoingOut && 'bg-orange-500/10 dark:bg-orange-500/8',
+      )}
+    >
+      <span
+        className={cn(
+          'shrink-0 w-9 text-center text-xs rounded-md px-1 py-0.5 font-semibold',
+          isBench ? 'bg-muted text-muted-foreground' : display.className,
+        )}
+      >
+        {isBench ? 'B' : display.label}
+      </span>
+      <span
+        className={cn(
+          'flex-1 text-ios-body',
+          isBench && !isGoingOut && 'text-muted-foreground',
+          isComingIn && 'font-semibold text-green-600 dark:text-green-400',
+          isGoingOut && 'font-semibold text-orange-600 dark:text-orange-400',
+        )}
+      >
+        {player.name}
+      </span>
+      {isComingIn && (
+        <span className="flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">
+          <ArrowUpIcon className="size-3.5" />
+          IN
+        </span>
+      )}
+      {isGoingOut && (
+        <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 shrink-0">
+          <ArrowDownIcon className="size-3.5" />
+          OUT
+        </span>
+      )}
+    </div>
+  );
+}
+
+interface RotationSectionProps {
+  rotation: Rotation;
+  label: string;
+  sublabel: string;
+  isCurrent: boolean;
+  playerMap: Map<PlayerId, Player>;
+  changingPlayerIds: Set<PlayerId>;
+  usePositions: boolean;
+}
+
+function RotationSection({
+  rotation,
+  label,
+  sublabel,
+  isCurrent,
+  playerMap,
+  changingPlayerIds,
+  usePositions,
+}: RotationSectionProps) {
+  const { field, bench } = sortPlayers(rotation, playerMap);
+  const allPlayers = [...field, ...bench];
+
+  return (
+    <section>
+      <div className="flex items-baseline gap-2 px-4 pb-1.5">
+        <h3
           className={cn(
-            'text-sm font-semibold flex items-center gap-1.5',
+            'text-ios-footnote font-semibold uppercase tracking-wide',
             isCurrent ? 'text-primary' : 'text-muted-foreground',
           )}
         >
           {label}
-          <span className="font-normal text-xs">· R{rotation.index + 1}</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-3 pb-3 space-y-0.5">
-        {fieldPlayers.map((player) => {
+        </h3>
+        <span className="text-ios-caption1 text-muted-foreground">{sublabel}</span>
+      </div>
+      <div className="bg-card rounded-[10px] mx-4 overflow-hidden">
+        {allPlayers.map((player, i) => {
           const assignment = rotation.assignments[player.id as PlayerId];
           const fieldPos = rotation.fieldPositions?.[player.id as PlayerId];
-          const display = getAssignmentDisplay(assignment, fieldPos, usePositions);
           const isChanging = changingPlayerIds.has(player.id as PlayerId);
-          // Coming IN: on field and changing (was on bench in previous rotation)
           const isComingIn = isChanging && assignment !== RotationAssignment.Bench;
+          const isGoingOut = isChanging && assignment === RotationAssignment.Bench;
 
           return (
-            <div key={player.id} className="flex items-center gap-2 py-0.5 text-sm">
-              <span
-                className={cn(
-                  'shrink-0 w-8 text-center text-xs rounded px-1 py-0.5 font-medium',
-                  display.className,
-                )}
-              >
-                {display.label}
-              </span>
-              <span
-                className={cn('flex-1 font-medium', isComingIn && 'text-primary font-semibold')}
-              >
-                {player.name}
-              </span>
-              {isComingIn && <ArrowUpIcon className="shrink-0 size-3.5 text-primary" />}
-            </div>
+            <PlayerRow
+              key={player.id}
+              player={player}
+              assignment={assignment}
+              fieldPos={fieldPos}
+              usePositions={usePositions}
+              isComingIn={isComingIn}
+              isGoingOut={isGoingOut}
+              isLast={i === allPlayers.length - 1}
+            />
           );
         })}
-
-        {benchPlayers.length > 0 && (
-          <div className="pt-2 mt-1 border-t space-y-0.5">
-            <p className="text-xs text-muted-foreground font-medium pb-0.5">Bench</p>
-            {benchPlayers.map((player) => {
-              const assignment = rotation.assignments[player.id as PlayerId];
-              const isChanging = changingPlayerIds.has(player.id as PlayerId);
-              // Going OUT: on bench and changing (was on field in previous rotation)
-              const isGoingOut = isChanging && assignment === RotationAssignment.Bench;
-
-              return (
-                <div
-                  key={player.id}
-                  className={cn(
-                    'flex items-center gap-2 py-0.5 text-sm',
-                    isGoingOut ? 'text-foreground' : 'text-muted-foreground',
-                  )}
-                >
-                  <span className="shrink-0 w-8 text-center text-xs rounded px-1 py-0.5 bg-muted font-medium">
-                    B
-                  </span>
-                  <span className={cn('flex-1', isGoingOut && 'font-medium')}>{player.name}</span>
-                  {isGoingOut && (
-                    <ArrowDownIcon className="shrink-0 size-3.5 text-muted-foreground" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
+}
+
+interface Props {
+  currentRotation: Rotation;
+  nextRotation: Rotation | undefined;
+  playerMap: Map<PlayerId, Player>;
+  changingPlayerIds: Set<PlayerId>;
+  usePositions: boolean;
 }
 
 export function LiveFocusView({
@@ -193,29 +231,75 @@ export function LiveFocusView({
   changingPlayerIds,
   usePositions,
 }: Props) {
+  // Compute substitution summary for the transition
+  const comingIn: string[] = [];
+  const goingOut: string[] = [];
+  if (nextRotation) {
+    for (const playerId of changingPlayerIds) {
+      const nextAssign = nextRotation.assignments[playerId];
+      const player = playerMap.get(playerId);
+      if (!player) continue;
+      if (nextAssign === RotationAssignment.Bench) {
+        goingOut.push(player.name);
+      } else {
+        comingIn.push(player.name);
+      }
+    }
+  }
+
   return (
-    <div className="flex gap-3">
-      <RotationCard
+    <div className="space-y-5">
+      {/* Current rotation */}
+      <RotationSection
         rotation={currentRotation}
         label="Now"
+        sublabel={`Rotation ${currentRotation.index + 1}`}
         isCurrent={true}
         playerMap={playerMap}
         changingPlayerIds={new Set()}
         usePositions={usePositions}
       />
+
+      {/* Substitution changes banner */}
+      {nextRotation && (comingIn.length > 0 || goingOut.length > 0) && (
+        <div className="mx-4 rounded-[10px] bg-muted/50 px-4 py-3 space-y-1.5">
+          <p className="text-ios-caption1 font-semibold uppercase tracking-wide text-muted-foreground">
+            Substitutions
+          </p>
+          {comingIn.length > 0 && (
+            <div className="flex items-start gap-2">
+              <ArrowUpIcon className="size-3.5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+              <p className="text-ios-footnote text-green-600 dark:text-green-400 font-medium">
+                {comingIn.join(', ')}
+              </p>
+            </div>
+          )}
+          {goingOut.length > 0 && (
+            <div className="flex items-start gap-2">
+              <ArrowDownIcon className="size-3.5 text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
+              <p className="text-ios-footnote text-orange-600 dark:text-orange-400 font-medium">
+                {goingOut.join(', ')}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Next rotation */}
       {nextRotation ? (
-        <RotationCard
+        <RotationSection
           rotation={nextRotation}
           label="Next"
+          sublabel={`Rotation ${nextRotation.index + 1}`}
           isCurrent={false}
           playerMap={playerMap}
           changingPlayerIds={changingPlayerIds}
           usePositions={usePositions}
         />
       ) : (
-        <Card className="flex-1 flex items-center justify-center text-muted-foreground text-sm border-dashed">
-          <CardContent className="py-6 text-center">Last rotation</CardContent>
-        </Card>
+        <div className="mx-4 rounded-[10px] bg-card px-4 py-6 text-center">
+          <p className="text-ios-footnote text-muted-foreground">Last rotation</p>
+        </div>
       )}
     </div>
   );

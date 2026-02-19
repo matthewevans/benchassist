@@ -80,9 +80,13 @@ export function Dashboard() {
             <img
               src="/benchassist/small_logo_light_square.png"
               alt=""
-              className="size-7 dark:hidden"
+              className="size-7 dark:hidden lg:hidden"
             />
-            <img src="/benchassist/small_logo.png" alt="" className="size-7 hidden dark:block" />
+            <img
+              src="/benchassist/small_logo.png"
+              alt=""
+              className="size-7 hidden dark:block dark:lg:hidden"
+            />
           </>
         }
         trailing={

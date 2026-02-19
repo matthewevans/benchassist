@@ -34,7 +34,7 @@ export function NavBar({
       )}
     >
       {/* Standard bar: 44px — three-column grid like iOS UINavigationBar */}
-      <div className="grid grid-cols-3 items-center h-11 px-4">
+      <div className="grid grid-cols-3 items-center h-11 px-4 max-w-5xl mx-auto">
         {/* Leading: back button or custom leading content */}
         <div className="flex items-center min-w-0">
           {backTo ? (
@@ -64,7 +64,7 @@ export function NavBar({
 
       {/* Large title row */}
       {largeTitle && (
-        <div className="px-4 pb-2">
+        <div className="px-4 pb-2 max-w-5xl mx-auto">
           <h1 className="text-ios-large-title">{title}</h1>
         </div>
       )}

@@ -33,7 +33,9 @@ export function Sidebar() {
         'pt-[env(safe-area-inset-top)]',
       )}
     >
-      <div className="px-4 pt-4 pb-2">
+      <div className="flex items-center gap-2.5 px-4 pt-4 pb-2">
+        <img src="/benchassist/small_logo_light_square.png" alt="" className="size-7 dark:hidden" />
+        <img src="/benchassist/small_logo.png" alt="" className="size-7 hidden dark:block" />
         <span className="text-ios-headline">BenchAssist</span>
       </div>
       <nav className="flex-1 px-2 py-2 space-y-0.5">
