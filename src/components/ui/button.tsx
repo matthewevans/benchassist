@@ -16,7 +16,7 @@ const buttonVariants = cva(
         secondary: 'bg-secondary text-primary rounded-xl active:bg-secondary/80',
         ghost: 'active:bg-accent/80',
         link: 'text-primary underline-offset-4 hover:underline',
-        plain: 'text-primary',
+        plain: 'text-primary active:opacity-60',
       },
       size: {
         default: 'h-[50px] px-5 text-[17px] leading-[22px] tracking-[-0.41px]',

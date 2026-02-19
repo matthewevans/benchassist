@@ -11,7 +11,6 @@ import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
-import { PlayerStatsCard } from '@/components/game/PlayerStatsCard.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
@@ -123,7 +122,7 @@ export function RotationGrid() {
               <div className="inline-flex rounded-lg bg-secondary/80 p-0.5">
                 <button
                   className={cn(
-                    'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
+                    'min-h-[34px] px-3 text-ios-footnote font-medium rounded-md transition-colors',
                     g.viewMode === 'focus'
                       ? 'bg-background shadow-sm text-foreground'
                       : 'text-muted-foreground',
@@ -134,7 +133,7 @@ export function RotationGrid() {
                 </button>
                 <button
                   className={cn(
-                    'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
+                    'min-h-[34px] px-3 text-ios-footnote font-medium rounded-md transition-colors',
                     g.viewMode === 'grid'
                       ? 'bg-background shadow-sm text-foreground'
                       : 'text-muted-foreground',
@@ -212,7 +211,9 @@ export function RotationGrid() {
       <div className="space-y-6 pt-4">
         {/* Completed indicator */}
         {g.isCompleted && (
-          <p className="max-w-4xl mx-auto text-sm text-muted-foreground px-4">Completed</p>
+          <p className="max-w-4xl mx-auto text-ios-footnote text-muted-foreground px-4">
+            Completed
+          </p>
         )}
 
         {/* Solver progress/error — visible in all modes */}
@@ -292,17 +293,6 @@ export function RotationGrid() {
             {g.swapSource.rotationIndex + 1}. Tap another player in the same rotation to swap, or
             tap again to deselect.
           </p>
-        )}
-
-        {/* Player statistics — setup mode only */}
-        {!g.isLive && !g.isCompleted && (
-          <div className="max-w-4xl mx-auto px-4">
-            <PlayerStatsCard
-              players={g.sortedPlayers}
-              playerStats={g.schedule.playerStats}
-              minPlayPercentage={g.config?.minPlayPercentage ?? 50}
-            />
-          </div>
         )}
 
         {/* Live bottom bar */}

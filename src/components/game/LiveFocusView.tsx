@@ -182,7 +182,7 @@ function RotationSection({
       <div className="flex items-baseline gap-2 px-4 pb-1.5">
         <h3
           className={cn(
-            'text-ios-footnote font-semibold uppercase tracking-wide',
+            'text-ios-footnote uppercase tracking-wide',
             isCurrent ? 'text-primary' : 'text-muted-foreground',
           )}
         >
@@ -263,7 +263,7 @@ export function LiveFocusView({
       {/* Substitution changes banner */}
       {nextRotation && (comingIn.length > 0 || goingOut.length > 0) && (
         <div className="mx-4 rounded-[10px] bg-muted/50 px-4 py-3 space-y-1.5">
-          <p className="text-ios-caption1 font-semibold uppercase tracking-wide text-muted-foreground">
+          <p className="text-ios-caption1 uppercase tracking-wide text-muted-foreground">
             Substitutions
           </p>
           {comingIn.length > 0 && (

@@ -28,7 +28,7 @@ function SheetOverlay({
     <SheetPrimitive.Overlay
       data-slot="sheet-overlay"
       className={cn(
-        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/30',
         className,
       )}
       {...props}
@@ -101,7 +101,7 @@ function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPr
   return (
     <SheetPrimitive.Title
       data-slot="sheet-title"
-      className={cn('text-foreground font-semibold', className)}
+      className={cn('text-ios-headline', className)}
       {...props}
     />
   );
@@ -114,7 +114,7 @@ function SheetDescription({
   return (
     <SheetPrimitive.Description
       data-slot="sheet-description"
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-ios-footnote text-muted-foreground', className)}
       {...props}
     />
   );

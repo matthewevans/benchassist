@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from '@/components/ui/sheet.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { AttendanceList } from '@/components/game/AttendanceList.tsx';
 import { GoalieAssignmentSelector } from '@/components/game/GoalieAssignmentSelector.tsx';
 import type { Player, PlayerId, GoalieAssignment } from '@/types/domain.ts';
@@ -70,46 +62,37 @@ export function GameSettingsSheet({
   const eligibleGoalies = players.filter((p) => p.canPlayGoalie && !editAbsent.has(p.id));
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Game Settings</SheetTitle>
-          <SheetDescription>
-            Edit attendance and goalie assignments, then regenerate.
-          </SheetDescription>
-        </SheetHeader>
+    <BottomSheet open={open} onOpenChange={onOpenChange} title="Game Settings">
+      <p className="text-ios-footnote text-muted-foreground text-center pb-4">
+        Edit attendance and goalie assignments, then regenerate.
+      </p>
 
-        <div className="space-y-6 px-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">
-              Attendance ({players.filter((p) => !editAbsent.has(p.id)).length} / {players.length})
-            </Label>
-            <AttendanceList
-              players={players}
-              absentIds={editAbsent}
-              onToggle={handleToggleAbsent}
-            />
-          </div>
-
-          {useGoalie && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Goalie Assignment</Label>
-              <GoalieAssignmentSelector
-                periods={periods}
-                goalieAssignments={editGoalies}
-                eligiblePlayers={eligibleGoalies}
-                onChange={handleGoalieChange}
-              />
-            </div>
-          )}
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <p className="text-ios-footnote text-muted-foreground uppercase tracking-wide">
+            Attendance ({players.filter((p) => !editAbsent.has(p.id)).length} / {players.length})
+          </p>
+          <AttendanceList players={players} absentIds={editAbsent} onToggle={handleToggleAbsent} />
         </div>
 
-        <SheetFooter>
-          <Button className="w-full" onClick={handleRegenerate}>
-            Regenerate with Changes
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        {useGoalie && (
+          <div className="space-y-2">
+            <p className="text-ios-footnote text-muted-foreground uppercase tracking-wide">
+              Goalie Assignment
+            </p>
+            <GoalieAssignmentSelector
+              periods={periods}
+              goalieAssignments={editGoalies}
+              eligiblePlayers={eligibleGoalies}
+              onChange={handleGoalieChange}
+            />
+          </div>
+        )}
+
+        <Button className="w-full" onClick={handleRegenerate}>
+          Regenerate with Changes
+        </Button>
+      </div>
+    </BottomSheet>
   );
 }

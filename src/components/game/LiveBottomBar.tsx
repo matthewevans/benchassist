@@ -115,7 +115,7 @@ export function LiveBottomBar({
         <div className="flex-1 min-w-0 text-center">
           {swapPlayerName ? (
             <div className="flex items-center justify-center gap-2">
-              <span className="font-medium text-primary truncate text-ios-subheadline">
+              <span className="text-primary truncate text-ios-subheadline">
                 Swapping {swapPlayerName}
               </span>
               <Button

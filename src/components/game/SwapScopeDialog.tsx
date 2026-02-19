@@ -26,7 +26,7 @@ export function SwapScopeDialog({
       }}
       title={`Swap ${playerA} and ${playerB}`}
     >
-      <p className="text-sm text-muted-foreground text-center pb-4">
+      <p className="text-ios-footnote text-muted-foreground text-center pb-4">
         Apply this swap to just this rotation, or to all remaining rotations?
       </p>
       <div className="flex flex-col gap-2">

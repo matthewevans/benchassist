@@ -9,7 +9,7 @@ interface PlayerStatsCardProps {
 export function PlayerStatsCard({ players, playerStats, minPlayPercentage }: PlayerStatsCardProps) {
   return (
     <section>
-      <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
+      <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase pb-1.5">
         Player Statistics
       </h3>
       <div className="bg-card rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">

@@ -107,7 +107,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/50">
-              <th className="text-left py-2.5 pr-3 pl-1 sticky left-0 bg-background font-semibold text-ios-footnote uppercase tracking-wide text-muted-foreground z-10">
+              <th className="text-left py-2.5 pr-3 pl-1 sticky left-0 bg-background text-ios-footnote uppercase tracking-wide text-muted-foreground z-10">
                 Player
               </th>
               {periodGroups.map((group) => {
@@ -173,7 +173,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       <div className="text-xs text-muted-foreground font-normal">
                         {i === 0 && isLive ? (
                           <button
-                            className="flex items-center justify-center gap-0.5 hover:text-foreground transition-colors mx-auto"
+                            className="flex items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] hover:text-foreground active:opacity-60 transition-colors mx-auto"
                             onClick={() => togglePeriod(group.periodIndex)}
                           >
                             P{r.periodIndex + 1}
@@ -228,7 +228,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         onRemove={() => onRemovePlayer(player.id)}
                         onAddBack={() => onAddPlayerBack(player.id)}
                       >
-                        <button className="text-left hover:text-primary transition-colors">
+                        <button className="text-left min-h-11 flex items-center hover:text-primary active:opacity-60 transition-colors">
                           {playerNameEl}
                         </button>
                       </PlayerPopover>
@@ -311,7 +311,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         >
                           <span
                             className={cn(
-                              'inline-flex items-center justify-center w-8 h-7 rounded-md text-sm font-medium transition-all',
+                              'inline-flex items-center justify-center w-8 h-7 rounded-md text-ios-footnote font-medium transition-all',
                               display.className,
                               isSelected && 'ring-2 ring-primary ring-offset-1 animate-pulse',
                               isValidTarget &&

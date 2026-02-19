@@ -7,7 +7,7 @@ interface OverallStatsCardsProps {
 export function OverallStatsCards({ stats }: OverallStatsCardsProps) {
   return (
     <section>
-      <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
+      <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase pb-1.5">
         Schedule Overview
       </h3>
       <div className="grid grid-cols-3 gap-3">
