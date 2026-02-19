@@ -5,7 +5,7 @@ import { Slot } from 'radix-ui';
 import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap text-ios-body font-medium transition-all disabled:pointer-events-none disabled:opacity-35 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-35 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px]",
   {
     variants: {
       variant: {
@@ -19,15 +19,15 @@ const buttonVariants = cva(
         plain: 'text-primary',
       },
       size: {
-        default: 'h-[50px] px-5 text-ios-body font-semibold',
-        sm: 'h-[38px] px-4 text-ios-subheadline',
-        xs: 'h-8 px-3 text-ios-footnote',
-        lg: 'h-[50px] px-6 text-ios-body font-semibold w-full',
+        default: 'h-[50px] px-5 text-[17px] leading-[22px] tracking-[-0.41px]',
+        sm: 'h-[38px] px-4 text-[15px] leading-[20px] tracking-[-0.24px]',
+        xs: 'h-8 px-3 text-[13px] leading-[18px] tracking-[-0.08px]',
+        lg: 'h-[50px] px-6 text-[17px] leading-[22px] tracking-[-0.41px] font-semibold w-full',
         icon: 'size-11',
         'icon-sm': 'size-9',
         'icon-xs': 'size-7',
         'icon-lg': 'size-12',
-        capsule: 'h-8 px-4 rounded-full text-ios-footnote',
+        capsule: 'h-8 px-4 rounded-full text-[13px] leading-[18px] tracking-[-0.08px]',
       },
     },
     defaultVariants: {
@@ -36,11 +36,6 @@ const buttonVariants = cva(
     },
   },
 );
-
-function hasPrimaryBackground(className?: string): boolean {
-  if (!className) return false;
-  return /\bbg-primary(?:\/[^\s]+)?\b/.test(className);
-}
 
 function Button({
   className,
@@ -59,11 +54,7 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(
-        buttonVariants({ variant, size }),
-        hasPrimaryBackground(className) && 'text-primary-foreground',
-        className,
-      )}
+      className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     />
   );

@@ -98,7 +98,7 @@
   --popover-foreground: oklch(1 0 0);
   /* Brighter tint for dark mode */
   --primary: oklch(0.696 0.17 162.48);
-  --primary-foreground: oklch(0 0 0);
+  --primary-foreground: oklch(1 0 0);
   /* Apple tertiarySystemFill (dark) */
   --secondary: oklch(0.553 0 0 / 24%);
   --secondary-foreground: oklch(1 0 0);

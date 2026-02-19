@@ -43,13 +43,15 @@ export function AppShell() {
         )}
         style={{ transform: `translate(-50%, ${Math.max(0, pullDistance - 44)}px)` }}
       >
-        <div className="min-h-11 px-3 rounded-full bg-card/95 border border-border/50 backdrop-blur-xl backdrop-saturate-[180%] shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none flex items-center gap-2">
-          {pullState === 'checking' ? (
-            <Loader2 className="size-4 text-primary animate-spin" />
-          ) : (
-            <ArrowDown className="size-4 text-muted-foreground" />
-          )}
-          <span className="text-ios-footnote text-muted-foreground whitespace-nowrap">
+        <div className="relative min-h-11 min-w-[230px] px-3 rounded-full bg-card/95 border border-border/50 backdrop-blur-xl backdrop-saturate-[180%] shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none flex items-center justify-center">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2">
+            {pullState === 'checking' ? (
+              <Loader2 className="size-4 text-primary animate-spin" />
+            ) : (
+              <ArrowDown className="size-4 text-muted-foreground" />
+            )}
+          </span>
+          <span className="text-ios-footnote text-muted-foreground whitespace-nowrap text-center">
             {isUpdateAvailable && pullState === 'checking' ? 'Update found' : pullLabel}
           </span>
         </div>
