@@ -2,8 +2,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { usePracticePlan, PHASE_ORDER } from '@/hooks/usePracticePlan.ts';
 import { DrillCard, StarIcon } from '@/components/DrillCard.tsx';
+import { NavBar } from '@/components/layout/NavBar.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Card, CardContent } from '@/components/ui/card.tsx';
+import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import {
   Select,
@@ -42,232 +43,239 @@ export function Practice() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <h1 className="text-2xl font-bold">Practice</h1>
+    <div>
+      <NavBar title="Practice" largeTitle />
 
-      {/* Birth year input row */}
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <Input
-            type="number"
-            placeholder="Birth year"
-            value={p.birthYear ?? ''}
-            onChange={(e) => p.handleBirthYearInput(e.target.value)}
-            className="w-32"
-          />
-          {p.birthYear && p.drillBracket && (
-            <span className="text-sm text-muted-foreground">
-              U{getUAge(p.birthYear)} &middot; {DRILL_BRACKET_LABELS[p.drillBracket]} drills
-            </span>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {U_AGE_CHIPS.map((uAge) => {
-            const chipBirthYear = uAgeToBirthYear(uAge);
-            const isSelected = p.birthYear === chipBirthYear;
-            return (
-              <Button
-                key={uAge}
-                size="xs"
-                variant={isSelected ? 'default' : 'outline'}
-                onClick={() => p.selectUAge(uAge)}
-              >
-                U{uAge}
-              </Button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Settings row */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Players</span>
-          <Input
-            type="number"
-            min={1}
-            max={30}
-            value={p.playerCount}
-            onChange={(e) => p.setPlayerCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
-            className="w-20"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Duration</span>
-          <Select
-            value={String(p.targetDuration)}
-            onValueChange={(v) => p.setTargetDuration(parseInt(v, 10))}
-          >
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DURATION_OPTIONS.map((mins) => (
-                <SelectItem key={mins} value={String(mins)}>
-                  {mins}m
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <Button
-          size="sm"
-          variant={p.favoritesOnly ? 'default' : 'outline'}
-          onClick={() => p.setFavoritesOnly((prev) => !prev)}
-        >
-          <StarIcon filled={p.favoritesOnly} className="size-4" />
-          Favorites
-        </Button>
-      </div>
-
-      {/* Practice theme quick-select */}
-      {p.drillBracket && (
-        <div className="space-y-2">
-          <span className="text-sm font-medium">Practice themes</span>
-          <div className="flex flex-wrap gap-1.5">
-            {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(p.drillBracket!)).map(
-              (template) => (
-                <Button
-                  key={template.id}
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const cats = [
-                      ...new Set(template.slots.flatMap((s) => s.preferredCategories)),
-                    ].filter((c) => p.availableCategories.includes(c)) as DrillCategory[];
-                    p.setSelectedCategories(cats);
-                    p.setSeed(Date.now());
-                  }}
-                >
-                  {template.name}
-                </Button>
-              ),
+      <div className="px-4 space-y-6 pt-4">
+        {/* Birth year input row */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Input
+              type="number"
+              placeholder="Birth year"
+              value={p.birthYear ?? ''}
+              onChange={(e) => p.handleBirthYearInput(e.target.value)}
+              className="w-32"
+            />
+            {p.birthYear && p.drillBracket && (
+              <span className="text-ios-footnote text-muted-foreground">
+                U{getUAge(p.birthYear)} &middot; {DRILL_BRACKET_LABELS[p.drillBracket]} drills
+              </span>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Category chips */}
-      {p.drillBracket && (
-        <div className="space-y-2">
-          <span className="text-sm font-medium">Focus areas</span>
           <div className="flex flex-wrap gap-1.5">
-            {p.availableCategories.map((cat) => {
-              const isSelected = p.selectedCategories.includes(cat);
+            {U_AGE_CHIPS.map((uAge) => {
+              const chipBirthYear = uAgeToBirthYear(uAge);
+              const isSelected = p.birthYear === chipBirthYear;
               return (
                 <Button
-                  key={cat}
-                  size="sm"
-                  variant={isSelected ? 'default' : 'outline'}
-                  onClick={() => p.toggleCategory(cat)}
+                  key={uAge}
+                  size="capsule"
+                  variant={isSelected ? 'default' : 'secondary'}
+                  onClick={() => p.selectUAge(uAge)}
                 >
-                  {DRILL_CATEGORY_LABELS[cat]}
+                  U{uAge}
                 </Button>
               );
             })}
           </div>
         </div>
-      )}
 
-      {/* Output section */}
-      {p.displayDrills && p.plan && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Practice Plan &middot; {p.totalDuration} min</h2>
-            <Button size="sm" variant="outline" onClick={() => p.setSeed(Date.now())}>
-              Shuffle All
-            </Button>
-          </div>
-          <div className="space-y-3">
-            {p.displayDrills.map((drill, index) => (
-              <DrillCard
-                key={`${index}-${drill.id}`}
-                drill={drill}
-                index={index + 1}
-                isFavorite={state.favoriteDrillIds.includes(drill.id)}
-                isExpanded={p.expandedDrillIds.has(drill.id)}
-                onToggleExpand={() => p.toggleExpanded(drill.id)}
-                onToggleFavorite={() => toggleFavorite(drill.id)}
-                onSwap={() => p.handleSwap(index)}
-                showSwap
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {p.groupedBrowseDrills && !p.plan && (
-        <div className="space-y-4">
-          {/* Browse filters */}
-          <div className="flex flex-wrap items-center gap-3">
+        {/* Settings row */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-ios-footnote text-muted-foreground">Players</span>
             <Input
-              placeholder="Search drills..."
-              value={p.browseSearch}
-              onChange={(e) => p.setBrowseSearch(e.target.value)}
-              className="w-64"
+              type="number"
+              min={1}
+              max={30}
+              value={p.playerCount}
+              onChange={(e) => p.setPlayerCount(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              className="w-20"
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-ios-footnote text-muted-foreground">Duration</span>
+            <Select
+              value={String(p.targetDuration)}
+              onValueChange={(v) => p.setTargetDuration(parseInt(v, 10))}
+            >
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DURATION_OPTIONS.map((mins) => (
+                  <SelectItem key={mins} value={String(mins)}>
+                    {mins}m
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button
+            size="capsule"
+            variant={p.favoritesOnly ? 'default' : 'secondary'}
+            onClick={() => p.setFavoritesOnly((prev) => !prev)}
+          >
+            <StarIcon filled={p.favoritesOnly} className="size-4" />
+            Favorites
+          </Button>
+        </div>
+
+        {/* Practice theme quick-select */}
+        {p.drillBracket && (
+          <div className="space-y-2">
+            <span className="text-ios-footnote font-medium">Practice themes</span>
             <div className="flex flex-wrap gap-1.5">
-              <Button
-                size="xs"
-                variant={p.browseCategory === null ? 'default' : 'outline'}
-                onClick={() => p.setBrowseCategory(null)}
-              >
-                All
+              {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(p.drillBracket!)).map(
+                (template) => (
+                  <Button
+                    key={template.id}
+                    size="capsule"
+                    variant="secondary"
+                    onClick={() => {
+                      const cats = [
+                        ...new Set(template.slots.flatMap((s) => s.preferredCategories)),
+                      ].filter((c) => p.availableCategories.includes(c)) as DrillCategory[];
+                      p.setSelectedCategories(cats);
+                      p.setSeed(Date.now());
+                    }}
+                  >
+                    {template.name}
+                  </Button>
+                ),
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Category chips */}
+        {p.drillBracket && (
+          <div className="space-y-2">
+            <span className="text-ios-footnote font-medium">Focus areas</span>
+            <div className="flex flex-wrap gap-1.5">
+              {p.availableCategories.map((cat) => {
+                const isSelected = p.selectedCategories.includes(cat);
+                return (
+                  <Button
+                    key={cat}
+                    size="capsule"
+                    variant={isSelected ? 'default' : 'secondary'}
+                    onClick={() => p.toggleCategory(cat)}
+                  >
+                    {DRILL_CATEGORY_LABELS[cat]}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Output section */}
+        {p.displayDrills && p.plan && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-ios-title3">Practice Plan &middot; {p.totalDuration} min</h2>
+              <Button size="sm" variant="plain" onClick={() => p.setSeed(Date.now())}>
+                Shuffle All
               </Button>
-              {p.availableCategories.map((cat) => (
-                <Button
-                  key={cat}
-                  size="xs"
-                  variant={p.browseCategory === cat ? 'default' : 'outline'}
-                  onClick={() => p.setBrowseCategory(p.browseCategory === cat ? null : cat)}
-                >
-                  {DRILL_CATEGORY_LABELS[cat]}
-                </Button>
+            </div>
+            <div className="space-y-3">
+              {p.displayDrills.map((drill, index) => (
+                <DrillCard
+                  key={`${index}-${drill.id}`}
+                  drill={drill}
+                  index={index + 1}
+                  isFavorite={state.favoriteDrillIds.includes(drill.id)}
+                  isExpanded={p.expandedDrillIds.has(drill.id)}
+                  onToggleExpand={() => p.toggleExpanded(drill.id)}
+                  onToggleFavorite={() => toggleFavorite(drill.id)}
+                  onSwap={() => p.handleSwap(index)}
+                  showSwap
+                />
               ))}
             </div>
           </div>
+        )}
 
-          <p className="text-sm text-muted-foreground">{p.browseDrills!.length} drills</p>
+        {p.groupedBrowseDrills && !p.plan && (
+          <div className="space-y-4">
+            {/* Browse filters */}
+            <div className="flex flex-wrap items-center gap-3">
+              <Input
+                placeholder="Search drills..."
+                value={p.browseSearch}
+                onChange={(e) => p.setBrowseSearch(e.target.value)}
+                className="w-64"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                <Button
+                  size="capsule"
+                  variant={p.browseCategory === null ? 'default' : 'secondary'}
+                  onClick={() => p.setBrowseCategory(null)}
+                >
+                  All
+                </Button>
+                {p.availableCategories.map((cat) => (
+                  <Button
+                    key={cat}
+                    size="capsule"
+                    variant={p.browseCategory === cat ? 'default' : 'secondary'}
+                    onClick={() => p.setBrowseCategory(p.browseCategory === cat ? null : cat)}
+                  >
+                    {DRILL_CATEGORY_LABELS[cat]}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
-          {/* Grouped drills */}
-          {PHASE_ORDER.map((phase) => {
-            const drills = p.groupedBrowseDrills![phase];
-            if (drills.length === 0) return null;
-            return (
-              <div key={phase} className="space-y-3">
-                <h2 className="text-lg font-semibold">{DRILL_PHASE_LABELS[phase]}</h2>
-                <div className="space-y-3">
-                  {drills.map((drill) => (
-                    <DrillCard
-                      key={drill.id}
-                      drill={drill}
-                      isFavorite={state.favoriteDrillIds.includes(drill.id)}
-                      isExpanded={p.expandedDrillIds.has(drill.id)}
-                      onToggleExpand={() => p.toggleExpanded(drill.id)}
-                      onToggleFavorite={() => toggleFavorite(drill.id)}
-                    />
-                  ))}
+            <p className="text-ios-footnote text-muted-foreground">
+              {p.browseDrills!.length} drills
+            </p>
+
+            {/* Grouped drills */}
+            {PHASE_ORDER.map((phase) => {
+              const drills = p.groupedBrowseDrills![phase];
+              if (drills.length === 0) return null;
+              return (
+                <div key={phase} className="space-y-3">
+                  <h2 className="text-ios-title3">{DRILL_PHASE_LABELS[phase]}</h2>
+                  <div className="space-y-3">
+                    {drills.map((drill) => (
+                      <DrillCard
+                        key={drill.id}
+                        drill={drill}
+                        isFavorite={state.favoriteDrillIds.includes(drill.id)}
+                        isExpanded={p.expandedDrillIds.has(drill.id)}
+                        onToggleExpand={() => p.toggleExpanded(drill.id)}
+                        onToggleFavorite={() => toggleFavorite(drill.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Empty state: no bracket selected */}
+        {!p.drillBracket && (
+          <GroupedList>
+            <GroupedListRow last>
+              <div className="text-center py-4">
+                <div className="text-ios-body font-medium text-muted-foreground">
+                  Select a birth year to get started
+                </div>
+                <div className="text-ios-caption1 text-muted-foreground mt-1">
+                  Choose the team birth year above to browse drills and generate practice plans.
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Empty state: no bracket selected */}
-      {!p.drillBracket && (
-        <Card>
-          <CardContent className="py-6 text-center text-muted-foreground">
-            <p className="text-lg font-medium">Select a birth year to get started</p>
-            <p className="text-sm mt-1">
-              Choose the team birth year above to browse drills and generate practice plans.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+            </GroupedListRow>
+          </GroupedList>
+        )}
+      </div>
     </div>
   );
 }
