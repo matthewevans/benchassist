@@ -129,9 +129,7 @@ export function DrillCard({
 
         {/* Description + diagram */}
         <div className={drill.diagram ? 'flex gap-3 items-start' : ''}>
-          <p className="text-ios-subheadline text-muted-foreground flex-1 line-clamp-2">
-            {drill.description}
-          </p>
+          <p className="text-ios-subheadline text-muted-foreground flex-1">{drill.description}</p>
           {drill.diagram && (
             <DrillDiagram
               diagram={drill.diagram}

@@ -188,7 +188,6 @@ export function Practice() {
               (template, index, list) => (
                 <GroupedListRow
                   key={template.id}
-                  chevron
                   last={index === list.length - 1}
                   onClick={() => {
                     const cats = [
