@@ -47,6 +47,20 @@ export function downloadJSON(data: StorageData, filename?: string): void {
   URL.revokeObjectURL(url);
 }
 
+export async function shareOrDownloadJSON(data: StorageData, filename?: string): Promise<void> {
+  const name = filename ?? `benchassist-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const json = exportToJSON(data);
+  const file = new File([json], name, { type: 'application/json' });
+
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file] });
+    return;
+  }
+
+  // Fallback for browsers without Web Share API file support
+  downloadJSON(data, name);
+}
+
 export function exportToBase64(data: StorageData): string {
   const bytes = new TextEncoder().encode(exportToJSON(data));
   let binary = '';

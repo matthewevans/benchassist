@@ -4,7 +4,7 @@ import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { TeamSelectionTree } from '@/components/TeamSelectionTree.tsx';
 import { useSelectionState } from '@/hooks/useSelectionState.ts';
-import { downloadJSON, exportToBase64, filterStorageData } from '@/storage/exportImport.ts';
+import { shareOrDownloadJSON, exportToBase64, filterStorageData } from '@/storage/exportImport.ts';
 import { CURRENT_VERSION, type StorageData } from '@/storage/localStorage.ts';
 import type { Game, Team, TeamId } from '@/types/domain.ts';
 
@@ -30,10 +30,15 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
     onOpenChange(nextOpen);
   }
 
-  function handleExport() {
+  async function handleShare() {
     const data: StorageData = { version: CURRENT_VERSION, teams, games };
     const filtered = filterStorageData(data, selections);
-    downloadJSON(filtered, `benchassist-backup-${new Date().toISOString().slice(0, 10)}.json`);
+    try {
+      await shareOrDownloadJSON(filtered);
+    } catch {
+      // User cancelled the share sheet
+      return;
+    }
     handleOpenChange(false);
   }
 
@@ -67,8 +72,8 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
           <TeamSelectionTree teams={teamList} games={games} selectionState={selectionState} />
 
           <div className="flex flex-col gap-2 pt-4">
-            <Button onClick={handleExport} disabled={!hasAnySelected} className="w-full">
-              Save to Files
+            <Button onClick={handleShare} disabled={!hasAnySelected} className="w-full">
+              Share
             </Button>
             <Button
               variant="plain"
