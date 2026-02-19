@@ -13,7 +13,11 @@ BenchAssist is a PWA for managing player rotations in team sports (soccer). Coac
 - `pnpm test` — run Vitest in watch mode
 - `pnpm test:run` — run Vitest once (CI mode)
 - `pnpm lint` — run ESLint
+- `pnpm typecheck` — type-check only (`tsc -b --noEmit`)
+- `pnpm format` / `pnpm format:check` — Prettier (singleQuote, trailingComma: all, printWidth: 100)
 - Run a single test file: `pnpm vitest run src/utils/stats.test.ts`
+
+**Pre-commit hook (Husky):** Runs `pnpm typecheck && npx lint-staged`. lint-staged runs `eslint --fix` + `prettier --write` on `.ts/.tsx` and `prettier --write` on `.json/.md/.css`. Commits will fail on type errors or unfixable lint violations.
 
 ## Architecture
 
@@ -68,6 +72,7 @@ All routes are nested inside `AppShell` (layout with navigation):
 - `/games/:gameId/live` — Redirects to `../rotations`
 - `/games` — Game history
 - `/practice` — Practice planner (drill library, age-based plans)
+- `/settings` — Appearance (theme), export/import, PWA update check
 
 ### Practice Planner
 
@@ -103,7 +108,8 @@ Tests use Vitest with `globals: true` (no need to import `describe`/`it`/`expect
 ## Conventions
 
 - **Imports:** Direct path imports (e.g., `@/components/ui/button`), no barrel files.
-- **UI components:** shadcn/ui in `src/components/ui/` using CVA for variants and Radix primitives. `cn()` from `src/lib/utils.ts` for className merging.
+- **UI components:** shadcn/ui in `src/components/ui/` using CVA for variants and Radix primitives. `cn()` from `src/lib/utils.ts` for className merging. Custom (non-shadcn) UI components: `bottom-sheet.tsx` (vaul drawer), `ios-alert.tsx`, `swipeable-row.tsx`, `grouped-list.tsx`.
+- **Responsive layout:** `AppShell` renders `Sidebar` (visible `lg+` / ≥1024px) and `TabBar` (visible below `lg`). `LiveGameBar` sits above the tab bar when a game is in-progress. `NavBar` is the per-page top bar with back navigation.
 - **Styling:** Tailwind v4 with OKLch CSS variables defined in `src/index.css` via `@theme inline`. Dark mode via `.dark` class. Semantic color tokens (background, foreground, primary, destructive, etc.).
 - **Forms:** Manual `useState` per field, no form library. Validation in save handlers.
 - **TypeScript:** Strict mode with `noUnusedLocals` and `noUnusedParameters`. ESLint FlatConfig with React Hooks + React Refresh rules.
