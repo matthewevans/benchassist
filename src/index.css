@@ -117,8 +117,25 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  button,
+  a,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+  @media (display-mode: standalone) {
+    html,
+    body {
+      overscroll-behavior: none;
+    }
   }
 }
