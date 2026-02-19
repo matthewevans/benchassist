@@ -1,58 +1,56 @@
-<h1 align="center">
-  <img src="public/logo_original_solid_1024.png" alt="" width="48" valign="middle" />&nbsp;
-  BenchAssist
-</h1>
+<p align="center">
+  <img src="public/logo_original_solid_1024.png" alt="BenchAssist" width="96" />
+</p>
+
+<h1 align="center">BenchAssist</h1>
 
 <p align="center">
-  <strong>Fair rotation schedules for youth soccer — no backend, no accounts, just open your browser.</strong>
+  <strong>The sideline rotation manager for youth soccer coaches.</strong><br />
+  A free, open-source PWA — no backend, no accounts, all data on your device.
 </p>
 
 <p align="center">
-  <a href="https://matthewevans.github.io/benchassist/">Live App</a> ·
+  <a href="https://matthewevans.github.io/benchassist/">Try the Live App</a> ·
   <a href="#features">Features</a> ·
-  <a href="#getting-started">Getting Started</a> ·
-  <a href="#tech-stack">Tech Stack</a>
+  <a href="#screenshots">Screenshots</a> ·
+  <a href="#getting-started">Getting Started</a>
 </p>
 
 ---
 
-BenchAssist is a free, open-source Progressive Web App that helps youth soccer coaches create balanced player rotations. It runs entirely in the browser — all data stays on your device in localStorage. Install it on your phone and use it on the sideline, no internet required.
+> **Get BenchAssist** — Open the [live app](https://matthewevans.github.io/benchassist/) on your phone, tap **Share → Add to Home Screen**. No app store needed.
 
 ## Screenshots
 
-| Dashboard                                    | Rotation Grid                                        |
-| -------------------------------------------- | ---------------------------------------------------- |
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Rotation Grid](docs/screenshots/rotation-grid.png) |
+<p align="center">
+  <img src="docs/screenshots/live-focus-mobile.png" alt="Live game focus view" width="260" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/rotation-grid-mobile.png" alt="Rotation grid" width="260" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/practice-planner-mobile.png" alt="Practice planner" width="260" />
+</p>
 
-| Live Focus View                                     | Live Grid View                                    |
-| --------------------------------------------------- | ------------------------------------------------- |
-| ![Live Focus View](docs/screenshots/live-focus.png) | ![Live Grid View](docs/screenshots/live-grid.png) |
+<p align="center">
+  <em>Live game day — track rotations, plan practices, all from the sideline.</em>
+</p>
 
-| Team Management                                          | Practice Planner                                           |
-| -------------------------------------------------------- | ---------------------------------------------------------- |
-| ![Team Management](docs/screenshots/team-management.png) | ![Practice Planner](docs/screenshots/practice-planner.png) |
+|                        Rotation Grid                         |                         Team Management                          |
+| :----------------------------------------------------------: | :--------------------------------------------------------------: |
+| ![Rotation Grid](docs/screenshots/rotation-grid-desktop.png) | ![Team Management](docs/screenshots/team-management-desktop.png) |
 
 ## Features
 
-**Team & Roster Management** — Create teams, bulk-import players, track skill rankings (1–5), goalie eligibility, and preferred positions.
+**Smart Rotation Solver** — Generates balanced schedules in a Web Worker. Respects constraints: no consecutive bench, minimum play time, goalie rest, and skill-balance priority.
 
-**Smart Rotation Solver** — An exhaustive search algorithm (running in a Web Worker so the UI stays smooth) generates optimal schedules that balance playing time across players while respecting constraints:
+**Live Game Mode** — Period timers, audio substitution alerts, Now/Next focus view. Add or remove players mid-game with automatic re-solving.
 
-- No consecutive bench assignments
-- Minimum play-time percentage
-- Goalie rest between periods
-- Skill-balance priority (strict / balanced / off)
-- Manual overrides for specific rotations
+**Position-Aware Scheduling** — 14 sub-positions across 4 position groups. Players auto-assign to formation slots based on their preferences.
 
-**Position-Aware Scheduling** — 4 broad positions (GK, DEF, MID, FWD) map to 14 sub-positions. Players are auto-assigned to formation slots with a two-pass algorithm that respects primary and secondary position preferences.
+**Practice Planner** — ~100 curated drills filtered by age bracket (U6–U18). Generate plans by category, duration, and player count.
 
-**Live Game Mode** — Track the game in real time with period timers, audio substitution alerts, a Now/Next focus view, and the ability to add or remove players mid-game with automatic schedule re-solving.
+**Team & Roster Management** — Bulk-import players, track skill rankings, goalie eligibility, and preferred positions.
 
-**Practice Planner** — Browse ~100 curated drills, filtered by age bracket (U6–U18). Generate practice plans by category, duration, and player count. Favorite drills for quick access. Each drill includes a rendered field diagram.
-
-**Data Portability** — Selective export/import (pick which teams, rosters, configs, and game history to include), full-data replacement, and schema migrations across versions. All destructive actions are undoable for 8 seconds via an undo toast.
-
-**Preset Game Configs** — 5v5, 7v7, 9v9, 11v11, and GYSA 7v7 templates with customizable periods, rotation counts, and constraint rules.
+**Data Portability** — Selective export/import, schema migrations, and 8-second undo on all destructive actions. All data stays on your device.
 
 ## Getting Started
 
@@ -70,9 +68,10 @@ pnpm install
 pnpm dev
 ```
 
-Open [http://localhost:5173/benchassist/](http://localhost:5173/benchassist/) in your browser.
+Open [localhost:5173/benchassist/](http://localhost:5173/benchassist/) in your browser.
 
-### Scripts
+<details>
+<summary><strong>All Commands</strong></summary>
 
 | Command          | Description                    |
 | ---------------- | ------------------------------ |
@@ -83,6 +82,8 @@ Open [http://localhost:5173/benchassist/](http://localhost:5173/benchassist/) in
 | `pnpm lint`      | Run ESLint                     |
 | `pnpm format`    | Format all files with Prettier |
 | `pnpm typecheck` | Type-check without emitting    |
+
+</details>
 
 ## Tech Stack
 
@@ -97,7 +98,16 @@ Open [http://localhost:5173/benchassist/](http://localhost:5173/benchassist/) in
 | PWA       | vite-plugin-pwa, auto-update, standalone display                   |
 | Quality   | ESLint, Prettier, Husky + lint-staged                              |
 
-## Project Structure
+## Under the Hood
+
+All app state flows through a single `useReducer` in `AppContext` with Immer for immutable updates. The reducer uses a discriminated union of 40+ action types with an exhaustive `never` check. State auto-persists to localStorage with a 500ms debounce.
+
+The rotation solver runs in a Web Worker to keep the UI responsive. It uses exhaustive search with pruning — generating valid bench patterns per player, searching all combinations, and scoring by team-strength variance. Mid-game re-solves preserve existing rotations.
+
+The undo system wraps the reducer with Immer's `produceWithPatches`, capturing inverse patches for destructive actions (delete, import, merge). A ref-based stack holds up to 30 undo entries.
+
+<details>
+<summary><strong>Project Structure</strong></summary>
 
 ```
 src/
@@ -115,13 +125,7 @@ src/
 └── workers/           # Web Worker for rotation solver
 ```
 
-## Architecture Overview
-
-All app state flows through a single `useReducer` in `AppContext` with Immer for immutable updates. The reducer uses a discriminated union of 40+ action types with an exhaustive `never` check. State auto-persists to localStorage with a 500ms debounce.
-
-The rotation solver runs in a Web Worker to keep the UI responsive. It uses exhaustive search with pruning — generating valid bench patterns per player, searching all combinations, and scoring by team-strength variance. Mid-game re-solves preserve existing rotations.
-
-The undo system wraps the reducer with Immer's `produceWithPatches`, capturing inverse patches for destructive actions (delete, import, merge). A ref-based stack holds up to 30 undo entries.
+</details>
 
 ## Contributing
 
