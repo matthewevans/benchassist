@@ -1,28 +1,17 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
+import { NavBar } from '@/components/layout/NavBar.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog.tsx';
-import { Separator } from '@/components/ui/separator.tsx';
-import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
-import { readJSONFile } from '@/storage/exportImport.ts';
-import type { StorageData } from '@/storage/localStorage.ts';
-import { ExportDialog } from '@/components/ExportDialog.tsx';
-import { ImportDialog } from '@/components/ImportDialog.tsx';
 import {
   TEAM_GENDER_LABELS,
-  TEAM_GENDER_BORDER_COLORS,
   TEAM_GENDER_DOT_COLORS,
   type Player,
   type Team,
@@ -35,31 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-
-const AVATAR_COLORS = [
-  'bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-200',
-  'bg-blue-200 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  'bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-200',
-  'bg-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  'bg-purple-200 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  'bg-pink-200 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-  'bg-indigo-200 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200',
-  'bg-orange-200 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
-  'bg-teal-200 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
-  'bg-cyan-200 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
-];
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
-
-function getColorClass(name: string): string {
-  let hash = 0;
-  for (const ch of name) hash = ((hash << 5) - hash + ch.charCodeAt(0)) | 0;
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-}
 
 function getAllPlayers(team: Team): Player[] {
   const seen = new Set<string>();
@@ -75,24 +39,9 @@ function getAllPlayers(team: Team): Player[] {
   return players;
 }
 
-function OnboardingStep({ number, label }: { number: number; label: string }) {
-  return (
-    <div className="flex items-center gap-3 text-sm">
-      <span className="flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold bg-muted text-muted-foreground">
-        {number}
-      </span>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-const MAX_AVATARS = 8;
-
 export function Dashboard() {
   const { state, dispatch } = useAppContext();
-  const dispatchWithUndo = useUndoToast();
   const [isCreating, setIsCreating] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamGender, setNewTeamGender] = useState<TeamGender>('coed');
 
@@ -100,23 +49,6 @@ export function Dashboard() {
 
   const activeGame = Object.values(state.games).find((g) => g.status === 'in-progress');
   const activeTeam = activeGame ? state.teams[activeGame.teamId] : undefined;
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [importData, setImportData] = useState<StorageData | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
-
-  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-
-    try {
-      const data = await readJSONFile(file);
-      setImportData(data);
-    } catch {
-      setImportError("Could not read file. Make sure it's a valid BenchAssist export.");
-    }
-  }
 
   function handleCreateTeam() {
     if (!newTeamName.trim()) return;
@@ -139,21 +71,18 @@ export function Dashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <div className="flex justify-center py-2">
-          <img
-            src={`${import.meta.env.BASE_URL}full_logo_light.png`}
-            alt="BenchAssist"
-            className="h-40 dark:hidden"
-          />
-          <img
-            src={`${import.meta.env.BASE_URL}full_logo_dark.png`}
-            alt="BenchAssist"
-            className="h-40 hidden dark:block"
-          />
-        </div>
+    <div>
+      <NavBar
+        title="Teams"
+        largeTitle
+        trailing={
+          <Button variant="plain" size="icon" onClick={() => setIsCreating(true)}>
+            <Plus className="size-[22px]" />
+          </Button>
+        }
+      />
 
+      <div className="px-4 space-y-6 pt-4">
         {activeGame && (
           <Link to={`/games/${activeGame.id}/rotations`}>
             <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/50 transition-colors">
@@ -170,201 +99,95 @@ export function Dashboard() {
             </div>
           </Link>
         )}
-      </div>
 
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Teams</h1>
-        <Dialog open={isCreating} onOpenChange={setIsCreating}>
-          <DialogTrigger asChild>
-            <Button>New Team</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Team</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label htmlFor="team-name">Team Name</Label>
-                <Input
-                  id="team-name"
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  placeholder="e.g., Thunder FC U12"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreateTeam();
-                  }}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Gender</Label>
-                <Select
-                  value={newTeamGender}
-                  onValueChange={(v) => setNewTeamGender(v as TeamGender)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
-                      <SelectItem key={value} value={value}>
-                        <span className="flex items-center gap-2">
-                          <span
-                            className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value as TeamGender]}`}
-                          />
-                          {label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={handleCreateTeam} className="w-full" disabled={!newTeamName.trim()}>
-                Create Team
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {teams.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Get Started</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <OnboardingStep number={1} label="Create a team" />
-            <OnboardingStep number={2} label="Add players to a roster" />
-            <OnboardingStep number={3} label="Set up a game format (5v5, 7v7, etc.)" />
-            <OnboardingStep number={4} label="Generate fair rotations" />
-            <div className="pt-2">
-              <Button className="w-full" onClick={() => setIsCreating(true)}>
-                Create Your First Team
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-3">
-          {teams.map((team) => {
-            const players = getAllPlayers(team);
-            const visible = players.slice(0, MAX_AVATARS);
-            const overflow = players.length - MAX_AVATARS;
-            return (
-              <Link key={team.id} to={`/teams/${team.id}`}>
-                <Card
-                  className={`hover:bg-accent/50 transition-colors cursor-pointer border-l-4 ${TEAM_GENDER_BORDER_COLORS[team.gender]}`}
-                >
-                  <CardHeader className="pb-2">
-                    <CardTitle>{team.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex gap-4 text-sm text-muted-foreground">
-                      <span>{TEAM_GENDER_LABELS[team.gender]}</span>
-                      {team.birthYear && <span>U{getUAge(team.birthYear)}</span>}
-                      <span>
-                        {team.rosters.length} roster{team.rosters.length !== 1 ? 's' : ''}
-                      </span>
-                      <span>
-                        {players.length} player{players.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    {players.length > 0 && (
-                      <div className="flex -space-x-2">
-                        {visible.map((player) => (
-                          <div
-                            key={player.id}
-                            title={player.name}
-                            className={`size-8 rounded-full flex items-center justify-center text-xs font-medium ring-2 ring-background ${getColorClass(player.name)}`}
-                          >
-                            {getInitials(player.name)}
-                          </div>
-                        ))}
-                        {overflow > 0 && (
-                          <div className="size-8 rounded-full flex items-center justify-center text-xs font-medium ring-2 ring-background bg-muted text-muted-foreground">
-                            +{overflow}
-                          </div>
-                        )}
+        {teams.length === 0 ? (
+          <>
+            <GroupedList header="Get Started">
+              <GroupedListRow>
+                <span className="text-ios-body">1. Create a team</span>
+              </GroupedListRow>
+              <GroupedListRow>
+                <span className="text-ios-body">2. Add players to a roster</span>
+              </GroupedListRow>
+              <GroupedListRow>
+                <span className="text-ios-body">3. Set up a game format (5v5, 7v7, etc.)</span>
+              </GroupedListRow>
+              <GroupedListRow last>
+                <span className="text-ios-body">4. Generate fair rotations</span>
+              </GroupedListRow>
+            </GroupedList>
+            <Button size="lg" onClick={() => setIsCreating(true)}>
+              Create Your First Team
+            </Button>
+          </>
+        ) : (
+          <GroupedList>
+            {teams.map((team, i) => {
+              const players = getAllPlayers(team);
+              return (
+                <Link key={team.id} to={`/teams/${team.id}`}>
+                  <GroupedListRow chevron last={i === teams.length - 1}>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`size-2.5 rounded-full shrink-0 ${TEAM_GENDER_DOT_COLORS[team.gender]}`}
+                      />
+                      <div className="min-w-0">
+                        <div className="text-ios-body font-medium truncate">{team.name}</div>
+                        <div className="text-ios-caption1 text-muted-foreground">
+                          {TEAM_GENDER_LABELS[team.gender]}
+                          {team.birthYear && ` · U${getUAge(team.birthYear)}`}
+                          {` · ${players.length} player${players.length !== 1 ? 's' : ''}`}
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      )}
-
-      <Separator />
-
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Data</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setIsExporting(true)}>
-            Export Backup
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-            Import Backup
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-        </div>
+                    </div>
+                  </GroupedListRow>
+                </Link>
+              );
+            })}
+          </GroupedList>
+        )}
       </div>
 
-      {importData && (
-        <ImportDialog
-          open={importData !== null}
-          onOpenChange={(open) => {
-            if (!open) setImportData(null);
-          }}
-          importData={importData}
-          onImportSelected={(filtered) => {
-            dispatchWithUndo({
-              type: 'MERGE_DATA',
-              payload: {
-                teams: filtered.teams,
-                games: filtered.games,
-                favoriteDrillIds: filtered.favoriteDrillIds ?? [],
-              },
-            });
-            setImportData(null);
-          }}
-          onReplaceAll={(data) => {
-            dispatchWithUndo({
-              type: 'IMPORT_DATA',
-              payload: {
-                teams: data.teams,
-                games: data.games,
-                favoriteDrillIds: data.favoriteDrillIds ?? [],
-              },
-            });
-            setImportData(null);
-          }}
-        />
-      )}
-
-      {importError && (
-        <Dialog open onOpenChange={() => setImportError(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Import Failed</DialogTitle>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground">{importError}</p>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      <ExportDialog
-        open={isExporting}
-        onOpenChange={setIsExporting}
-        teams={state.teams}
-        games={state.games}
-      />
+      <BottomSheet open={isCreating} onOpenChange={setIsCreating} title="New Team">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="team-name">Team Name</Label>
+            <Input
+              id="team-name"
+              value={newTeamName}
+              onChange={(e) => setNewTeamName(e.target.value)}
+              placeholder="e.g., Thunder FC U12"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreateTeam();
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Gender</Label>
+            <Select value={newTeamGender} onValueChange={(v) => setNewTeamGender(v as TeamGender)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value as TeamGender]}`}
+                      />
+                      {label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button size="lg" onClick={handleCreateTeam} disabled={!newTeamName.trim()}>
+            Create Team
+          </Button>
+        </div>
+      </BottomSheet>
     </div>
   );
 }
