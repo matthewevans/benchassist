@@ -1,0 +1,69 @@
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
+import { cn } from '@/lib/utils.ts';
+
+interface NavBarProps {
+  title: string;
+  backTo?: string;
+  backLabel?: string;
+  trailing?: ReactNode;
+  largeTitle?: boolean;
+  className?: string;
+}
+
+export function NavBar({
+  title,
+  backTo,
+  backLabel,
+  trailing,
+  largeTitle = false,
+  className,
+}: NavBarProps) {
+  return (
+    <header
+      className={cn(
+        'sticky top-0 z-40',
+        'bg-[rgba(249,249,249,0.72)] dark:bg-[rgba(29,29,31,0.72)]',
+        'backdrop-blur-xl backdrop-saturate-[180%]',
+        'border-b border-border/50',
+        'pt-[env(safe-area-inset-top)]',
+        className,
+      )}
+    >
+      {/* Standard bar: 44px */}
+      <div className="flex items-center justify-between h-11 px-4">
+        {/* Leading: back button or spacer */}
+        <div className="flex items-center gap-1 min-w-0 flex-1">
+          {backTo ? (
+            <Link
+              to={backTo}
+              aria-label={`Back to ${backLabel ?? 'previous page'}`}
+              className="flex items-center gap-0.5 text-primary -ml-2 pr-2 py-2 shrink-0"
+            >
+              <ChevronLeft className="size-[22px] stroke-[2.5]" />
+              {backLabel && <span className="text-ios-body">{backLabel}</span>}
+            </Link>
+          ) : null}
+        </div>
+
+        {/* Center title (standard mode only) */}
+        {!largeTitle && (
+          <h1 className="text-ios-headline text-center absolute left-1/2 -translate-x-1/2 truncate max-w-[60%]">
+            {title}
+          </h1>
+        )}
+
+        {/* Trailing actions */}
+        <div className="flex items-center gap-2 shrink-0">{trailing}</div>
+      </div>
+
+      {/* Large title row */}
+      {largeTitle && (
+        <div className="px-4 pb-2">
+          <h1 className="text-ios-large-title">{title}</h1>
+        </div>
+      )}
+    </header>
+  );
+}
