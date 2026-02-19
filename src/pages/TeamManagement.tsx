@@ -2,18 +2,12 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
-import { Card, CardContent } from '@/components/ui/card.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog.tsx';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
-import { Separator } from '@/components/ui/separator.tsx';
+import { NavBar } from '@/components/layout/NavBar.tsx';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
+import { IOSAlert } from '@/components/ui/ios-alert.tsx';
+import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
@@ -24,7 +18,7 @@ import {
   TEAM_GENDER_LABELS,
   TEAM_GENDER_DOT_COLORS,
 } from '@/types/domain.ts';
-import type { Roster, GameConfig, GameConfigId, TeamGender } from '@/types/domain.ts';
+import type { GameConfig, GameConfigId, Roster, TeamGender } from '@/types/domain.ts';
 import {
   Select,
   SelectContent,
@@ -32,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import { PencilIcon } from 'lucide-react';
 
 export function TeamManagement() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -112,200 +105,143 @@ export function TeamManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Team header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="text-muted-foreground hover:text-foreground text-sm">
-            Teams
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          {isEditing ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleRenameTeam();
-                  if (e.key === 'Escape') setIsEditing(false);
-                }}
-                aria-label="Team name"
-                autoFocus
-                className="h-8 w-48"
-              />
-              <Button size="sm" onClick={handleRenameTeam}>
-                Save
-              </Button>
-            </div>
-          ) : (
-            <h1
-              className="text-2xl font-bold cursor-pointer hover:text-primary group flex items-center gap-1.5"
-              onClick={() => {
-                setEditName(team.name);
-                setIsEditing(true);
-              }}
-            >
-              {team.name}
-              <PencilIcon className="size-3.5 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
-            </h1>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <Link to={`/practice?team=${teamId}`}>
-            <Button variant="outline" size="sm">
-              Practice
-            </Button>
-          </Link>
-          <Link to={`/games/new?teamId=${teamId}`}>
-            <Button size="sm">New Game</Button>
-          </Link>
-          <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteTeam(true)}>
-            Delete
+    <div>
+      <NavBar
+        title={team.name}
+        backTo="/"
+        backLabel="Teams"
+        trailing={
+          <Button
+            variant="plain"
+            size="sm"
+            onClick={() => {
+              setEditName(team.name);
+              setIsEditing(true);
+            }}
+          >
+            Edit
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Gender:</span>
-        <Select value={team.gender} onValueChange={(v) => handleChangeGender(v as TeamGender)}>
-          <SelectTrigger className="w-28 h-8">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                <span className="flex items-center gap-2">
-                  <span
-                    className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value as TeamGender]}`}
-                  />
-                  {label}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">Birth Year:</span>
-        <Input
-          type="number"
-          min={2005}
-          max={new Date().getFullYear()}
-          value={team.birthYear ?? ''}
-          onChange={(e) => {
-            const val = e.target.value ? parseInt(e.target.value, 10) : null;
-            dispatch({
-              type: 'SET_TEAM_BIRTH_YEAR',
-              payload: { teamId: teamId!, birthYear: val },
-            });
-          }}
-          placeholder="e.g., 2017"
-          className="w-24 h-8"
-        />
-        {team.birthYear && (
-          <span className="text-muted-foreground">= U{getUAge(team.birthYear)}</span>
-        )}
-      </div>
-
-      {/* Rosters */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Rosters</h2>
-          <Dialog open={isAddingRoster} onOpenChange={setIsAddingRoster}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                Add Roster
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>New Roster</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label htmlFor="roster-name">Roster Name</Label>
-                  <Input
-                    id="roster-name"
-                    value={newRosterName}
-                    onChange={(e) => setNewRosterName(e.target.value)}
-                    placeholder="e.g., Spring 2026"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAddRoster();
-                    }}
-                    autoFocus
-                  />
-                </div>
-                <Button
-                  onClick={handleAddRoster}
-                  className="w-full"
-                  disabled={!newRosterName.trim()}
-                >
-                  Create Roster
-                </Button>
+      <div className="px-4 space-y-6 pt-4">
+        {/* Team Details */}
+        <GroupedList header="Details">
+          <GroupedListRow
+            trailing={
+              <Select
+                value={team.gender}
+                onValueChange={(v) => handleChangeGender(v as TeamGender)}
+              >
+                <SelectTrigger className="w-28 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value as TeamGender]}`}
+                        />
+                        {label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            }
+          >
+            Gender
+          </GroupedListRow>
+          <GroupedListRow
+            last
+            trailing={
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={2005}
+                  max={new Date().getFullYear()}
+                  value={team.birthYear ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value ? parseInt(e.target.value, 10) : null;
+                    dispatch({
+                      type: 'SET_TEAM_BIRTH_YEAR',
+                      payload: { teamId: teamId!, birthYear: val },
+                    });
+                  }}
+                  placeholder="e.g., 2017"
+                  className="w-24 h-8"
+                />
+                {team.birthYear && (
+                  <span className="text-muted-foreground text-ios-footnote">
+                    U{getUAge(team.birthYear)}
+                  </span>
+                )}
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
+            }
+          >
+            Birth Year
+          </GroupedListRow>
+        </GroupedList>
 
-        {team.rosters.length === 0 ? (
-          <Card>
-            <CardContent className="py-6 text-center text-muted-foreground text-sm">
-              No rosters yet. Add a roster to start managing players.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-2">
-            {team.rosters.map((roster) => (
+        {/* Rosters */}
+        <GroupedList header="Rosters">
+          {team.rosters.length === 0 ? (
+            <GroupedListRow last>
+              <span className="text-muted-foreground">No rosters yet</span>
+            </GroupedListRow>
+          ) : (
+            team.rosters.map((roster, i) => (
               <Link key={roster.id} to={`/teams/${teamId}/rosters/${roster.id}`}>
-                <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
-                  <CardContent className="py-3 flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{roster.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
-                      </p>
+                <GroupedListRow chevron last={i === team.rosters.length - 1}>
+                  <div>
+                    <div className="text-ios-body font-medium">{roster.name}</div>
+                    <div className="text-ios-caption1 text-muted-foreground">
+                      {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </GroupedListRow>
               </Link>
-            ))}
-          </div>
-        )}
-      </section>
+            ))
+          )}
+        </GroupedList>
+        <Button variant="secondary" size="sm" onClick={() => setIsAddingRoster(true)}>
+          Add Roster
+        </Button>
 
-      <Separator />
-
-      {/* Game Configs */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Game Configurations</h2>
-          <Dialog open={isAddingConfig} onOpenChange={setIsAddingConfig}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                Custom...
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>New Game Configuration</DialogTitle>
-              </DialogHeader>
-              <GameConfigForm
-                teamId={teamId ?? ''}
-                onSave={handleSaveConfig}
-                onCancel={() => setIsAddingConfig(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+        {/* Game Configurations */}
+        <GroupedList header="Game Configurations">
+          {team.gameConfigs.length === 0 ? (
+            <GroupedListRow last>
+              <span className="text-muted-foreground">No configurations</span>
+            </GroupedListRow>
+          ) : (
+            team.gameConfigs.map((config, i) => (
+              <GroupedListRow
+                key={config.id}
+                onClick={() => setEditingConfig(config)}
+                chevron
+                last={i === team.gameConfigs.length - 1}
+              >
+                <div>
+                  <div className="text-ios-body font-medium">{config.name}</div>
+                  <div className="text-ios-caption1 text-muted-foreground">
+                    {config.fieldSize}v{config.fieldSize} &middot; {config.periods} periods &middot;{' '}
+                    {config.rotationsPerPeriod} rot/period
+                  </div>
+                </div>
+              </GroupedListRow>
+            ))
+          )}
+        </GroupedList>
 
         {/* Template quick-create buttons */}
         <div className="flex flex-wrap gap-2">
           {GAME_CONFIG_TEMPLATES.map((template) => (
             <Button
               key={template.name}
-              variant="outline"
-              size="sm"
+              variant="secondary"
+              size="capsule"
               onClick={() => {
                 const config = createConfigFromTemplate(teamId!, template);
                 dispatch({ type: 'ADD_GAME_CONFIG', payload: { teamId: teamId!, config } });
@@ -314,86 +250,132 @@ export function TeamManagement() {
               {template.name}
             </Button>
           ))}
+          <Button variant="secondary" size="capsule" onClick={() => setIsAddingConfig(true)}>
+            Custom...
+          </Button>
         </div>
 
-        {team.gameConfigs.length === 0 ? (
-          <Card>
-            <CardContent className="py-6 text-center text-muted-foreground text-sm">
-              No game configurations. Add one to define field size, periods, and rules.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-2">
-            {team.gameConfigs.map((config) => (
-              <Card
-                key={config.id}
-                className="hover:bg-accent/50 transition-colors cursor-pointer"
-                onClick={() => setEditingConfig(config)}
-              >
-                <CardContent className="py-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{config.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {config.fieldSize}v{config.fieldSize} &middot; {config.periods} periods
-                        &middot; {config.rotationsPerPeriod} rotations/period
-                      </p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeletingConfigId(config.id);
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+        {/* Actions */}
+        <GroupedList header="Actions">
+          <Link to={`/practice?team=${teamId}`}>
+            <GroupedListRow chevron>Practice Planner</GroupedListRow>
+          </Link>
+          <Link to={`/games/new?teamId=${teamId}`}>
+            <GroupedListRow chevron>New Game</GroupedListRow>
+          </Link>
+          <GroupedListRow last onClick={() => setConfirmDeleteTeam(true)}>
+            <span className="text-destructive">Delete Team</span>
+          </GroupedListRow>
+        </GroupedList>
+      </div>
+
+      {/* BottomSheets */}
+      <BottomSheet open={isAddingRoster} onOpenChange={setIsAddingRoster} title="New Roster">
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="roster-name">Roster Name</Label>
+            <Input
+              id="roster-name"
+              value={newRosterName}
+              onChange={(e) => setNewRosterName(e.target.value)}
+              placeholder="e.g., Spring 2026"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddRoster();
+              }}
+              autoFocus
+            />
+          </div>
+          <Button onClick={handleAddRoster} size="lg" disabled={!newRosterName.trim()}>
+            Create Roster
+          </Button>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={isAddingConfig}
+        onOpenChange={setIsAddingConfig}
+        title="New Game Configuration"
+      >
+        <GameConfigForm
+          teamId={teamId ?? ''}
+          onSave={handleSaveConfig}
+          onCancel={() => setIsAddingConfig(false)}
+        />
+      </BottomSheet>
+
+      <BottomSheet
+        open={!!editingConfig}
+        onOpenChange={(open) => {
+          if (!open) setEditingConfig(null);
+        }}
+        title="Edit Configuration"
+      >
+        {editingConfig && (
+          <div className="space-y-4">
+            <GameConfigForm
+              teamId={teamId ?? ''}
+              initialConfig={editingConfig}
+              onSave={handleUpdateConfig}
+              onCancel={() => setEditingConfig(null)}
+            />
+            <Button
+              variant="destructive-plain"
+              size="lg"
+              onClick={() => setDeletingConfigId(editingConfig.id)}
+            >
+              Delete Configuration
+            </Button>
           </div>
         )}
+      </BottomSheet>
 
-        {/* Edit config dialog */}
-        <Dialog
-          open={!!editingConfig}
-          onOpenChange={(open) => {
-            if (!open) setEditingConfig(null);
-          }}
-        >
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Configuration</DialogTitle>
-            </DialogHeader>
-            {editingConfig && (
-              <GameConfigForm
-                teamId={teamId ?? ''}
-                initialConfig={editingConfig}
-                onSave={handleUpdateConfig}
-                onCancel={() => setEditingConfig(null)}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-      </section>
+      <BottomSheet open={isEditing} onOpenChange={setIsEditing} title="Rename Team">
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label htmlFor="team-name">Team Name</Label>
+            <Input
+              id="team-name"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRenameTeam();
+                if (e.key === 'Escape') setIsEditing(false);
+              }}
+              aria-label="Team name"
+              autoFocus
+            />
+          </div>
+          <Button onClick={handleRenameTeam} size="lg" disabled={!editName.trim()}>
+            Save
+          </Button>
+        </div>
+      </BottomSheet>
 
-      <ConfirmDialog
+      {/* IOSAlerts */}
+      <IOSAlert
         open={confirmDeleteTeam}
+        onOpenChange={setConfirmDeleteTeam}
+        title={`Delete "${team.name}"?`}
+        message="This will permanently delete the team and all its rosters, configs, and games."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
         onConfirm={() => {
           setConfirmDeleteTeam(false);
           handleDeleteTeam();
         }}
         onCancel={() => setConfirmDeleteTeam(false)}
-        title={`Delete "${team.name}"?`}
-        description="This will permanently delete the team and all its rosters, configs, and games."
-        confirmLabel="Delete"
-        variant="destructive"
+        destructive
       />
 
-      <ConfirmDialog
+      <IOSAlert
         open={deletingConfigId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingConfigId(null);
+        }}
+        title="Delete configuration?"
+        message="This game configuration will be permanently removed."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
         onConfirm={() => {
           if (teamId && deletingConfigId) {
             dispatchWithUndo({
@@ -402,12 +384,10 @@ export function TeamManagement() {
             });
           }
           setDeletingConfigId(null);
+          setEditingConfig(null);
         }}
         onCancel={() => setDeletingConfigId(null)}
-        title="Delete configuration?"
-        description="This game configuration will be permanently removed."
-        confirmLabel="Delete"
-        variant="destructive"
+        destructive
       />
     </div>
   );
