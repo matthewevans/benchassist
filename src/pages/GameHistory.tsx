@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Trash2 } from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
-import { Card, CardContent } from '@/components/ui/card.tsx';
+import { NavBar } from '@/components/layout/NavBar.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog.tsx';
+import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
+import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { GAME_STATUS_LABELS, GAME_STATUS_STYLES } from '@/types/domain.ts';
 
 export function GameHistory() {
@@ -22,63 +24,74 @@ export function GameHistory() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Game History</h1>
+    <div>
+      <NavBar title="History" largeTitle />
 
-      {games.length === 0 ? (
-        <Card>
-          <CardContent className="py-6 text-center text-muted-foreground">
-            <p className="text-lg font-medium">No games yet</p>
-            <p className="text-sm mt-1">Create a game from a team page to get started.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-2">
-          {games.map((game) => {
-            const team = state.teams[game.teamId];
-            const linkPath = `/games/${game.id}/rotations`;
-
-            return (
-              <Card key={game.id} className="hover:bg-accent/50 transition-colors">
-                <CardContent className="py-3">
-                  <div className="flex items-center justify-between">
-                    <Link to={linkPath} className="flex-1">
-                      <div>
-                        <p className="font-medium">{game.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {team?.name} &middot; {new Date(game.createdAt).toLocaleDateString()}
-                        </p>
+      <div className="px-4 space-y-6 pt-4">
+        {games.length === 0 ? (
+          <GroupedList>
+            <GroupedListRow last>
+              <div className="text-center py-4">
+                <div className="text-ios-body font-medium text-muted-foreground">No games yet</div>
+                <div className="text-ios-caption1 text-muted-foreground mt-1">
+                  Create a game from a team page to get started.
+                </div>
+              </div>
+            </GroupedListRow>
+          </GroupedList>
+        ) : (
+          <GroupedList>
+            {games.map((game, i) => {
+              const team = state.teams[game.teamId];
+              return (
+                <Link key={game.id} to={`/games/${game.id}/rotations`}>
+                  <GroupedListRow
+                    chevron
+                    last={i === games.length - 1}
+                    trailing={
+                      <div className="flex items-center gap-2">
+                        <Badge className={GAME_STATUS_STYLES[game.status]}>
+                          {GAME_STATUS_LABELS[game.status]}
+                        </Badge>
+                        <Button
+                          variant="plain"
+                          size="icon-xs"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDeletingGameId(game.id);
+                          }}
+                        >
+                          <Trash2 className="size-4 text-destructive" />
+                        </Button>
                       </div>
-                    </Link>
-                    <div className="flex items-center gap-2">
-                      <Badge className={GAME_STATUS_STYLES[game.status]}>
-                        {GAME_STATUS_LABELS[game.status]}
-                      </Badge>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive"
-                        onClick={() => setDeletingGameId(game.id)}
-                      >
-                        Delete
-                      </Button>
+                    }
+                  >
+                    <div>
+                      <div className="text-ios-body font-medium">{game.name}</div>
+                      <div className="text-ios-caption1 text-muted-foreground">
+                        {team?.name} &middot; {new Date(game.createdAt).toLocaleDateString()}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                  </GroupedListRow>
+                </Link>
+              );
+            })}
+          </GroupedList>
+        )}
+      </div>
 
-      <ConfirmDialog
+      <IOSAlert
         open={deletingGameId !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeletingGameId(null);
+        }}
         onConfirm={handleDeleteGame}
         onCancel={() => setDeletingGameId(null)}
         title="Delete game?"
-        description="This will permanently remove this game and its rotation schedule."
+        message="This will permanently remove this game and its rotation schedule."
         confirmLabel="Delete"
-        variant="destructive"
+        destructive
       />
     </div>
   );
