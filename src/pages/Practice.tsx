@@ -44,7 +44,17 @@ export function Practice() {
 
   return (
     <div>
-      <NavBar title="Practice" largeTitle />
+      <NavBar
+        title="Practice"
+        largeTitle
+        trailing={
+          p.birthYear != null ? (
+            <Button variant="plain" size="xs" onClick={p.reset}>
+              Reset
+            </Button>
+          ) : undefined
+        }
+      />
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {/* Age group section */}
@@ -141,55 +151,59 @@ export function Practice() {
 
         {/* Practice themes */}
         {p.drillBracket && (
-          <div className="space-y-2">
-            <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4">
+          <section>
+            <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
               Practice Themes
             </h3>
-            <div className="flex flex-wrap gap-1.5">
-              {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(p.drillBracket!)).map(
-                (template) => (
-                  <Button
-                    key={template.id}
-                    size="capsule"
-                    variant="secondary"
-                    onClick={() => {
-                      const cats = [
-                        ...new Set(template.slots.flatMap((s) => s.preferredCategories)),
-                      ].filter((c) => p.availableCategories.includes(c)) as DrillCategory[];
-                      p.setSelectedCategories(cats);
-                      p.setSeed(Date.now());
-                    }}
-                  >
-                    {template.name}
-                  </Button>
-                ),
-              )}
+            <div className="bg-card rounded-[10px] px-3 py-3">
+              <div className="flex flex-wrap gap-1.5">
+                {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(p.drillBracket!)).map(
+                  (template) => (
+                    <Button
+                      key={template.id}
+                      size="capsule"
+                      variant="secondary"
+                      onClick={() => {
+                        const cats = [
+                          ...new Set(template.slots.flatMap((s) => s.preferredCategories)),
+                        ].filter((c) => p.availableCategories.includes(c)) as DrillCategory[];
+                        p.setSelectedCategories(cats);
+                        p.setSeed(Date.now());
+                      }}
+                    >
+                      {template.name}
+                    </Button>
+                  ),
+                )}
+              </div>
             </div>
-          </div>
+          </section>
         )}
 
         {/* Focus areas */}
         {p.drillBracket && (
-          <div className="space-y-2">
-            <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4">
+          <section>
+            <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
               Focus Areas
             </h3>
-            <div className="flex flex-wrap gap-1.5">
-              {p.availableCategories.map((cat) => {
-                const isSelected = p.selectedCategories.includes(cat);
-                return (
-                  <Button
-                    key={cat}
-                    size="capsule"
-                    variant={isSelected ? 'default' : 'secondary'}
-                    onClick={() => p.toggleCategory(cat)}
-                  >
-                    {DRILL_CATEGORY_LABELS[cat]}
-                  </Button>
-                );
-              })}
+            <div className="bg-card rounded-[10px] px-3 py-3">
+              <div className="flex flex-wrap gap-1.5">
+                {p.availableCategories.map((cat) => {
+                  const isSelected = p.selectedCategories.includes(cat);
+                  return (
+                    <Button
+                      key={cat}
+                      size="capsule"
+                      variant={isSelected ? 'default' : 'secondary'}
+                      onClick={() => p.toggleCategory(cat)}
+                    >
+                      {DRILL_CATEGORY_LABELS[cat]}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          </section>
         )}
 
         {/* Practice plan output */}
@@ -223,45 +237,50 @@ export function Practice() {
 
         {/* Browse mode */}
         {p.groupedBrowseDrills && !p.plan && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Browse filters */}
-            <div className="space-y-3">
-              <Input
-                placeholder="Search drills…"
-                value={p.browseSearch}
-                onChange={(e) => p.setBrowseSearch(e.target.value)}
-              />
-              <div className="flex flex-wrap gap-1.5">
-                <Button
-                  size="capsule"
-                  variant={p.browseCategory === null ? 'default' : 'secondary'}
-                  onClick={() => p.setBrowseCategory(null)}
-                >
-                  All
-                </Button>
-                {p.availableCategories.map((cat) => (
+            <section>
+              <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
+                Browse Drills
+              </h3>
+              <div className="bg-card rounded-[10px] px-3 py-3 space-y-3">
+                <Input
+                  placeholder="Search drills…"
+                  value={p.browseSearch}
+                  onChange={(e) => p.setBrowseSearch(e.target.value)}
+                />
+                <div className="flex flex-wrap gap-1.5">
                   <Button
-                    key={cat}
                     size="capsule"
-                    variant={p.browseCategory === cat ? 'default' : 'secondary'}
-                    onClick={() => p.setBrowseCategory(p.browseCategory === cat ? null : cat)}
+                    variant={p.browseCategory === null ? 'default' : 'secondary'}
+                    onClick={() => p.setBrowseCategory(null)}
                   >
-                    {DRILL_CATEGORY_LABELS[cat]}
+                    All
                   </Button>
-                ))}
+                  {p.availableCategories.map((cat) => (
+                    <Button
+                      key={cat}
+                      size="capsule"
+                      variant={p.browseCategory === cat ? 'default' : 'secondary'}
+                      onClick={() => p.setBrowseCategory(p.browseCategory === cat ? null : cat)}
+                    >
+                      {DRILL_CATEGORY_LABELS[cat]}
+                    </Button>
+                  ))}
+                </div>
               </div>
-              <p className="text-ios-footnote text-muted-foreground px-1">
+              <p className="text-ios-footnote text-muted-foreground px-4 pt-1.5">
                 {p.browseDrills!.length} drill{p.browseDrills!.length !== 1 ? 's' : ''}
               </p>
-            </div>
+            </section>
 
             {/* Grouped drills by phase */}
             {PHASE_ORDER.map((phase) => {
               const drills = p.groupedBrowseDrills![phase];
               if (drills.length === 0) return null;
               return (
-                <div key={phase} className="space-y-3">
-                  <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-1">
+                <section key={phase} className="space-y-2">
+                  <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4">
                     {DRILL_PHASE_LABELS[phase]}
                   </h2>
                   <div className="space-y-3">
@@ -276,7 +295,7 @@ export function Practice() {
                       />
                     ))}
                   </div>
-                </div>
+                </section>
               );
             })}
           </div>

@@ -17,8 +17,7 @@ function renderPractice(route = '/practice') {
 /** Returns the "Focus Areas" section container (the category chips area). */
 function getFocusAreasSection() {
   const heading = screen.getByText('Focus Areas');
-  // The heading's closest div is the space-y-2 wrapper containing both the label and the chip row
-  return heading.closest('div')!;
+  return heading.closest('section')!;
 }
 
 describe('Practice page', () => {

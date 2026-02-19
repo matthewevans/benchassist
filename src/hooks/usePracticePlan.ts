@@ -222,6 +222,24 @@ export function usePracticePlan(options: {
     setBirthYear(uAgeToBirthYear(uAge));
   }
 
+  function reset() {
+    setBirthYear(null);
+    setPlayerCount(options.initialBirthYear ? options.initialPlayerCount : 10);
+    setSelectedCategories([]);
+    setTargetDuration(60);
+    setFavoritesOnly(false);
+    setSeed(Date.now());
+    setExpandedDrillIds(new Set());
+    setSwappedDrills(new Map());
+    setBrowseSearch('');
+    setBrowseCategory(null);
+    try {
+      sessionStorage.removeItem(SESSION_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
   return {
     // State
     birthYear,
@@ -255,5 +273,6 @@ export function usePracticePlan(options: {
     handleSwap,
     handleBirthYearInput,
     selectUAge,
+    reset,
   };
 }
