@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
-import { Settings2, RotateCcwIcon } from 'lucide-react';
+import { Settings2, RotateCcwIcon, EllipsisIcon } from 'lucide-react';
 import { useRotationGame } from '@/hooks/useRotationGame.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
@@ -16,6 +16,7 @@ import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 
 function RotationPips({
   periodGroups,
@@ -143,21 +144,29 @@ export function RotationGrid() {
                   Grid
                 </button>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={g.handleRegenerate}
-                disabled={g.solver.isRunning}
-              >
-                {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
-              </Button>
-              <Button
-                variant="destructive-plain"
-                size="sm"
-                onClick={() => g.setConfirmEndGame(true)}
-              >
-                End Game
-              </Button>
+              {/* Overflow menu for infrequent actions */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="plain" size="icon-sm" aria-label="Game actions">
+                    <EllipsisIcon className="size-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-48 p-1.5">
+                  <button
+                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                    onClick={g.handleRegenerate}
+                    disabled={g.solver.isRunning}
+                  >
+                    {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
+                  </button>
+                  <button
+                    className="flex items-center w-full h-11 px-3 text-ios-body text-destructive rounded-lg active:bg-accent/80 transition-colors"
+                    onClick={() => g.setConfirmEndGame(true)}
+                  >
+                    End Game
+                  </button>
+                </PopoverContent>
+              </Popover>
             </div>
           }
         />

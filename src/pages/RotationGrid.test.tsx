@@ -276,11 +276,12 @@ describe('RotationGrid', () => {
       expect(screen.getByTitle(/Rotation 1 of 4/)).toBeInTheDocument();
     });
 
-    it('shows End Game button in header', () => {
+    it('shows End Game in overflow menu', async () => {
       const { state, game } = buildLiveState();
       renderGrid(state, game.id);
-      // The header has an "End Game" button (the bottom bar may also have one)
-      expect(screen.getAllByRole('button', { name: /end game/i }).length).toBeGreaterThanOrEqual(1);
+      // Open the overflow menu in the nav bar
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      expect(screen.getByRole('button', { name: /end game/i })).toBeInTheDocument();
     });
 
     it('does not show stats cards or player statistics section', () => {
@@ -501,12 +502,13 @@ describe('RotationGrid', () => {
       return { state: liveState, game: liveGame, ...rest };
     }
 
-    it('shows confirmation dialog when End Game button clicked', async () => {
+    it('shows confirmation dialog when End Game clicked from overflow menu', async () => {
       const { state, game } = buildLiveState();
       renderGrid(state, game.id);
 
-      const endGameButtons = screen.getAllByRole('button', { name: /end game/i });
-      await userEvent.click(endGameButtons[0]);
+      // Open overflow menu then click End Game
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /end game/i }));
 
       expect(screen.getByText('End this game?')).toBeInTheDocument();
       expect(screen.getByText(/won't be able to resume/)).toBeInTheDocument();
@@ -516,8 +518,8 @@ describe('RotationGrid', () => {
       const { state, game } = buildLiveState();
       const { dispatch } = renderGrid(state, game.id);
 
-      const endGameButtons = screen.getAllByRole('button', { name: /end game/i });
-      await userEvent.click(endGameButtons[0]);
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /end game/i }));
 
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
@@ -532,9 +534,10 @@ describe('RotationGrid', () => {
       const { state, game } = buildLiveState();
       const { dispatch } = renderGrid(state, game.id);
 
-      const endGameButtons = screen.getAllByRole('button', { name: /end game/i });
-      await userEvent.click(endGameButtons[0]);
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /end game/i }));
 
+      // Confirm in the IOSAlert dialog
       await userEvent.click(screen.getByRole('button', { name: 'End Game' }));
 
       expect(dispatch).toHaveBeenCalledWith(
@@ -556,10 +559,7 @@ describe('RotationGrid', () => {
       renderGrid(lastRotState, game.id);
 
       // On the last rotation, LiveBottomBar shows "End Game" on the advance button
-      // There are multiple "End Game" buttons (header + bottom bar)
-      const endButtons = screen.getAllByRole('button', { name: /end game/i });
-      // Click the bottom bar one (last in DOM)
-      await userEvent.click(endButtons[endButtons.length - 1]);
+      await userEvent.click(screen.getByRole('button', { name: /end game/i }));
 
       expect(screen.getByText('End this game?')).toBeInTheDocument();
     });

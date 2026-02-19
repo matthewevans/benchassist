@@ -5,6 +5,7 @@ import {
   XIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronsRightIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
@@ -33,8 +34,6 @@ export function LiveBottomBar({
 }: LiveBottomBarProps) {
   const nextMarker = timer.markers.find((m) => timer.elapsedMs < m.timeMs);
   const nextSubMin = nextMarker ? Math.ceil((nextMarker.timeMs - timer.elapsedMs) / 60000) : null;
-
-  const advanceLabel = isLastRotation ? 'End Game' : isCrossingPeriod ? 'Next Period' : 'Next';
 
   return (
     <div
@@ -162,10 +161,14 @@ export function LiveBottomBar({
             <Button
               className="h-11 px-5 text-ios-subheadline font-semibold rounded-full"
               onClick={onAdvance}
-              aria-label={advanceLabel}
+              aria-label={isCrossingPeriod ? 'Next period' : 'Next'}
             >
-              {advanceLabel}
-              <ChevronRightIcon className="size-4 ml-0.5" />
+              Next
+              {isCrossingPeriod ? (
+                <ChevronsRightIcon className="size-4 ml-0.5" />
+              ) : (
+                <ChevronRightIcon className="size-4 ml-0.5" />
+              )}
             </Button>
           )}
         </div>
