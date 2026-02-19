@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 
 const MAX_PULL_DISTANCE = 110;
 const ACTIVATION_DISTANCE = 72;
@@ -126,7 +125,6 @@ export function usePullToCheckUpdate({ onCheckForUpdate }: UsePullToCheckUpdateO
         setPullState('checking');
         setPullDistance(46);
         pullDistanceRef.current = 46;
-        toast('Checking for updates...', { duration: 1500 });
         void onCheckForUpdate();
       } else {
         resetPull();

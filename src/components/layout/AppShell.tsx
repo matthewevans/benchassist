@@ -37,7 +37,7 @@ export function AppShell() {
       <div
         aria-hidden
         className={cn(
-          'fixed left-1/2 top-[calc(env(safe-area-inset-top)+6px)] -translate-x-1/2 z-50',
+          'fixed left-1/2 top-[calc(env(safe-area-inset-top)+6px)] z-50',
           'transition-all duration-200 pointer-events-none',
           showPullIndicator ? 'opacity-100' : 'opacity-0',
         )}
@@ -51,9 +51,18 @@ export function AppShell() {
               <ArrowDown className="size-4 text-muted-foreground" />
             )}
           </span>
-          <span className="text-ios-footnote text-muted-foreground whitespace-nowrap text-center">
-            {isUpdateAvailable && pullState === 'checking' ? 'Update found' : pullLabel}
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0">
+            {pullState === 'checking' ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ArrowDown className="size-4" />
+            )}
           </span>
+          <div className="absolute inset-0 flex items-center justify-center px-10">
+            <span className="text-ios-footnote text-muted-foreground whitespace-nowrap text-center">
+              {isUpdateAvailable && pullState === 'checking' ? 'Update found' : pullLabel}
+            </span>
+          </div>
         </div>
       </div>
 
