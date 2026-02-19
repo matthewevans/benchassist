@@ -63,5 +63,5 @@ export function useTheme() {
     });
   }, []);
 
-  return { preference, resolved, cycle };
+  return { preference, resolved, cycle, setPreference };
 }

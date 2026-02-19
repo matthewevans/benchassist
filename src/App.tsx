@@ -8,6 +8,7 @@ import { GameSetup } from '@/pages/GameSetup.tsx';
 import { RotationGrid } from '@/pages/RotationGrid.tsx';
 import { GameHistory } from '@/pages/GameHistory.tsx';
 import { Practice } from '@/pages/Practice.tsx';
+import { Settings } from '@/pages/Settings.tsx';
 import { Toaster } from '@/components/ui/sonner.tsx';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="games/:gameId/rotations" element={<RotationGrid />} />
             <Route path="games/:gameId/live" element={<Navigate to="../rotations" replace />} />
             <Route path="games" element={<GameHistory />} />
+            <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
