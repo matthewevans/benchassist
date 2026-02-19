@@ -20,9 +20,13 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
   const selectionState = useSelectionState(teamList);
   const { selections, hasAnySelected } = selectionState;
   const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [didCopy, setDidCopy] = useState(false);
 
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) setCopiedText(null);
+    if (!nextOpen) {
+      setCopiedText(null);
+      setDidCopy(false);
+    }
     onOpenChange(nextOpen);
   }
 
@@ -39,8 +43,9 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
     const base64 = exportToBase64(filtered);
     try {
       await navigator.clipboard.writeText(base64);
+      setDidCopy(true);
     } catch {
-      // silently ignore clipboard errors
+      // Clipboard failed — user can still copy from the textarea
     }
     setCopiedText(base64);
   }
@@ -49,8 +54,9 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
     if (!copiedText) return;
     try {
       await navigator.clipboard.writeText(copiedText);
+      setDidCopy(true);
     } catch {
-      // silently ignore clipboard errors
+      // Clipboard failed — user can still copy from the textarea
     }
   }
 
@@ -77,8 +83,10 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col items-center gap-1 py-2">
-            <Check className="size-6 text-primary" />
-            <p className="text-ios-body font-medium">Copied to Clipboard</p>
+            {didCopy && <Check className="size-6 text-primary" />}
+            <p className="text-ios-body font-medium">
+              {didCopy ? 'Copied to Clipboard' : 'Copy the text below'}
+            </p>
           </div>
 
           <textarea
