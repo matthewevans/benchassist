@@ -153,7 +153,7 @@ export function GameSetup() {
 
   return (
     <div>
-      <NavBar title="New Game" backTo="/" backLabel="Teams" />
+      <NavBar title="New Game" backTo="/games" backLabel="Games" />
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {/* Step 1: Team & Configuration */}

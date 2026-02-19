@@ -1,12 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, PlusCircle, ClipboardList, Clock, Settings } from 'lucide-react';
+import { Users, ClipboardList, Clock, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 
 const TAB_ITEMS = [
   { path: '/', label: 'Teams', icon: Users },
-  { path: '/games/new', label: 'New Game', icon: PlusCircle },
-  { path: '/practice', label: 'Practice', icon: ClipboardList },
   { path: '/games', label: 'Games', icon: Clock },
+  { path: '/practice', label: 'Practice', icon: ClipboardList },
   { path: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 
@@ -15,7 +14,7 @@ function isTabActive(pathname: string, tabPath: string): boolean {
     return pathname === '/' || pathname.startsWith('/teams');
   }
   if (tabPath === '/games') {
-    return pathname === '/games';
+    return pathname === '/games' || pathname.startsWith('/games/');
   }
   return pathname === tabPath || pathname.startsWith(tabPath + '/');
 }

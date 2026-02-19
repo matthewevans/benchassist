@@ -60,10 +60,10 @@ The `useSolver` hook (`src/hooks/useSolver.ts`) manages the worker lifecycle, pr
 
 All routes are nested inside `AppShell` (layout with navigation):
 
-- `/` — Dashboard (team/game management, export/import)
+- `/` — Teams home (team list and creation)
 - `/teams/:teamId` — Team management (rosters, configs)
 - `/teams/:teamId/rosters/:rosterId` — Roster editor (bulk import, positions)
-- `/games/new` — Game setup (config, roster, absent players, goalie assignments)
+- `/games/new` — Game setup (config, roster, absent players, goalie assignments), typically launched from the Games page `+` action
 - `/games/:gameId/rotations` — Rotation grid + live game (single page handles both setup and live modes based on `game.status`)
 - `/games/:gameId/live` — Redirects to `../rotations`
 - `/games` — Game history

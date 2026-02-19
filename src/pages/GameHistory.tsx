@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { NavBar } from '@/components/layout/NavBar.tsx';
@@ -25,7 +25,17 @@ export function GameHistory() {
 
   return (
     <div>
-      <NavBar title="Games" largeTitle />
+      <NavBar
+        title="Games"
+        largeTitle
+        trailing={
+          <Button asChild variant="plain" size="icon">
+            <Link to="/games/new" aria-label="Create new game">
+              <Plus className="size-[22px]" />
+            </Link>
+          </Button>
+        }
+      />
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {games.length === 0 ? (

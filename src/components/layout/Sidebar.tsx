@@ -1,12 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, PlusCircle, ClipboardList, Clock, Settings } from 'lucide-react';
+import { Users, ClipboardList, Clock, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 
 const SIDEBAR_ITEMS = [
   { path: '/', label: 'Teams', icon: Users },
-  { path: '/games/new', label: 'New Game', icon: PlusCircle },
-  { path: '/practice', label: 'Practice', icon: ClipboardList },
   { path: '/games', label: 'Games', icon: Clock },
+  { path: '/practice', label: 'Practice', icon: ClipboardList },
   { path: '/settings', label: 'Settings', icon: Settings },
 ] as const;
 
@@ -15,7 +14,7 @@ function isActive(pathname: string, itemPath: string): boolean {
     return pathname === '/' || pathname.startsWith('/teams');
   }
   if (itemPath === '/games') {
-    return pathname === '/games';
+    return pathname === '/games' || pathname.startsWith('/games/');
   }
   return pathname === itemPath || pathname.startsWith(itemPath + '/');
 }
