@@ -296,11 +296,7 @@ export function TeamManagement() {
         onOpenChange={setIsAddingConfig}
         title="New Game Configuration"
       >
-        <GameConfigForm
-          teamId={teamId ?? ''}
-          onSave={handleSaveConfig}
-          onCancel={() => setIsAddingConfig(false)}
-        />
+        <GameConfigForm teamId={teamId ?? ''} onSave={handleSaveConfig} />
       </BottomSheet>
 
       <BottomSheet
@@ -311,21 +307,20 @@ export function TeamManagement() {
         title="Edit Configuration"
       >
         {editingConfig && (
-          <div className="space-y-4">
+          <>
             <GameConfigForm
               teamId={teamId ?? ''}
               initialConfig={editingConfig}
               onSave={handleUpdateConfig}
-              onCancel={() => setEditingConfig(null)}
             />
-            <Button
-              variant="destructive-plain"
-              size="lg"
-              onClick={() => setDeletingConfigId(editingConfig.id)}
-            >
-              Delete Configuration
-            </Button>
-          </div>
+            <div className="pt-6">
+              <GroupedList>
+                <GroupedListRow last onClick={() => setDeletingConfigId(editingConfig.id)}>
+                  <span className="text-destructive">Delete Configuration</span>
+                </GroupedListRow>
+              </GroupedList>
+            </div>
+          </>
         )}
       </BottomSheet>
 

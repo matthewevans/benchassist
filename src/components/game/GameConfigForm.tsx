@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import {
   Select,
   SelectContent,
@@ -9,16 +8,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import { Separator } from '@/components/ui/separator.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible.tsx';
-import { ChevronDownIcon } from 'lucide-react';
-import { cn } from '@/lib/utils.ts';
 import { Badge } from '@/components/ui/badge.tsx';
+import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { generateId } from '@/utils/id.ts';
 import { POSITION_LABELS } from '@/types/domain.ts';
 import type { GameConfig, FormationSlot, Position } from '@/types/domain.ts';
@@ -28,10 +20,9 @@ interface GameConfigFormProps {
   teamId: string;
   initialConfig?: GameConfig;
   onSave: (config: GameConfig) => void;
-  onCancel: () => void;
 }
 
-export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: GameConfigFormProps) {
+export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigFormProps) {
   const [name, setName] = useState(initialConfig?.name ?? '');
   const [fieldSize, setFieldSize] = useState(initialConfig?.fieldSize ?? 7);
   const [periods, setPeriods] = useState(initialConfig?.periods ?? 2);
@@ -63,8 +54,6 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
   );
   const [usePositions, setUsePositions] = useState(initialConfig?.usePositions ?? false);
   const [formation, setFormation] = useState<FormationSlot[]>(initialConfig?.formation ?? []);
-
-  const [rulesOpen, setRulesOpen] = useState(!!initialConfig);
 
   const fieldPlayerSlots = fieldSize - (useGoalie ? 1 : 0);
   const formationTotal = formation.reduce((sum, s) => sum + s.count, 0);
@@ -105,247 +94,279 @@ export function GameConfigForm({ teamId, initialConfig, onSave, onCancel }: Game
     onSave(config);
   }
 
+  const positionFooter = usePositions
+    ? `Total: ${formationTotal} / ${fieldPlayerSlots} field players${formationTotal !== fieldPlayerSlots ? (formationTotal < fieldPlayerSlots ? ' — need more' : ' — too many') : ''}`
+    : undefined;
+
   return (
-    <div className="space-y-4 pt-2">
-      <div className="space-y-2">
-        <Label htmlFor="config-name">Configuration Name</Label>
-        <Input
-          id="config-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Regular Season 7v7"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="field-size">Field Size</Label>
-          <Input
-            id="field-size"
-            type="number"
-            min={3}
-            max={15}
-            value={fieldSize}
-            onChange={(e) => setFieldSize(Number(e.target.value))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="periods">Periods</Label>
-          <Input
-            id="periods"
-            type="number"
-            min={1}
-            max={6}
-            value={periods}
-            onChange={(e) => setPeriods(Number(e.target.value))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="period-duration">Period Duration (min)</Label>
-          <Input
-            id="period-duration"
-            type="number"
-            min={5}
-            max={90}
-            value={periodDuration}
-            onChange={(e) => setPeriodDuration(Number(e.target.value))}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="rotations-per-period">Rotations / Period</Label>
-          <Input
-            id="rotations-per-period"
-            type="number"
-            min={1}
-            max={6}
-            value={rotationsPerPeriod}
-            onChange={(e) => setRotationsPerPeriod(Number(e.target.value))}
-          />
-        </div>
-      </div>
-
-      <Collapsible open={rulesOpen} onOpenChange={setRulesOpen}>
-        <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex items-center justify-between w-full px-0 text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            Rules & Balance
-            <ChevronDownIcon
-              className={cn('h-4 w-4 transition-transform', rulesOpen && 'rotate-180')}
+    <div className="space-y-5 pt-2">
+      {/* Section 1: Name */}
+      <GroupedList>
+        <GroupedListRow
+          last
+          trailing={
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Regular Season 7v7"
+              className="w-44 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
             />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="space-y-3 pt-1">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm">No consecutive benching</Label>
-                <p className="text-xs text-muted-foreground">
-                  Prevent back-to-back bench rotations
-                </p>
-              </div>
-              <Switch checked={noConsecutiveBench} onCheckedChange={setNoConsecutiveBench} />
-            </div>
-            {noConsecutiveBench && (
-              <div className="pl-4 space-y-2">
-                <Label htmlFor="max-consecutive">Max consecutive bench rotations</Label>
-                <Input
-                  id="max-consecutive"
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={maxConsecutiveBench}
-                  onChange={(e) => setMaxConsecutiveBench(Number(e.target.value))}
-                  className="w-20"
-                />
-              </div>
-            )}
+          }
+        >
+          <span className="text-ios-body">Configuration Name</span>
+        </GroupedListRow>
+      </GroupedList>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm">Minimum play time</Label>
-                <p className="text-xs text-muted-foreground">Every player plays at least this %</p>
-              </div>
-              <Switch checked={enforceMinPlayTime} onCheckedChange={setEnforceMinPlayTime} />
+      {/* Section 2: Format */}
+      <GroupedList header="Format">
+        <GroupedListRow
+          trailing={
+            <Input
+              type="number"
+              min={3}
+              max={15}
+              value={fieldSize}
+              onChange={(e) => setFieldSize(Number(e.target.value))}
+              className="w-20 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
+            />
+          }
+        >
+          <span className="text-ios-body">Field Size</span>
+        </GroupedListRow>
+        <GroupedListRow
+          trailing={
+            <Input
+              type="number"
+              min={1}
+              max={6}
+              value={periods}
+              onChange={(e) => setPeriods(Number(e.target.value))}
+              className="w-20 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
+            />
+          }
+        >
+          <span className="text-ios-body">Periods</span>
+        </GroupedListRow>
+        <GroupedListRow
+          trailing={
+            <div className="flex items-center gap-1.5">
+              <Input
+                type="number"
+                min={5}
+                max={90}
+                value={periodDuration}
+                onChange={(e) => setPeriodDuration(Number(e.target.value))}
+                className="w-16 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
+              />
+              <span className="text-ios-body text-muted-foreground">min</span>
             </div>
-            {enforceMinPlayTime && (
-              <div className="pl-4 space-y-2">
-                <Label htmlFor="min-play">Minimum play percentage</Label>
+          }
+        >
+          <span className="text-ios-body">Period Duration</span>
+        </GroupedListRow>
+        <GroupedListRow
+          last
+          trailing={
+            <Input
+              type="number"
+              min={1}
+              max={6}
+              value={rotationsPerPeriod}
+              onChange={(e) => setRotationsPerPeriod(Number(e.target.value))}
+              className="w-20 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
+            />
+          }
+        >
+          <span className="text-ios-body">Rotations / Period</span>
+        </GroupedListRow>
+      </GroupedList>
+
+      {/* Section 3: Rules */}
+      <GroupedList header="Rules">
+        <GroupedListRow
+          trailing={<Switch checked={noConsecutiveBench} onCheckedChange={setNoConsecutiveBench} />}
+        >
+          <div>
+            <div className="text-ios-body">No consecutive bench</div>
+            <div className="text-ios-caption1 text-muted-foreground">
+              Prevent back-to-back bench rotations
+            </div>
+          </div>
+        </GroupedListRow>
+        {noConsecutiveBench && (
+          <GroupedListRow
+            trailing={
+              <Input
+                type="number"
+                min={1}
+                max={5}
+                value={maxConsecutiveBench}
+                onChange={(e) => setMaxConsecutiveBench(Number(e.target.value))}
+                className="w-20 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
+              />
+            }
+          >
+            <span className="text-ios-body">Max consecutive</span>
+          </GroupedListRow>
+        )}
+        <GroupedListRow
+          trailing={<Switch checked={enforceMinPlayTime} onCheckedChange={setEnforceMinPlayTime} />}
+        >
+          <div>
+            <div className="text-ios-body">Minimum play time</div>
+            <div className="text-ios-caption1 text-muted-foreground">
+              Every player plays at least this %
+            </div>
+          </div>
+        </GroupedListRow>
+        {enforceMinPlayTime && (
+          <GroupedListRow
+            last={!useGoalie && !usePositions}
+            trailing={
+              <div className="flex items-center gap-1.5">
                 <Input
-                  id="min-play"
                   type="number"
                   min={10}
                   max={100}
                   value={minPlayPercentage}
                   onChange={(e) => setMinPlayPercentage(Number(e.target.value))}
-                  className="w-20"
+                  className="w-16 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
                 />
+                <span className="text-ios-body text-muted-foreground">%</span>
               </div>
-            )}
+            }
+          >
+            <span className="text-ios-body">Min play %</span>
+          </GroupedListRow>
+        )}
+      </GroupedList>
 
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm">Uses goalkeeper</Label>
-                <p className="text-xs text-muted-foreground">
-                  Format includes a dedicated goalkeeper
-                </p>
-              </div>
-              <Switch checked={useGoalie} onCheckedChange={setUseGoalie} />
-            </div>
-
-            {useGoalie && (
-              <>
-                <div className="flex items-center justify-between pl-4">
-                  <div>
-                    <Label className="text-sm">Goalie plays full period</Label>
-                    <p className="text-xs text-muted-foreground">No mid-period goalie swaps</p>
-                  </div>
-                  <Switch
-                    checked={goaliePlayFullPeriod}
-                    onCheckedChange={setGoaliePlayFullPeriod}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pl-4">
-                  <div>
-                    <Label className="text-sm">Goalie rests after period</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Goalie must bench first rotation of next period
-                    </p>
-                  </div>
-                  <Switch
-                    checked={goalieRestAfterPeriod}
-                    onCheckedChange={setGoalieRestAfterPeriod}
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm">Use positions</Label>
-                <p className="text-xs text-muted-foreground">
-                  Assign field positions (DEF, MID, FWD)
-                </p>
-              </div>
-              <Switch checked={usePositions} onCheckedChange={setUsePositions} />
-            </div>
-
-            {usePositions && (
-              <div className="pl-4 space-y-3">
-                {(['DEF', 'MID', 'FWD'] as const).map((pos) => {
-                  const count = formation.find((s) => s.position === pos)?.count ?? 0;
-                  return (
-                    <div key={pos} className="flex items-center justify-between">
-                      <Label className="text-sm">{POSITION_LABELS[pos]}s</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        max={fieldPlayerSlots}
-                        value={count}
-                        onChange={(e) => updateFormationSlot(pos, Number(e.target.value))}
-                        className="w-20"
-                      />
-                    </div>
-                  );
-                })}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    Total: {formationTotal} / {fieldPlayerSlots} field players
-                    {formationTotal !== fieldPlayerSlots && (
-                      <span className="text-destructive ml-1">
-                        ({formationTotal < fieldPlayerSlots ? 'need more' : 'too many'})
-                      </span>
-                    )}
-                  </span>
-                </div>
-                {derivedPositions.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {derivedPositions.map((pos, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">
-                        {pos}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Balance Priority</Label>
-              <Select
-                value={balancePriority}
-                onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="strict">Strict (bench weaker players more)</SelectItem>
-                  <SelectItem value="balanced">Balanced (moderate skill weighting)</SelectItem>
-                  <SelectItem value="off">Off (equal play time for all)</SelectItem>
-                </SelectContent>
-              </Select>
+      {/* Section 4: Goalkeeper */}
+      <GroupedList header="Goalkeeper">
+        <GroupedListRow
+          last={!useGoalie}
+          trailing={<Switch checked={useGoalie} onCheckedChange={setUseGoalie} />}
+        >
+          <div>
+            <div className="text-ios-body">Uses goalkeeper</div>
+            <div className="text-ios-caption1 text-muted-foreground">
+              Format includes a dedicated GK
             </div>
           </div>
-        </CollapsibleContent>
-      </Collapsible>
+        </GroupedListRow>
+        {useGoalie && (
+          <>
+            <GroupedListRow
+              trailing={
+                <Switch checked={goaliePlayFullPeriod} onCheckedChange={setGoaliePlayFullPeriod} />
+              }
+            >
+              <div>
+                <div className="text-ios-body">Full period only</div>
+                <div className="text-ios-caption1 text-muted-foreground">
+                  No mid-period goalie swaps
+                </div>
+              </div>
+            </GroupedListRow>
+            <GroupedListRow
+              last
+              trailing={
+                <Switch
+                  checked={goalieRestAfterPeriod}
+                  onCheckedChange={setGoalieRestAfterPeriod}
+                />
+              }
+            >
+              <div>
+                <div className="text-ios-body">Rest after period</div>
+                <div className="text-ios-caption1 text-muted-foreground">
+                  Goalie benches first rotation next period
+                </div>
+              </div>
+            </GroupedListRow>
+          </>
+        )}
+      </GroupedList>
 
-      <Separator />
-
-      <div className="flex gap-2">
-        <Button
-          onClick={handleSave}
-          className="flex-1"
-          disabled={!name.trim() || (usePositions && formationTotal !== fieldPlayerSlots)}
+      {/* Section 5: Positions */}
+      <GroupedList header="Positions" footer={positionFooter}>
+        <GroupedListRow
+          last={!usePositions}
+          trailing={<Switch checked={usePositions} onCheckedChange={setUsePositions} />}
         >
-          {initialConfig ? 'Save Changes' : 'Create Configuration'}
-        </Button>
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
+          <div>
+            <div className="text-ios-body">Use positions</div>
+            <div className="text-ios-caption1 text-muted-foreground">
+              Assign field positions (DEF, MID, FWD)
+            </div>
+          </div>
+        </GroupedListRow>
+        {usePositions &&
+          (['DEF', 'MID', 'FWD'] as const).map((pos, i) => {
+            const count = formation.find((s) => s.position === pos)?.count ?? 0;
+            const isLast = i === 2;
+            return (
+              <GroupedListRow
+                key={pos}
+                last={isLast}
+                trailing={
+                  <Input
+                    type="number"
+                    min={0}
+                    max={fieldPlayerSlots}
+                    value={count}
+                    onChange={(e) => updateFormationSlot(pos, Number(e.target.value))}
+                    className="w-20 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
+                  />
+                }
+              >
+                <span className="text-ios-body">{POSITION_LABELS[pos]}s</span>
+              </GroupedListRow>
+            );
+          })}
+      </GroupedList>
+      {usePositions && derivedPositions.length > 0 && (
+        <div className="flex flex-wrap gap-1 px-4">
+          {derivedPositions.map((pos, i) => (
+            <Badge key={i} variant="secondary" className="text-xs">
+              {pos}
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Section 6: Balance */}
+      <GroupedList header="Balance">
+        <GroupedListRow
+          last
+          trailing={
+            <Select
+              value={balancePriority}
+              onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}
+            >
+              <SelectTrigger className="w-32 h-8 border-none shadow-none bg-transparent px-0 focus:ring-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="strict">Strict</SelectItem>
+                <SelectItem value="balanced">Balanced</SelectItem>
+                <SelectItem value="off">Off</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+        >
+          <span className="text-ios-body">Priority</span>
+        </GroupedListRow>
+      </GroupedList>
+
+      {/* Save button */}
+      <Button
+        size="lg"
+        onClick={handleSave}
+        disabled={!name.trim() || (usePositions && formationTotal !== fieldPlayerSlots)}
+      >
+        {initialConfig ? 'Save Changes' : 'Create Configuration'}
+      </Button>
     </div>
   );
 }
