@@ -188,10 +188,12 @@ describe('RotationGrid', () => {
       expect(screen.getAllByText(team.name).length).toBeGreaterThanOrEqual(1);
     });
 
-    it('shows Start Game and Regenerate buttons', () => {
+    it('shows Start Game button and Regenerate in overflow menu', async () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
       expect(screen.getByRole('button', { name: /start game/i })).toBeInTheDocument();
+      // Regenerate is behind the overflow menu
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       expect(screen.getByRole('button', { name: /regenerate/i })).toBeInTheDocument();
     });
 
@@ -247,9 +249,10 @@ describe('RotationGrid', () => {
       );
     });
 
-    it('calls solver.solve when Regenerate is clicked', async () => {
+    it('calls solver.solve when Regenerate is clicked from overflow menu', async () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
       expect(mockSolver.solve).toHaveBeenCalled();
     });
@@ -345,7 +348,7 @@ describe('RotationGrid', () => {
       await userEvent.click(fieldBadges[0]);
 
       expect(screen.getByText(/Selected .+ in R1/)).toBeInTheDocument();
-      expect(screen.getByText(/Click another player/)).toBeInTheDocument();
+      expect(screen.getByText(/Tap another player/)).toBeInTheDocument();
     });
 
     it('deselects when same cell is clicked again', async () => {

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
-import { Settings2, RotateCcwIcon, EllipsisIcon } from 'lucide-react';
+import { RotateCcwIcon, EllipsisIcon } from 'lucide-react';
 import { useRotationGame } from '@/hooks/useRotationGame.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
@@ -176,23 +176,31 @@ export function RotationGrid() {
           backTo={`/teams/${g.game.teamId}`}
           backLabel={g.team?.name ?? 'Team'}
           trailing={
-            <div className="flex items-center gap-2">
-              <Button
-                variant="plain"
-                size="icon"
-                onClick={() => g.setSettingsOpen(true)}
-                title="Edit game settings"
-              >
-                <Settings2 className="size-5" />
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={g.handleRegenerate}
-                disabled={g.solver.isRunning}
-              >
-                {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
-              </Button>
+            <div className="flex items-center gap-1.5">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="plain" size="icon-sm" aria-label="Game actions">
+                    <EllipsisIcon className="size-5" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-52 p-1.5">
+                  <button
+                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                    onClick={() => {
+                      g.setSettingsOpen(true);
+                    }}
+                  >
+                    Settings
+                  </button>
+                  <button
+                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                    onClick={g.handleRegenerate}
+                    disabled={g.solver.isRunning}
+                  >
+                    {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
+                  </button>
+                </PopoverContent>
+              </Popover>
               <Button size="sm" onClick={g.handleStartGame}>
                 Start Game
               </Button>
@@ -226,14 +234,16 @@ export function RotationGrid() {
 
         {/* Swap hint — setup mode only, hidden once a swap starts */}
         {!g.isLive && !g.isCompleted && !g.swapSource && (
-          <p className="max-w-4xl mx-auto mx-4 px-4 text-ios-footnote text-muted-foreground bg-card rounded-[10px] py-3 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
-            Tap any player cell to swap their position with another player in the same rotation.
-          </p>
+          <div className="max-w-4xl mx-auto px-4">
+            <p className="text-ios-footnote text-muted-foreground bg-card rounded-[10px] py-3 px-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
+              Tap any player cell to swap their position with another player in the same rotation.
+            </p>
+          </div>
         )}
 
         {/* Landscape hint — portrait only, many rotations */}
         {g.manyRotations && !g.isCompleted && (
-          <p className="hidden portrait:flex text-xs text-muted-foreground text-center items-center justify-center gap-1.5 px-4">
+          <p className="hidden portrait:flex text-ios-caption1 text-muted-foreground text-center items-center justify-center gap-1.5 px-4">
             <RotateCcwIcon className="size-3" />
             Rotate your phone for a wider view
           </p>
@@ -277,10 +287,10 @@ export function RotationGrid() {
 
         {/* Swap instruction — only in non-live mode */}
         {!g.isLive && !g.isCompleted && g.swapSource && (
-          <p className="max-w-4xl mx-auto px-4 text-sm text-muted-foreground mt-2">
+          <p className="max-w-4xl mx-auto px-4 text-ios-footnote text-muted-foreground">
             Selected {g.playerMap.get(g.swapSource.playerId)?.name} in R
-            {g.swapSource.rotationIndex + 1}. Click another player in the same rotation to swap, or
-            click again to deselect.
+            {g.swapSource.rotationIndex + 1}. Tap another player in the same rotation to swap, or
+            tap again to deselect.
           </p>
         )}
 
