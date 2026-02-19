@@ -31,31 +31,31 @@ export function NavBar({
         className,
       )}
     >
-      {/* Standard bar: 44px */}
-      <div className="flex items-center justify-between h-11 px-4">
-        {/* Leading: back button or spacer */}
-        <div className="flex items-center gap-1 min-w-0 flex-1">
+      {/* Standard bar: 44px — three-column grid like iOS UINavigationBar */}
+      <div className="grid grid-cols-3 items-center h-11 px-4">
+        {/* Leading: back button */}
+        <div className="flex items-center min-w-0">
           {backTo ? (
             <Link
               to={backTo}
               aria-label={`Back to ${backLabel ?? 'previous page'}`}
-              className="flex items-center gap-0.5 text-primary -ml-2 pr-2 py-2 shrink-0"
+              className="flex items-center gap-0.5 text-primary -ml-2 pr-2 py-2 min-w-0"
             >
-              <ChevronLeft className="size-[22px] stroke-[2.5]" />
-              {backLabel && <span className="text-ios-body">{backLabel}</span>}
+              <ChevronLeft className="size-[22px] stroke-[2.5] shrink-0" />
+              {backLabel && <span className="text-ios-body truncate">{backLabel}</span>}
             </Link>
           ) : null}
         </div>
 
         {/* Center title (standard mode only) */}
-        {!largeTitle && (
-          <h1 className="text-ios-headline text-center absolute left-1/2 -translate-x-1/2 truncate max-w-[60%]">
-            {title}
-          </h1>
+        {!largeTitle ? (
+          <h1 className="text-ios-headline text-center truncate">{title}</h1>
+        ) : (
+          <div />
         )}
 
         {/* Trailing actions */}
-        <div className="flex items-center gap-2 shrink-0">{trailing}</div>
+        <div className="flex items-center justify-end gap-2">{trailing}</div>
       </div>
 
       {/* Large title row */}
