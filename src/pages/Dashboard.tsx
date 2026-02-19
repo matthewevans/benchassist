@@ -72,20 +72,6 @@ export function Dashboard() {
       <NavBar
         title="Teams"
         largeTitle
-        leading={
-          <>
-            <img
-              src="/benchassist/small_logo_light_square.png"
-              alt=""
-              className="size-7 dark:hidden lg:hidden"
-            />
-            <img
-              src="/benchassist/small_logo.png"
-              alt=""
-              className="size-7 hidden dark:block dark:lg:hidden"
-            />
-          </>
-        }
         trailing={
           <Button variant="plain" size="icon" onClick={() => setIsCreating(true)}>
             <Plus className="size-[22px]" />
