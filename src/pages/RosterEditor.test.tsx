@@ -23,6 +23,7 @@ function buildTestState(): {
   const state: AppState = {
     teams: { [team.id]: team },
     games: {},
+    favoriteDrillIds: [],
   };
 
   return { state, team, roster };
@@ -58,12 +59,15 @@ describe('RosterEditor', () => {
   });
 
   describe('player delete confirmation', () => {
-    it('shows confirmation dialog when Remove is clicked', async () => {
+    it('shows confirmation dialog when Delete Player is clicked in edit sheet', async () => {
       const { state, team, roster } = buildTestState();
       renderEditor(state, team.id, roster.id);
 
-      const removeButtons = screen.getAllByRole('button', { name: /remove/i });
-      await userEvent.click(removeButtons[0]);
+      // Tap player name to open edit sheet
+      await userEvent.click(screen.getByText('Alice'));
+
+      // Click Delete Player in the edit sheet
+      await userEvent.click(screen.getByRole('button', { name: /delete player/i }));
 
       expect(screen.getByText(/Remove Alice\?/)).toBeInTheDocument();
       expect(screen.getByText(/permanently removed/)).toBeInTheDocument();
@@ -73,9 +77,8 @@ describe('RosterEditor', () => {
       const { state, team, roster } = buildTestState();
       const { dispatch } = renderEditor(state, team.id, roster.id);
 
-      const removeButtons = screen.getAllByRole('button', { name: /remove/i });
-      await userEvent.click(removeButtons[0]);
-
+      await userEvent.click(screen.getByText('Alice'));
+      await userEvent.click(screen.getByRole('button', { name: /delete player/i }));
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
       expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'DELETE_PLAYER' }));
@@ -85,10 +88,10 @@ describe('RosterEditor', () => {
       const { state, team, roster } = buildTestState();
       const { dispatch } = renderEditor(state, team.id, roster.id);
 
-      const removeButtons = screen.getAllByRole('button', { name: /remove/i });
-      await userEvent.click(removeButtons[0]);
+      await userEvent.click(screen.getByText('Alice'));
+      await userEvent.click(screen.getByRole('button', { name: /delete player/i }));
 
-      // The confirm button label is "Remove"
+      // The confirm button label is "Remove" in the IOSAlert
       const confirmButton = screen.getByRole('button', { name: 'Remove' });
       await userEvent.click(confirmButton);
 

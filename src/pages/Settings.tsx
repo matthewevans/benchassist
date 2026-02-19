@@ -1,12 +1,12 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { NavBar } from '@/components/layout/NavBar.tsx';
 import { useTheme } from '@/hooks/useTheme.ts';
 import type { ThemePreference } from '@/hooks/useTheme.ts';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
-import { readJSONFile } from '@/storage/exportImport.ts';
 import { ExportDialog } from '@/components/ExportDialog.tsx';
 import { ImportDialog } from '@/components/ImportDialog.tsx';
+import { ImportMethodDialog } from '@/components/ImportMethodDialog.tsx';
 import { Check, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import type { StorageData } from '@/storage/localStorage.ts';
@@ -22,20 +22,8 @@ export function Settings() {
   const { state } = useAppContext();
   const dispatchWithUndo = useUndoToast();
   const [isExporting, setIsExporting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
   const [importData, setImportData] = useState<StorageData | null>(null);
-
-  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-    try {
-      const data = await readJSONFile(file);
-      setImportData(data);
-    } catch {
-      // Will be handled by user seeing no import dialog
-    }
-  }
 
   return (
     <div>
@@ -78,19 +66,12 @@ export function Settings() {
               <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
             </button>
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setIsImporting(true)}
               className="flex items-center justify-between w-full h-11 px-4 text-ios-body text-left"
             >
               <span>Import Backup</span>
               <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
             </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              className="hidden"
-              onChange={handleFileSelect}
-            />
           </div>
         </section>
 
@@ -118,6 +99,12 @@ export function Settings() {
         onOpenChange={setIsExporting}
         teams={state.teams}
         games={state.games}
+      />
+
+      <ImportMethodDialog
+        open={isImporting}
+        onOpenChange={setIsImporting}
+        onDataLoaded={setImportData}
       />
 
       {importData && (
