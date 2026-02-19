@@ -67,16 +67,16 @@ export function LiveBottomBar({
 
       <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 max-w-5xl mx-auto">
         {/* Left: Timer + controls */}
-        <div className="flex items-center gap-0.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <span
             className={cn(
-              'font-mono font-bold tabular-nums text-base',
+              'font-mono font-bold tabular-nums text-ios-callout',
               timer.isOvertime && 'text-destructive',
             )}
           >
             {timer.formattedElapsed}
           </span>
-          <span className="text-[11px] text-muted-foreground hidden sm:inline ml-0.5">
+          <span className="text-ios-caption2 text-muted-foreground hidden sm:inline ml-0.5">
             / {timer.formattedDuration}
           </span>
           {timer.isRunning ? (
@@ -112,16 +112,16 @@ export function LiveBottomBar({
         </div>
 
         {/* Center: swap mode indicator OR next sub hint */}
-        <div className="flex-1 min-w-0 text-center text-sm">
+        <div className="flex-1 min-w-0 text-center">
           {swapPlayerName ? (
             <div className="flex items-center justify-center gap-2">
               <span className="font-medium text-primary truncate text-ios-subheadline">
                 Swapping {swapPlayerName}
               </span>
               <Button
-                variant="plain"
-                size="sm"
-                className="h-7 px-2 text-ios-caption1 shrink-0"
+                variant="secondary"
+                size="capsule"
+                className="shrink-0"
                 onClick={onCancelSwap}
                 aria-label="Cancel swap"
               >
