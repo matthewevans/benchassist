@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
 import { Button } from '@/components/ui/button.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
+import { NavBar } from '@/components/layout/NavBar.tsx';
+import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { AttendanceList } from '@/components/game/AttendanceList.tsx';
 import { GoalieAssignmentSelector } from '@/components/game/GoalieAssignmentSelector.tsx';
@@ -16,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select.tsx';
-import { Separator } from '@/components/ui/separator.tsx';
 import { generateId } from '@/utils/id.ts';
 import { validateRosterForGame } from '@/utils/validation.ts';
 import { createConfigFromTemplate } from '@/utils/gameConfig.ts';
@@ -66,7 +66,7 @@ export function GameSetup() {
     const totalRotations = selectedConfig.periods * selectedConfig.rotationsPerPeriod;
     const fieldSlots = selectedConfig.fieldSize;
     const benchPerRotation = Math.max(0, playerCount - fieldSlots);
-    return `${playerCount} players · ${selectedConfig.fieldSize}v${selectedConfig.fieldSize} · ${totalRotations} rotations · ~${benchPerRotation} benched per rotation`;
+    return `${playerCount} players \u00b7 ${selectedConfig.fieldSize}v${selectedConfig.fieldSize} \u00b7 ${totalRotations} rotations \u00b7 ~${benchPerRotation} benched per rotation`;
   }, [selectedRoster, selectedConfig, activePlayers]);
 
   const [configExpanded, setConfigExpanded] = useState(false);
@@ -152,48 +152,33 @@ export function GameSetup() {
   }, [solver.result, solver.error, dispatch, navigate]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-2 text-sm">
-        <Link to="/" className="text-muted-foreground hover:text-foreground">
-          Teams
-        </Link>
-        {selectedTeam && (
-          <>
-            <span className="text-muted-foreground">/</span>
-            <Link to={`/teams/${teamId}`} className="text-muted-foreground hover:text-foreground">
-              {selectedTeam.name}
-            </Link>
-          </>
-        )}
-        <span className="text-muted-foreground">/</span>
-        <span>New Game</span>
-      </div>
-      <h1 className="text-2xl font-bold">New Game</h1>
+    <div>
+      <NavBar title="New Game" backTo="/" backLabel="Teams" />
 
-      {/* Step 1: Select Team */}
-      <Card>
+      <div className="px-4 space-y-6 pt-4">
+        {/* Step 1: Team & Configuration */}
         {showConfigCollapsed ? (
-          <CardContent className="py-3 flex items-center justify-between">
-            <div>
-              <p className="font-medium text-sm">
-                {selectedTeam?.name} · {selectedRoster?.name}
-              </p>
-              <p className="text-xs text-muted-foreground">{summaryText}</p>
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setConfigExpanded(true)}>
-              Edit
-            </Button>
-          </CardContent>
+          <GroupedList header="Team & Configuration">
+            <GroupedListRow
+              last
+              trailing={
+                <Button variant="plain" size="sm" onClick={() => setConfigExpanded(true)}>
+                  Edit
+                </Button>
+              }
+            >
+              <div>
+                <div className="text-ios-body font-medium">
+                  {selectedTeam?.name} &middot; {selectedRoster?.name}
+                </div>
+                <div className="text-ios-caption1 text-muted-foreground">{summaryText}</div>
+              </div>
+            </GroupedListRow>
+          </GroupedList>
         ) : (
-          <>
-            <CardHeader>
-              <CardTitle className="text-base">
-                <span className="text-muted-foreground mr-1.5">1.</span>
-                Team & Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
+          <GroupedList header="Team & Configuration">
+            <GroupedListRow>
+              <div className="w-full space-y-2 py-1">
                 <Label>Team</Label>
                 <Select
                   value={teamId}
@@ -215,10 +200,12 @@ export function GameSetup() {
                   </SelectContent>
                 </Select>
               </div>
+            </GroupedListRow>
 
-              {selectedTeam && (
-                <>
-                  <div className="space-y-2">
+            {selectedTeam && (
+              <>
+                <GroupedListRow>
+                  <div className="w-full space-y-2 py-1">
                     <Label>Roster</Label>
                     <Select value={rosterId} onValueChange={setRosterId}>
                       <SelectTrigger>
@@ -245,8 +232,10 @@ export function GameSetup() {
                       </p>
                     )}
                   </div>
+                </GroupedListRow>
 
-                  <div className="space-y-2">
+                <GroupedListRow>
+                  <div className="w-full space-y-2 py-1">
                     <Label>Game Configuration</Label>
                     <Select value={configId} onValueChange={setConfigId}>
                       <SelectTrigger>
@@ -269,11 +258,14 @@ export function GameSetup() {
                           {GAME_CONFIG_TEMPLATES.map((template) => (
                             <Button
                               key={template.name}
-                              variant="outline"
-                              size="sm"
+                              variant="secondary"
+                              size="capsule"
                               onClick={() => {
                                 const config = createConfigFromTemplate(teamId, template);
-                                dispatch({ type: 'ADD_GAME_CONFIG', payload: { teamId, config } });
+                                dispatch({
+                                  type: 'ADD_GAME_CONFIG',
+                                  payload: { teamId, config },
+                                });
                                 setConfigId(config.id);
                               }}
                             >
@@ -284,8 +276,10 @@ export function GameSetup() {
                       </div>
                     )}
                   </div>
+                </GroupedListRow>
 
-                  <div className="space-y-2">
+                <GroupedListRow last>
+                  <div className="w-full space-y-2 py-1">
                     <Label htmlFor="game-name">Game Name (optional)</Label>
                     <Input
                       id="game-name"
@@ -294,86 +288,71 @@ export function GameSetup() {
                       placeholder="e.g., vs Thunder - Feb 15"
                     />
                   </div>
-                </>
-              )}
-              {summaryText && (
-                <p className="text-sm text-muted-foreground pt-2 border-t">{summaryText}</p>
-              )}
-            </CardContent>
-          </>
+                </GroupedListRow>
+              </>
+            )}
+
+            {summaryText && (
+              <div className="px-4 py-2 text-ios-footnote text-muted-foreground border-t border-border/50">
+                {summaryText}
+              </div>
+            )}
+          </GroupedList>
         )}
-      </Card>
 
-      {/* Step 2: Mark absences */}
-      {selectedRoster && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <span className="text-muted-foreground mr-1.5">2.</span>
-              Attendance ({activePlayers.length} / {selectedRoster.players.length} available)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AttendanceList
-              players={selectedRoster.players}
-              absentIds={absentPlayerIds}
-              onToggle={handleToggleAbsent}
-            />
-          </CardContent>
-        </Card>
-      )}
+        {/* Step 2: Attendance */}
+        {selectedRoster && (
+          <GroupedList
+            header={`Attendance (${activePlayers.length} / ${selectedRoster.players.length})`}
+          >
+            <GroupedListRow last>
+              <AttendanceList
+                players={selectedRoster.players}
+                absentIds={absentPlayerIds}
+                onToggle={handleToggleAbsent}
+              />
+            </GroupedListRow>
+          </GroupedList>
+        )}
 
-      {/* Step 3: Goalie Assignment */}
-      {selectedConfig?.useGoalie !== false && selectedConfig && activePlayers.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              <span className="text-muted-foreground mr-1.5">3.</span>
-              Goalie Assignment
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <GoalieAssignmentSelector
-              periods={selectedConfig.periods}
-              goalieAssignments={goalieAssignments}
-              eligiblePlayers={activePlayers.filter((p) => p.canPlayGoalie)}
-              onChange={handleGoalieChange}
-            />
-          </CardContent>
-        </Card>
-      )}
+        {/* Step 3: Goalie Assignment */}
+        {selectedConfig?.useGoalie !== false && selectedConfig && activePlayers.length > 0 && (
+          <GroupedList header="Goalie Assignment">
+            <GroupedListRow last>
+              <GoalieAssignmentSelector
+                periods={selectedConfig.periods}
+                goalieAssignments={goalieAssignments}
+                eligiblePlayers={activePlayers.filter((p) => p.canPlayGoalie)}
+                onChange={handleGoalieChange}
+              />
+            </GroupedListRow>
+          </GroupedList>
+        )}
 
-      {/* Validation */}
-      {validationErrors.length > 0 && (
-        <Card className="border-destructive">
-          <CardContent className="py-3">
+        {/* Validation */}
+        {validationErrors.length > 0 && (
+          <div className="bg-destructive/10 rounded-[10px] px-4 py-3">
             {validationErrors.map((error, i) => (
-              <p key={i} className="text-sm text-destructive">
+              <p key={i} className="text-ios-footnote text-destructive">
                 {error}
               </p>
             ))}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {/* Solver status */}
-      <SolverStatusCard
-        isRunning={solver.isRunning}
-        progress={solver.progress}
-        message={solver.message}
-        error={solver.error}
-      />
+        {/* Solver status */}
+        <SolverStatusCard
+          isRunning={solver.isRunning}
+          progress={solver.progress}
+          message={solver.message}
+          error={solver.error}
+        />
 
-      <Separator />
-
-      <Button
-        className="w-full"
-        size="lg"
-        disabled={!canGenerate || solver.isRunning}
-        onClick={handleGenerate}
-      >
-        {solver.isRunning ? 'Generating...' : 'Generate Rotations'}
-      </Button>
+        {/* CTA */}
+        <Button size="lg" disabled={!canGenerate || solver.isRunning} onClick={handleGenerate}>
+          {solver.isRunning ? 'Generating...' : 'Generate Rotations'}
+        </Button>
+      </div>
     </div>
   );
 }
