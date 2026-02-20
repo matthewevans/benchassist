@@ -33,6 +33,9 @@ export function SwipeableRow({ children, onDelete, className }: SwipeableRowProp
 
   function handleTouchStart(e: React.TouchEvent) {
     if (revealed) {
+      // If the touch lands on the delete button, let the click event fire naturally.
+      // Calling snapBack() here would animate the button away before click registers.
+      if ((e.target as Element).closest('[data-slot="action-button"]')) return;
       snapBack();
       return;
     }
@@ -83,6 +86,7 @@ export function SwipeableRow({ children, onDelete, className }: SwipeableRowProp
       {(revealed || offset < 0) && (
         <div className="absolute inset-y-0 right-0 flex items-center">
           <button
+            data-slot="action-button"
             className="h-full bg-destructive text-white text-ios-body font-medium flex items-center justify-center cursor-pointer"
             style={{ width: ACTION_WIDTH }}
             onClick={(e) => {

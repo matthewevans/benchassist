@@ -7,10 +7,18 @@ interface BottomSheetProps {
   onOpenChange: (open: boolean) => void;
   title?: string;
   children: ReactNode;
+  footer?: ReactNode;
   className?: string;
 }
 
-export function BottomSheet({ open, onOpenChange, title, children, className }: BottomSheetProps) {
+export function BottomSheet({
+  open,
+  onOpenChange,
+  title,
+  children,
+  footer,
+  className,
+}: BottomSheetProps) {
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
@@ -39,6 +47,9 @@ export function BottomSheet({ open, onOpenChange, title, children, className }: 
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto px-4 pb-4">{children}</div>
+
+          {/* Footer: always visible above the safe area, not scrolled */}
+          {footer && <div className="shrink-0 px-4 pt-2 pb-4">{footer}</div>}
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>

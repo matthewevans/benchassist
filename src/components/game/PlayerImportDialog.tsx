@@ -102,87 +102,12 @@ export function PlayerImportDialog({
           if (!o) handleClose();
         }}
         title={importStep === 'paste' ? t('import_players') : t('review_import')}
-      >
-        {importStep === 'paste' ? (
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label htmlFor="import-text">{t('import_paste_label')}</Label>
-              <textarea
-                id="import-text"
-                className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-                placeholder={t('import_placeholder')}
-                autoFocus
-              />
-            </div>
+        footer={
+          importStep === 'paste' ? (
             <Button onClick={handleParse} className="w-full" disabled={!importText.trim()}>
               {t('import_preview_btn')}
             </Button>
-          </div>
-        ) : (
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              {importRows.map((row, i) => (
-                <div key={i} className="flex min-h-11 items-center gap-2">
-                  {row.error ? (
-                    <div className="flex-1 flex items-center gap-2 text-ios-body text-destructive">
-                      <span className="truncate">{row.name}</span>
-                      <span className="text-ios-caption1">({row.error})</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Input
-                        value={row.name}
-                        onChange={(e) => updateRow(i, { name: e.target.value })}
-                        className="flex-1 text-ios-body"
-                      />
-                      <Select
-                        value={String(row.skillRanking)}
-                        onValueChange={(v) =>
-                          updateRow(i, { skillRanking: Number(v) as SkillRanking })
-                        }
-                      >
-                        <SelectTrigger className="w-16 min-h-11 text-ios-body">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {([1, 2, 3, 4, 5] as const).map((rank) => (
-                            <SelectItem key={rank} value={String(rank)}>
-                              {rank}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Checkbox
-                        checked={row.canPlayGoalie}
-                        onCheckedChange={(checked) =>
-                          updateRow(i, { canPlayGoalie: checked as boolean })
-                        }
-                        aria-label={t('can_play_goalie_aria')}
-                      />
-                      {row.existingPlayerId ? (
-                        <Badge variant="secondary" className="text-ios-caption2 shrink-0">
-                          {t('import_update')}
-                        </Badge>
-                      ) : (
-                        <Badge className="text-ios-caption2 shrink-0">{t('import_new')}</Badge>
-                      )}
-                    </>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive shrink-0"
-                    onClick={() => removeRow(i)}
-                    aria-label={t('import_remove_aria')}
-                  >
-                    X
-                  </Button>
-                </div>
-              ))}
-            </div>
-
+          ) : (
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setImportStep('paste')} className="flex-1">
                 {tCommon('actions.back')}
@@ -195,6 +120,81 @@ export function PlayerImportDialog({
                 {t('import_add', { count: importRows.filter((r) => !r.error).length })}
               </Button>
             </div>
+          )
+        }
+      >
+        {importStep === 'paste' ? (
+          <div className="space-y-2 pt-2">
+            <Label htmlFor="import-text">{t('import_paste_label')}</Label>
+            {/* font-size must be ≥16px to prevent iOS Safari viewport zoom on focus */}
+            <textarea
+              id="import-text"
+              className="w-full min-h-[160px] rounded-md border border-input bg-background px-3 py-2 text-base font-mono"
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder={t('import_placeholder')}
+            />
+          </div>
+        ) : (
+          <div className="space-y-2 pt-2">
+            {importRows.map((row, i) => (
+              <div key={i} className="flex min-h-11 items-center gap-2">
+                {row.error ? (
+                  <div className="flex-1 flex items-center gap-2 text-ios-body text-destructive">
+                    <span className="truncate">{row.name}</span>
+                    <span className="text-ios-caption1">({row.error})</span>
+                  </div>
+                ) : (
+                  <>
+                    <Input
+                      value={row.name}
+                      onChange={(e) => updateRow(i, { name: e.target.value })}
+                      className="flex-1 text-ios-body"
+                    />
+                    <Select
+                      value={String(row.skillRanking)}
+                      onValueChange={(v) =>
+                        updateRow(i, { skillRanking: Number(v) as SkillRanking })
+                      }
+                    >
+                      <SelectTrigger className="w-16 min-h-11 text-ios-body">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {([1, 2, 3, 4, 5] as const).map((rank) => (
+                          <SelectItem key={rank} value={String(rank)}>
+                            {rank}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Checkbox
+                      checked={row.canPlayGoalie}
+                      onCheckedChange={(checked) =>
+                        updateRow(i, { canPlayGoalie: checked as boolean })
+                      }
+                      aria-label={t('can_play_goalie_aria')}
+                    />
+                    {row.existingPlayerId ? (
+                      <Badge variant="secondary" className="text-ios-caption2 shrink-0">
+                        {t('import_update')}
+                      </Badge>
+                    ) : (
+                      <Badge className="text-ios-caption2 shrink-0">{t('import_new')}</Badge>
+                    )}
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive shrink-0"
+                  onClick={() => removeRow(i)}
+                  aria-label={t('import_remove_aria')}
+                >
+                  X
+                </Button>
+              </div>
+            ))}
           </div>
         )}
       </BottomSheet>

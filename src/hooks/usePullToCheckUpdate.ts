@@ -8,6 +8,7 @@ type PullState = 'idle' | 'pulling' | 'release' | 'checking';
 
 type UsePullToCheckUpdateOptions = {
   onCheckForUpdate: () => Promise<void> | void;
+  disabled?: boolean;
 };
 
 function getScrollableAncestor(element: Element | null): HTMLElement | null {
@@ -45,7 +46,7 @@ function canStartPullGesture(target: EventTarget | null, touchY: number) {
   return window.scrollY <= 0;
 }
 
-export function usePullToCheckUpdate({ onCheckForUpdate }: UsePullToCheckUpdateOptions) {
+export function usePullToCheckUpdate({ onCheckForUpdate, disabled }: UsePullToCheckUpdateOptions) {
   const [pullDistance, setPullDistance] = useState(0);
   const [pullState, setPullState] = useState<PullState>('idle');
 
@@ -55,6 +56,8 @@ export function usePullToCheckUpdate({ onCheckForUpdate }: UsePullToCheckUpdateO
   const resetTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (disabled) return;
+
     const clearResetTimer = () => {
       if (resetTimerRef.current) {
         window.clearTimeout(resetTimerRef.current);
@@ -150,7 +153,7 @@ export function usePullToCheckUpdate({ onCheckForUpdate }: UsePullToCheckUpdateO
       window.removeEventListener('touchend', onTouchEnd);
       window.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [onCheckForUpdate]);
+  }, [onCheckForUpdate, disabled]);
 
   return { pullDistance, pullState };
 }

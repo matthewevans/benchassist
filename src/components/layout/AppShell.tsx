@@ -20,12 +20,13 @@ export function AppShell() {
   const { state } = useAppContext();
   const { checkForUpdate, isUpdateAvailable } = usePwaUpdate();
   const location = useLocation();
+  const isOnRotationPage = /\/games\/[^/]+\/rotations/.test(location.pathname);
   const { pullDistance, pullState } = usePullToCheckUpdate({
     onCheckForUpdate: checkForUpdate,
+    disabled: isOnRotationPage,
   });
 
   const hasLiveGame = Object.values(state.games).some((g) => g.status === 'in-progress');
-  const isOnRotationPage = /\/games\/[^/]+\/rotations/.test(location.pathname);
   const showGameBar = hasLiveGame && !isOnRotationPage;
   const showPullIndicator = pullDistance > 0 || pullState === 'checking';
 
