@@ -131,9 +131,25 @@ export function GameSetup() {
 
   function handleSelectTeam(nextTeamId: string) {
     setTeamId(nextTeamId);
-    setRosterId('');
-    setConfigId('');
     setIsTeamPickerOpen(false);
+
+    const team = state.teams[nextTeamId];
+    if (!team) {
+      setRosterId('');
+      setConfigId('');
+      return;
+    }
+
+    // Find most recent game for this team
+    const lastGame = Object.values(state.games)
+      .filter((g) => g.teamId === nextTeamId)
+      .sort((a, b) => b.createdAt - a.createdAt)[0];
+
+    const rosterExists = lastGame && team.rosters.some((r) => r.id === lastGame.rosterId);
+    const configExists = lastGame && team.gameConfigs.some((c) => c.id === lastGame.gameConfigId);
+
+    setRosterId(rosterExists ? lastGame.rosterId : '');
+    setConfigId(configExists ? lastGame.gameConfigId : '');
   }
 
   function handleSelectRoster(nextRosterId: string) {
