@@ -82,7 +82,15 @@
     "step_2": "2. Agrega jugadores a una plantilla",
     "step_3": "3. Configura un formato de juego (5v5, 7v7, etc.)",
     "step_4": "4. Genera rotaciones justas",
-    "create_first_team": "Crear mi primer equipo"
+    "create_first_team": "Crear mi primer equipo",
+    "have_backup": "¿Tienes un respaldo?",
+    "import_data": "Importar tus datos"
+  },
+  "welcome": {
+    "title": "Bienvenido a BenchBoss",
+    "subtitle": "Tiempo de juego justo, simplificado.",
+    "get_started": "Comenzar",
+    "restore_backup": "Restaurar respaldo"
   },
   "team": {
     "new_team": "Nuevo equipo",

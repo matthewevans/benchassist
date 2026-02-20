@@ -82,7 +82,15 @@
     "step_2": "2. Add players to a roster",
     "step_3": "3. Set up a game format (5v5, 7v7, etc.)",
     "step_4": "4. Generate fair rotations",
-    "create_first_team": "Create Your First Team"
+    "create_first_team": "Create Your First Team",
+    "have_backup": "Have a backup?",
+    "import_data": "Import your data"
+  },
+  "welcome": {
+    "title": "Welcome to BenchBoss",
+    "subtitle": "Fair playing time, made simple.",
+    "get_started": "Get Started",
+    "restore_backup": "Restore from Backup"
   },
   "team": {
     "new_team": "New Team",

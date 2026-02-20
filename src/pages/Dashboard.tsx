@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { NavBar } from '@/components/layout/NavBar.tsx';
@@ -13,6 +13,10 @@ import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
 import { createConfigFromTemplate, getGysaTemplateForBirthYear } from '@/utils/gameConfig.ts';
 import { TEAM_GENDER_DOT_COLORS, type Player, type Team, type TeamGender } from '@/types/domain.ts';
+import { ImportMethodDialog } from '@/components/ImportMethodDialog.tsx';
+import { ImportDialog } from '@/components/ImportDialog.tsx';
+import { useUndoToast } from '@/hooks/useUndoToast.ts';
+import type { StorageData } from '@/storage/localStorage.ts';
 import {
   Select,
   SelectContent,
@@ -38,7 +42,10 @@ function getAllPlayers(team: Team): Player[] {
 export function Dashboard() {
   const { state, dispatch } = useAppContext();
   const { t } = useTranslation('common');
+  const dispatchWithUndo = useUndoToast();
   const [isCreating, setIsCreating] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importData, setImportData] = useState<StorageData | null>(null);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamGender, setNewTeamGender] = useState<TeamGender>('coed');
   const [newTeamBirthYear, setNewTeamBirthYear] = useState<number | null>(null);
@@ -104,6 +111,19 @@ export function Dashboard() {
             <Button size="lg" onClick={() => setIsCreating(true)}>
               {t('dashboard.create_first_team')}
             </Button>
+            <GroupedList>
+              <GroupedListRow chevron last onClick={() => setIsImporting(true)}>
+                <div className="flex items-center gap-3">
+                  <Download className="size-5 text-primary" />
+                  <div>
+                    <div className="text-ios-body">{t('dashboard.have_backup')}</div>
+                    <div className="text-ios-caption1 text-muted-foreground">
+                      {t('dashboard.import_data')}
+                    </div>
+                  </div>
+                </div>
+              </GroupedListRow>
+            </GroupedList>
           </>
         ) : (
           <GroupedList>
@@ -195,6 +215,47 @@ export function Dashboard() {
           </Button>
         </div>
       </BottomSheet>
+
+      <ImportMethodDialog
+        open={isImporting}
+        onOpenChange={setIsImporting}
+        onDataLoaded={(data) => {
+          setImportData(data);
+          setIsImporting(false);
+        }}
+      />
+
+      {importData && (
+        <ImportDialog
+          open={importData !== null}
+          onOpenChange={(open) => {
+            if (!open) setImportData(null);
+          }}
+          importData={importData}
+          onImportSelected={(filtered) => {
+            dispatchWithUndo({
+              type: 'MERGE_DATA',
+              payload: {
+                teams: filtered.teams,
+                games: filtered.games,
+                favoriteDrillIds: filtered.favoriteDrillIds ?? [],
+              },
+            });
+            setImportData(null);
+          }}
+          onReplaceAll={(data) => {
+            dispatchWithUndo({
+              type: 'IMPORT_DATA',
+              payload: {
+                teams: data.teams,
+                games: data.games,
+                favoriteDrillIds: data.favoriteDrillIds ?? [],
+              },
+            });
+            setImportData(null);
+          }}
+        />
+      )}
     </div>
   );
 }

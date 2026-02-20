@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from '@/context/AppContext.tsx';
 import { AppShell } from '@/components/layout/AppShell.tsx';
@@ -9,26 +10,44 @@ import { RotationGrid } from '@/pages/RotationGrid.tsx';
 import { GameHistory } from '@/pages/GameHistory.tsx';
 import { Practice } from '@/pages/Practice.tsx';
 import { Settings } from '@/pages/Settings.tsx';
+import { Welcome } from '@/pages/Welcome.tsx';
+import { hasBeenWelcomed } from '@/storage/welcomed.ts';
 import { Toaster } from '@/components/ui/sonner.tsx';
+import { useAppContext } from '@/hooks/useAppContext.ts';
+
+function AppGate() {
+  const { state } = useAppContext();
+  const [welcomed, setWelcomed] = useState(hasBeenWelcomed);
+
+  const hasData = Object.keys(state.teams).length > 0;
+
+  if (!hasData && !welcomed) {
+    return <Welcome onComplete={() => setWelcomed(true)} />;
+  }
+
+  return (
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route index element={<Dashboard />} />
+        <Route path="teams/:teamId" element={<TeamManagement />} />
+        <Route path="teams/:teamId/rosters/:rosterId" element={<RosterEditor />} />
+        <Route path="practice" element={<Practice />} />
+        <Route path="games/new" element={<GameSetup />} />
+        <Route path="games/:gameId/rotations" element={<RotationGrid />} />
+        <Route path="games/:gameId/live" element={<Navigate to="../rotations" replace />} />
+        <Route path="games" element={<GameHistory />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
 
 export default function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route index element={<Dashboard />} />
-            <Route path="teams/:teamId" element={<TeamManagement />} />
-            <Route path="teams/:teamId/rosters/:rosterId" element={<RosterEditor />} />
-            <Route path="practice" element={<Practice />} />
-            <Route path="games/new" element={<GameSetup />} />
-            <Route path="games/:gameId/rotations" element={<RotationGrid />} />
-            <Route path="games/:gameId/live" element={<Navigate to="../rotations" replace />} />
-            <Route path="games" element={<GameHistory />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Route>
-        </Routes>
+        <AppGate />
       </BrowserRouter>
       <Toaster />
     </AppProvider>
