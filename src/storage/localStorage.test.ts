@@ -98,7 +98,7 @@ describe('loadData', () => {
   });
 
   it('loads valid data with empty collections', () => {
-    const data = { version: 3, teams: {}, games: {} };
+    const data = { version: 4, teams: {}, games: {} };
     localStorage.setItem('benchassist_data', JSON.stringify(data));
     expect(loadData()).toEqual(data);
   });
@@ -113,7 +113,7 @@ describe('loadData', () => {
     };
     localStorage.setItem('benchassist_data', JSON.stringify(data));
     const result = loadData();
-    expect(result!.version).toBe(3);
+    expect(result!.version).toBe(4);
     expect(result!.teams.t1.gender).toBe('coed');
     expect(result!.teams.t1.birthYear).toBeNull();
   });
@@ -147,7 +147,7 @@ describe('localStorage migration v2→v3', () => {
               minPlayPercentage: 50,
               goaliePlayFullPeriod: true,
               goalieRestAfterPeriod: true,
-              balancePriority: 'balanced',
+              balancePriority: 'balanced', // pre-v4 format, migration converts this
               createdAt: 1000,
               updatedAt: 1000,
             },
@@ -162,8 +162,12 @@ describe('localStorage migration v2→v3', () => {
 
     const result = loadData();
     expect(result).not.toBeNull();
-    expect(result!.version).toBe(3);
+    expect(result!.version).toBe(4);
     expect(result!.teams['t1'].birthYear).toBeNull();
+    // v4 migration should convert balancePriority to skillBalance
+    const config = result!.teams['t1'].gameConfigs[0];
+    expect(config.skillBalance).toBe(true);
+    expect((config as Record<string, unknown>).balancePriority).toBeUndefined();
   });
 
   it('sets birthYear to null for all teams (no auto-inference)', () => {
@@ -188,7 +192,7 @@ describe('localStorage migration v2→v3', () => {
     expect(result!.teams['t1'].birthYear).toBeNull();
   });
 
-  it('preserves existing v3 data with birthYear', () => {
+  it('preserves existing v3 data with birthYear and migrates to v4', () => {
     const v3Data = {
       version: 3,
       teams: {
@@ -208,6 +212,7 @@ describe('localStorage migration v2→v3', () => {
     localStorage.setItem('benchassist_data', JSON.stringify(v3Data));
 
     const result = loadData();
+    expect(result!.version).toBe(4);
     expect(result!.teams['t1'].birthYear).toBe(2017);
   });
 });

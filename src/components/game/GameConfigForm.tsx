@@ -2,13 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
@@ -63,9 +56,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
   const [goalieRestAfterPeriod, setGoalieRestAfterPeriod] = useState(
     initialConfig?.goalieRestAfterPeriod ?? true,
   );
-  const [balancePriority, setBalancePriority] = useState<GameConfig['balancePriority']>(
-    initialConfig?.balancePriority ?? 'balanced',
-  );
+  const [skillBalance, setSkillBalance] = useState(initialConfig?.skillBalance ?? true);
   const [usePositions, setUsePositions] = useState(defaultUsePositions);
   const [formation, setFormation] = useState<FormationSlot[]>(defaultFormation);
 
@@ -100,7 +91,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
       minPlayPercentage,
       goaliePlayFullPeriod: useGoalie ? goaliePlayFullPeriod : false,
       goalieRestAfterPeriod: useGoalie ? goalieRestAfterPeriod : false,
-      balancePriority,
+      skillBalance,
       createdAt: initialConfig?.createdAt ?? Date.now(),
       updatedAt: Date.now(),
     };
@@ -361,23 +352,14 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
       <GroupedList header={t('config_form.balance')}>
         <GroupedListRow
           last
-          trailing={
-            <Select
-              value={balancePriority}
-              onValueChange={(v) => setBalancePriority(v as GameConfig['balancePriority'])}
-            >
-              <SelectTrigger className="w-32 min-h-11 border-none shadow-none bg-transparent px-0 focus:ring-0">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="strict">{t('config_form.balance_strict')}</SelectItem>
-                <SelectItem value="balanced">{t('config_form.balance_balanced')}</SelectItem>
-                <SelectItem value="off">{t('config_form.balance_off')}</SelectItem>
-              </SelectContent>
-            </Select>
-          }
+          trailing={<Switch checked={skillBalance} onCheckedChange={setSkillBalance} />}
         >
-          <span className="text-ios-body">{t('config_form.balance_priority')}</span>
+          <div>
+            <div className="text-ios-body">{t('config_form.skill_balance')}</div>
+            <div className="text-ios-caption1 text-muted-foreground">
+              {t('config_form.skill_balance_desc')}
+            </div>
+          </div>
         </GroupedListRow>
       </GroupedList>
 

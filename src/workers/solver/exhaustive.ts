@@ -367,12 +367,12 @@ function calculateBenchCounts(
   players: Player[],
   totalRotations: number,
   benchSlotsPerRotation: number,
-  config: { balancePriority: string; enforceMinPlayTime: boolean; minPlayPercentage: number },
+  config: { skillBalance: boolean; enforceMinPlayTime: boolean; minPlayPercentage: number },
 ): Map<string, number> {
   const totalBenchSlots = totalRotations * benchSlotsPerRotation;
   const counts = new Map<string, number>();
 
-  if (config.balancePriority === 'off') {
+  if (!config.skillBalance) {
     // Equal distribution
     const perPlayer = Math.floor(totalBenchSlots / players.length);
     const remainder = totalBenchSlots - perPlayer * players.length;

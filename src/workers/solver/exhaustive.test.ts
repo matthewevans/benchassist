@@ -144,7 +144,7 @@ describe('exhaustiveSearch', () => {
 
   it('produces balanced team strength across rotations', () => {
     const players = buildRoster(10);
-    const config = gameConfigFactory.build({ fieldSize: 7, balancePriority: 'balanced' });
+    const config = gameConfigFactory.build({ fieldSize: 7, skillBalance: true });
     const totalRotations = config.periods * config.rotationsPerPeriod;
 
     const schedule = exhaustiveSearch({

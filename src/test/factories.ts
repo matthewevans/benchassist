@@ -40,7 +40,7 @@ export const gameConfigFactory = Factory.define<GameConfig>(() => ({
   minPlayPercentage: 50,
   goaliePlayFullPeriod: true,
   goalieRestAfterPeriod: true,
-  balancePriority: 'balanced',
+  skillBalance: true,
   createdAt: Date.now(),
   updatedAt: Date.now(),
 }));

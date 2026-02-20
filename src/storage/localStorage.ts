@@ -1,7 +1,7 @@
 import type { Team, Game } from '@/types/domain.ts';
 
 const STORAGE_KEY = 'benchassist_data';
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 
 export interface StorageData {
   version: number;
@@ -13,6 +13,11 @@ export interface StorageData {
 type PreMigrationTeam = Omit<Team, 'gender' | 'birthYear'> & {
   gender?: Team['gender'];
   birthYear?: Team['birthYear'];
+};
+
+type PreV4GameConfig = Omit<import('@/types/domain.ts').GameConfig, 'skillBalance'> & {
+  balancePriority?: 'strict' | 'balanced' | 'off';
+  skillBalance?: boolean;
 };
 
 function migrateData(data: StorageData): StorageData {
@@ -35,6 +40,24 @@ function migrateData(data: StorageData): StorageData {
       } as Team;
     }
     migrated = { ...migrated, version: 3, teams };
+  }
+  if (migrated.version === 3) {
+    // v3→v4: Convert balancePriority ('strict'|'balanced'|'off') to skillBalance (boolean)
+    const teams: Record<string, Team> = {};
+    for (const [id, team] of Object.entries(migrated.teams)) {
+      teams[id] = {
+        ...team,
+        gameConfigs: team.gameConfigs.map((cfg) => {
+          const old = cfg as unknown as PreV4GameConfig;
+          const { balancePriority, ...rest } = old;
+          return {
+            ...rest,
+            skillBalance: balancePriority !== 'off',
+          } as import('@/types/domain.ts').GameConfig;
+        }),
+      };
+    }
+    migrated = { ...migrated, version: 4, teams };
   }
   return migrated;
 }

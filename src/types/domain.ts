@@ -114,7 +114,7 @@ export interface GameConfig {
   minPlayPercentage: number;
   goaliePlayFullPeriod: boolean;
   goalieRestAfterPeriod: boolean;
-  balancePriority: 'strict' | 'balanced' | 'off';
+  skillBalance: boolean;
 
   createdAt: number;
   updatedAt: number;
@@ -245,7 +245,7 @@ export const DEFAULT_GAME_RULES = {
   minPlayPercentage: 50,
   goaliePlayFullPeriod: true,
   goalieRestAfterPeriod: true,
-  balancePriority: 'balanced' as const,
+  skillBalance: true,
 } satisfies Pick<
   GameConfig,
   | 'noConsecutiveBench'
@@ -254,7 +254,7 @@ export const DEFAULT_GAME_RULES = {
   | 'minPlayPercentage'
   | 'goaliePlayFullPeriod'
   | 'goalieRestAfterPeriod'
-  | 'balancePriority'
+  | 'skillBalance'
 >;
 
 export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
