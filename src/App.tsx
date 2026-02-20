@@ -14,7 +14,7 @@ import { Toaster } from '@/components/ui/sonner.tsx';
 export default function App() {
   return (
     <AppProvider>
-      <BrowserRouter basename="/benchassist/">
+      <BrowserRouter>
         <Routes>
           <Route element={<AppShell />}>
             <Route index element={<Dashboard />} />

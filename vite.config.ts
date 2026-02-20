@@ -9,7 +9,7 @@ import path from 'path';
 const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
 
 export default defineConfig({
-  base: '/benchassist/',
+  base: '/',
   define: {
     __BUILD_HASH__: JSON.stringify(commitHash),
   },
