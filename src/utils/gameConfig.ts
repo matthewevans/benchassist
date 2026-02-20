@@ -1,6 +1,6 @@
 import { generateId } from '@/utils/id.ts';
 import { GAME_CONFIG_TEMPLATES, DEFAULT_GAME_RULES } from '@/types/domain.ts';
-import type { GameConfig, GameConfigTemplate, TeamId } from '@/types/domain.ts';
+import type { FormationSlot, GameConfig, GameConfigTemplate, TeamId } from '@/types/domain.ts';
 import { getUAge } from '@/utils/age.ts';
 
 export function createConfigFromTemplate(teamId: TeamId, template: GameConfigTemplate): GameConfig {
@@ -32,6 +32,51 @@ export function getGysaTemplateForBirthYear(birthYear: number): GameConfigTempla
       uAge >= t.gysaMinAge &&
       uAge <= t.gysaMaxAge,
   );
+}
+
+/**
+ * Returns the most idiomatic DEF/MID/FWD formation for a given number of field players
+ * (i.e. fieldSize minus GK). Used as the default when usePositions is first enabled.
+ */
+export function getDefaultFormation(fieldPlayerCount: number): FormationSlot[] {
+  const presets: Record<number, FormationSlot[]> = {
+    4: [
+      { position: 'DEF', count: 2 },
+      { position: 'MID', count: 1 },
+      { position: 'FWD', count: 1 },
+    ],
+    5: [
+      { position: 'DEF', count: 2 },
+      { position: 'MID', count: 2 },
+      { position: 'FWD', count: 1 },
+    ],
+    6: [
+      { position: 'DEF', count: 2 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 1 },
+    ],
+    7: [
+      { position: 'DEF', count: 3 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 1 },
+    ],
+    8: [
+      { position: 'DEF', count: 3 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 2 },
+    ],
+    9: [
+      { position: 'DEF', count: 4 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 2 },
+    ],
+    10: [
+      { position: 'DEF', count: 4 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 3 },
+    ],
+  };
+  return presets[fieldPlayerCount] ?? [];
 }
 
 /** Produces a human-readable subtitle for a template, e.g. "7 players · 4 quarters · 12 min · Goalkeeper" */
