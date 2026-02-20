@@ -25,9 +25,23 @@ describe('parsePlayerImport', () => {
     expect(result).toEqual([{ name: 'Bad', error: 'Skill must be 1-5' }]);
   });
 
-  it('returns error for missing colon', () => {
+  it('defaults skill to 3 when no colon is present', () => {
     const result = parsePlayerImport('NoColon');
-    expect(result).toEqual([{ name: 'NoColon', error: 'Expected format: Name: Skill' }]);
+    expect(result).toEqual([{ name: 'NoColon', skillRanking: 3 }]);
+  });
+
+  it('defaults skill to 3 when colon is present but skill is empty', () => {
+    const result = parsePlayerImport('Alex:');
+    expect(result).toEqual([{ name: 'Alex', skillRanking: 3 }]);
+  });
+
+  it('parses a plain list of names defaulting all skills to 3', () => {
+    const result = parsePlayerImport('Alice\nBob\nCarol');
+    expect(result).toEqual([
+      { name: 'Alice', skillRanking: 3 },
+      { name: 'Bob', skillRanking: 3 },
+      { name: 'Carol', skillRanking: 3 },
+    ]);
   });
 
   it('returns error for non-numeric skill', () => {
@@ -42,7 +56,7 @@ describe('parsePlayerImport', () => {
 
   it('returns error for empty name', () => {
     const result = parsePlayerImport(': 3');
-    expect(result).toEqual([{ name: ': 3', error: 'Expected format: Name: Skill' }]);
+    expect(result).toEqual([{ name: ': 3', error: 'Name is required' }]);
   });
 
   it('returns empty array for empty input', () => {

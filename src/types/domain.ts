@@ -226,6 +226,9 @@ export interface Game {
 // Preset game config templates
 export interface GameConfigTemplate {
   name: string;
+  group: 'standard' | 'gysa';
+  gysaMinAge?: number; // inclusive U age lower bound (e.g. 5 for U5/U6)
+  gysaMaxAge?: number; // inclusive U age upper bound (e.g. 6 for U5/U6)
   fieldSize: number;
   periods: number;
   periodDurationMinutes: number;
@@ -255,8 +258,10 @@ export const DEFAULT_GAME_RULES = {
 >;
 
 export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
+  // Standard formats
   {
     name: '5v5 (No Positions)',
+    group: 'standard',
     fieldSize: 5,
     periods: 2,
     periodDurationMinutes: 25,
@@ -267,6 +272,7 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
   },
   {
     name: '7v7',
+    group: 'standard',
     fieldSize: 7,
     periods: 2,
     periodDurationMinutes: 30,
@@ -281,6 +287,7 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
   },
   {
     name: '9v9',
+    group: 'standard',
     fieldSize: 9,
     periods: 2,
     periodDurationMinutes: 35,
@@ -295,6 +302,7 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
   },
   {
     name: '11v11',
+    group: 'standard',
     fieldSize: 11,
     periods: 2,
     periodDurationMinutes: 45,
@@ -307,11 +315,93 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
     ],
     useGoalie: true,
   },
+  // GYSA brackets (azgysa.com)
   {
-    name: 'GYSA 7v7',
+    name: 'GYSA U5/U6',
+    group: 'gysa',
+    gysaMinAge: 5,
+    gysaMaxAge: 6,
+    fieldSize: 4,
+    periods: 4,
+    periodDurationMinutes: 10,
+    rotationsPerPeriod: 1,
+    usePositions: false,
+    formation: [],
+    useGoalie: false,
+  },
+  {
+    name: 'GYSA U7',
+    group: 'gysa',
+    gysaMinAge: 7,
+    gysaMaxAge: 7,
+    fieldSize: 5,
+    periods: 4,
+    periodDurationMinutes: 12,
+    rotationsPerPeriod: 1,
+    usePositions: false,
+    formation: [],
+    useGoalie: false,
+  },
+  {
+    name: 'GYSA U8',
+    group: 'gysa',
+    gysaMinAge: 8,
+    gysaMaxAge: 8,
+    fieldSize: 6,
+    periods: 4,
+    periodDurationMinutes: 12,
+    rotationsPerPeriod: 2,
+    usePositions: false,
+    formation: [],
+    useGoalie: true,
+  },
+  {
+    name: 'GYSA U9',
+    group: 'gysa',
+    gysaMinAge: 9,
+    gysaMaxAge: 9,
     fieldSize: 7,
     periods: 4,
     periodDurationMinutes: 12,
+    rotationsPerPeriod: 2,
+    usePositions: false,
+    formation: [],
+    useGoalie: true,
+  },
+  {
+    name: 'GYSA U10',
+    group: 'gysa',
+    gysaMinAge: 10,
+    gysaMaxAge: 10,
+    fieldSize: 7,
+    periods: 4,
+    periodDurationMinutes: 15,
+    rotationsPerPeriod: 2,
+    usePositions: false,
+    formation: [],
+    useGoalie: true,
+  },
+  {
+    name: 'GYSA U11/12/13',
+    group: 'gysa',
+    gysaMinAge: 11,
+    gysaMaxAge: 13,
+    fieldSize: 9,
+    periods: 2,
+    periodDurationMinutes: 30,
+    rotationsPerPeriod: 2,
+    usePositions: false,
+    formation: [],
+    useGoalie: true,
+  },
+  {
+    name: 'GYSA U14/15/16',
+    group: 'gysa',
+    gysaMinAge: 14,
+    gysaMaxAge: 16,
+    fieldSize: 11,
+    periods: 2,
+    periodDurationMinutes: 35,
     rotationsPerPeriod: 2,
     usePositions: false,
     formation: [],

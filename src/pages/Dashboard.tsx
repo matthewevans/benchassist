@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
+import { createConfigFromTemplate, getGysaTemplateForBirthYear } from '@/utils/gameConfig.ts';
 import { TEAM_GENDER_DOT_COLORS, type Player, type Team, type TeamGender } from '@/types/domain.ts';
 import {
   Select,
@@ -40,19 +41,26 @@ export function Dashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamGender, setNewTeamGender] = useState<TeamGender>('coed');
+  const [newTeamBirthYear, setNewTeamBirthYear] = useState<number | null>(null);
 
   const teams = Object.values(state.teams).sort((a, b) => b.updatedAt - a.updatedAt);
 
   function handleCreateTeam() {
     if (!newTeamName.trim()) return;
 
+    const teamId = generateId();
+    const gysaTemplate = newTeamBirthYear
+      ? getGysaTemplateForBirthYear(newTeamBirthYear)
+      : undefined;
+    const gameConfigs = gysaTemplate ? [createConfigFromTemplate(teamId, gysaTemplate)] : [];
+
     const team: Team = {
-      id: generateId(),
+      id: teamId,
       name: newTeamName.trim(),
       gender: newTeamGender,
-      birthYear: null,
+      birthYear: newTeamBirthYear,
       rosters: [],
-      gameConfigs: [],
+      gameConfigs,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -60,6 +68,7 @@ export function Dashboard() {
     dispatch({ type: 'CREATE_TEAM', payload: team });
     setNewTeamName('');
     setNewTeamGender('coed');
+    setNewTeamBirthYear(null);
     setIsCreating(false);
   }
 
@@ -156,6 +165,30 @@ export function Dashboard() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="team-birth-year">{t('team.birth_year')}</Label>
+            <Input
+              id="team-birth-year"
+              type="number"
+              min={2005}
+              max={new Date().getFullYear()}
+              value={newTeamBirthYear ?? ''}
+              onChange={(e) => {
+                const val = e.target.value ? parseInt(e.target.value, 10) : null;
+                setNewTeamBirthYear(val);
+              }}
+              placeholder={t('team.birth_year_placeholder')}
+            />
+            {newTeamBirthYear &&
+              (() => {
+                const match = getGysaTemplateForBirthYear(newTeamBirthYear);
+                return match ? (
+                  <p className="text-ios-footnote text-primary">
+                    {t('team.gysa_auto_config', { name: match.name })}
+                  </p>
+                ) : null;
+              })()}
           </div>
           <Button size="lg" onClick={handleCreateTeam} disabled={!newTeamName.trim()}>
             {t('team.create')}

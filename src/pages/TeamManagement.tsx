@@ -13,9 +13,19 @@ import { GameConfigForm } from '@/components/game/GameConfigForm.tsx';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
-import { createConfigFromTemplate } from '@/utils/gameConfig.ts';
+import {
+  createConfigFromTemplate,
+  formatConfigSummary,
+  getGysaTemplateForBirthYear,
+} from '@/utils/gameConfig.ts';
 import { GAME_CONFIG_TEMPLATES, TEAM_GENDER_DOT_COLORS } from '@/types/domain.ts';
-import type { GameConfig, GameConfigId, Roster, TeamGender } from '@/types/domain.ts';
+import type {
+  GameConfig,
+  GameConfigId,
+  GameConfigTemplate,
+  Roster,
+  TeamGender,
+} from '@/types/domain.ts';
 import {
   Select,
   SelectContent,
@@ -34,6 +44,7 @@ export function TeamManagement() {
   const [isAddingRoster, setIsAddingRoster] = useState(false);
   const [newRosterName, setNewRosterName] = useState('');
   const [isAddingConfig, setIsAddingConfig] = useState(false);
+  const [isChoosingTemplate, setIsChoosingTemplate] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editingConfig, setEditingConfig] = useState<GameConfig | null>(null);
@@ -235,22 +246,11 @@ export function TeamManagement() {
           )}
         </GroupedList>
 
-        {/* Template quick-create buttons */}
-        <div className="flex flex-wrap gap-2">
-          {GAME_CONFIG_TEMPLATES.map((template) => (
-            <Button
-              key={template.name}
-              variant="secondary"
-              size="capsule"
-              onClick={() => {
-                const config = createConfigFromTemplate(teamId!, template);
-                dispatch({ type: 'ADD_GAME_CONFIG', payload: { teamId: teamId!, config } });
-              }}
-            >
-              {template.name}
-            </Button>
-          ))}
-          <Button variant="secondary" size="capsule" onClick={() => setIsAddingConfig(true)}>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setIsChoosingTemplate(true)}>
+            {t('team.add_from_template')}
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setIsAddingConfig(true)}>
             {t('team.custom')}
           </Button>
         </div>
@@ -293,6 +293,26 @@ export function TeamManagement() {
             {t('team.create_roster')}
           </Button>
         </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={isChoosingTemplate}
+        onOpenChange={setIsChoosingTemplate}
+        title={t('team.add_from_template')}
+      >
+        <TemplatePickerSheet
+          team={team}
+          teamId={teamId ?? ''}
+          onSelect={(template) => {
+            const config = createConfigFromTemplate(teamId!, template);
+            dispatch({ type: 'ADD_GAME_CONFIG', payload: { teamId: teamId!, config } });
+            setIsChoosingTemplate(false);
+          }}
+          onCustom={() => {
+            setIsChoosingTemplate(false);
+            setIsAddingConfig(true);
+          }}
+        />
       </BottomSheet>
 
       <BottomSheet
@@ -388,6 +408,73 @@ export function TeamManagement() {
         onCancel={() => setDeletingConfigId(null)}
         destructive
       />
+    </div>
+  );
+}
+
+// ─── Template Picker Sheet ────────────────────────────────────────────────────
+
+interface TemplatePickerSheetProps {
+  team: import('@/types/domain.ts').Team;
+  teamId: string;
+  onSelect: (template: GameConfigTemplate) => void;
+  onCustom: () => void;
+}
+
+function TemplatePickerSheet({ team, onSelect, onCustom }: TemplatePickerSheetProps) {
+  const { t } = useTranslation('common');
+
+  const recommendedTemplate = team.birthYear
+    ? getGysaTemplateForBirthYear(team.birthYear)
+    : undefined;
+
+  const standardTemplates = GAME_CONFIG_TEMPLATES.filter((t) => t.group === 'standard');
+  const gysaTemplates = GAME_CONFIG_TEMPLATES.filter((t) => t.group === 'gysa');
+
+  function renderTemplateRow(template: GameConfigTemplate, isLast: boolean) {
+    const isRecommended = recommendedTemplate?.name === template.name;
+    const subtitle = formatConfigSummary(template);
+
+    return (
+      <GroupedListRow
+        key={template.name}
+        last={isLast}
+        onClick={() => onSelect(template)}
+        trailing={
+          isRecommended ? (
+            <span className="text-ios-footnote text-primary font-medium">
+              {t('team.template_recommended')}
+            </span>
+          ) : undefined
+        }
+      >
+        <div>
+          <div className="text-ios-body font-medium">{template.name}</div>
+          <div className="text-ios-caption1 text-muted-foreground">{subtitle}</div>
+        </div>
+      </GroupedListRow>
+    );
+  }
+
+  return (
+    <div className="space-y-5 pb-2">
+      <GroupedList header={t('team.template_section_standard')}>
+        {standardTemplates.map((template, i) =>
+          renderTemplateRow(template, i === standardTemplates.length - 1),
+        )}
+      </GroupedList>
+
+      <GroupedList header={t('team.template_section_gysa')}>
+        {gysaTemplates.map((template, i) =>
+          renderTemplateRow(template, i === gysaTemplates.length - 1),
+        )}
+      </GroupedList>
+
+      <GroupedList>
+        <GroupedListRow last chevron onClick={onCustom}>
+          <span className="text-ios-body">{t('team.custom')}</span>
+        </GroupedListRow>
+      </GroupedList>
     </div>
   );
 }
