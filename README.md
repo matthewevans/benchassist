@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://matthewevans.github.io/benchassist/">Try the Live App</a> ·
+  <a href="https://benchassist.app/">Try the Live App</a> ·
   <a href="#features">Features</a> ·
   <a href="#screenshots">Screenshots</a> ·
   <a href="#getting-started">Getting Started</a>
@@ -18,7 +18,7 @@
 
 ---
 
-> **Get BenchAssist** — Open the [live app](https://matthewevans.github.io/benchassist/) on your phone, tap **Share → Add to Home Screen**. No app store needed.
+> **Get BenchAssist** — Open the [live app](https://benchassist.app/) on your phone, tap **Share → Add to Home Screen**. No app store needed.
 
 ## Screenshots
 
@@ -68,7 +68,7 @@ pnpm install
 pnpm dev
 ```
 
-Open [localhost:5173/benchassist/](http://localhost:5173/benchassist/) in your browser.
+Open [localhost:5173](http://localhost:5173/) in your browser.
 
 <details>
 <summary><strong>All Commands</strong></summary>

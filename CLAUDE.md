@@ -114,5 +114,5 @@ Tests use Vitest with `globals: true` (no need to import `describe`/`it`/`expect
 - **Forms:** Manual `useState` per field, no form library. Validation in save handlers.
 - **TypeScript:** Strict mode with `noUnusedLocals` and `noUnusedParameters`. ESLint FlatConfig with React Hooks + React Refresh rules.
 - **PWA:** vite-plugin-pwa with `registerType: 'autoUpdate'`, standalone display, green theme.
-- **Build/deploy:** Base URL is `/benchassist/` (set in `vite.config.ts`). `__BUILD_HASH__` global injected from `git rev-parse --short HEAD` at build time (typed in `src/globals.d.ts`).
+- **Build/deploy:** Base URL is `/` (custom domain `benchassist.app`). `__BUILD_HASH__` global injected from `git rev-parse --short HEAD` at build time (typed in `src/globals.d.ts`).
 - **TypeScript imports:** `allowImportingTsExtensions: true` in tsconfig — imports use `.ts`/`.tsx` extensions. `verbatimModuleSyntax: true` enforces `import type` for type-only imports. Test files are excluded from `tsconfig.app.json`.
