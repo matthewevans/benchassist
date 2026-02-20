@@ -9,19 +9,23 @@ export interface StorageData {
   favoriteDrillIds?: string[];
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RawStorageData = {
   version: number;
-  teams: Record<string, any>;
-  games: Record<string, any>;
+  teams: Record<string, unknown>;
+  games: Record<string, unknown>;
   [key: string]: unknown;
 };
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
 
 /** v1→v2: Add gender field to all teams (default: 'coed') */
 export function migrateV1toV2(data: RawStorageData): RawStorageData {
   const teams: Record<string, unknown> = {};
   for (const [id, team] of Object.entries(data.teams)) {
-    teams[id] = { ...team, gender: team.gender ?? 'coed' };
+    const teamRecord = asRecord(team);
+    teams[id] = { ...teamRecord, gender: teamRecord.gender ?? 'coed' };
   }
   return { ...data, version: 2, teams };
 }
@@ -30,7 +34,12 @@ export function migrateV1toV2(data: RawStorageData): RawStorageData {
 export function migrateV2toV3(data: RawStorageData): RawStorageData {
   const teams: Record<string, unknown> = {};
   for (const [id, team] of Object.entries(data.teams)) {
-    teams[id] = { ...team, gender: team.gender ?? 'coed', birthYear: team.birthYear ?? null };
+    const teamRecord = asRecord(team);
+    teams[id] = {
+      ...teamRecord,
+      gender: teamRecord.gender ?? 'coed',
+      birthYear: teamRecord.birthYear ?? null,
+    };
   }
   return { ...data, version: 3, teams };
 }
@@ -39,15 +48,15 @@ export function migrateV2toV3(data: RawStorageData): RawStorageData {
 export function migrateV3toV4(data: RawStorageData): RawStorageData {
   const teams: Record<string, unknown> = {};
   for (const [id, team] of Object.entries(data.teams)) {
+    const teamRecord = asRecord(team);
+    const gameConfigs = Array.isArray(teamRecord.gameConfigs) ? teamRecord.gameConfigs : [];
     teams[id] = {
-      ...team,
-      gameConfigs: (team.gameConfigs ?? []).map(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (cfg: any) => {
-          const { balancePriority, ...rest } = cfg;
-          return { ...rest, skillBalance: balancePriority !== 'off' };
-        },
-      ),
+      ...teamRecord,
+      gameConfigs: gameConfigs.map((cfg) => {
+        const cfgRecord = asRecord(cfg);
+        const { balancePriority, ...rest } = cfgRecord;
+        return { ...rest, skillBalance: balancePriority !== 'off' };
+      }),
     };
   }
   return { ...data, version: 4, teams };
@@ -67,7 +76,7 @@ function migrateData(data: RawStorageData): StorageData {
       throw error;
     }
   }
-  return migrated as StorageData;
+  return migrated as unknown as StorageData;
 }
 
 function isValidStorageData(data: unknown): data is StorageData {
@@ -101,7 +110,7 @@ export function loadData(): StorageData | null {
     if (!isValidStorageData(parsed)) return null;
 
     if (parsed.version < CURRENT_VERSION) {
-      return migrateData(parsed as RawStorageData);
+      return migrateData(parsed as unknown as RawStorageData);
     }
 
     return parsed;
@@ -112,7 +121,7 @@ export function loadData(): StorageData | null {
 
 export function normalizeImportedData(data: StorageData): StorageData {
   if (data.version < CURRENT_VERSION) {
-    return migrateData(data as RawStorageData);
+    return migrateData(data as unknown as RawStorageData);
   }
   return data;
 }

@@ -242,6 +242,21 @@ describe('RotationGrid', () => {
       await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
       expect(mockSolver.solve).toHaveBeenCalled();
     });
+
+    it('supports draft games without a schedule', async () => {
+      const { state, game } = buildTestState();
+      const draftGame: Game = { ...game, schedule: null };
+      const draftState: AppState = {
+        ...state,
+        games: { [game.id]: draftGame },
+      };
+
+      renderGrid(draftState, game.id);
+
+      expect(screen.getByText(/saved without rotations/i)).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: /generate rotations/i }));
+      expect(mockSolver.solve).toHaveBeenCalled();
+    });
   });
 
   describe('live mode', () => {

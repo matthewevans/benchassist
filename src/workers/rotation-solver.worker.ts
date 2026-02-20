@@ -2,6 +2,7 @@ import type { SolverRequest, SolverResponse } from '@/types/solver.ts';
 import type { Rotation, RotationSchedule, Player } from '@/types/domain.ts';
 import { exhaustiveSearch } from './solver/exhaustive.ts';
 import { calculatePlayerStats, computeStrengthStats } from '@/utils/stats.ts';
+import { validateGoalieAssignments } from '@/utils/validation.ts';
 
 let currentRequestId: string | null = null;
 let currentCancellation: { cancelled: boolean } | null = null;
@@ -55,6 +56,16 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           existingRotations,
         } = request.payload;
 
+        const onProgress = (percentage: number, message: string) => {
+          const response: SolverResponse = {
+            type: 'PROGRESS',
+            payload: { requestId: request.payload.requestId, percentage, message },
+          };
+          self.postMessage(response);
+        };
+
+        onProgress(1, 'game:solver.initializing');
+
         const activePlayers = players.filter((p) => !absentPlayerIds.includes(p.id));
         const totalRotations = config.periods * config.rotationsPerPeriod;
         const benchSlotsPerRotation = activePlayers.length - config.fieldSize;
@@ -65,13 +76,14 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           );
         }
 
-        const onProgress = (percentage: number, message: string) => {
-          const response: SolverResponse = {
-            type: 'PROGRESS',
-            payload: { requestId: request.payload.requestId, percentage, message },
-          };
-          self.postMessage(response);
-        };
+        const goalieAssignmentErrors = validateGoalieAssignments(
+          activePlayers,
+          config,
+          goalieAssignments,
+        );
+        if (goalieAssignmentErrors.length > 0) {
+          throw new Error(goalieAssignmentErrors[0]);
+        }
 
         const newSchedule = exhaustiveSearch({
           players: activePlayers,

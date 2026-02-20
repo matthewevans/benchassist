@@ -157,6 +157,7 @@
   },
   "error": {
     "not_found": "Partido o rotaciones no encontradas",
+    "no_schedule": "Este partido se guardó sin rotaciones. Genera rotaciones para continuar.",
     "back_to_teams": "Regresar a equipos"
   }
 }

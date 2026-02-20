@@ -1,47 +1,86 @@
 import { RotationAssignment } from '@/types/domain.ts';
-import type { FormationSlot, Position, SubPosition, Player, PlayerId } from '@/types/domain.ts';
+import { POSITION_VALUES, PositionCode } from '@/types/domain.ts';
+import type {
+  FormationSlot,
+  Position,
+  FieldPosition,
+  SubPosition,
+  Player,
+  PlayerId,
+} from '@/types/domain.ts';
 
 /** Which broad position each sub-position belongs to */
 const SUB_POSITION_GROUP: Record<SubPosition, Position> = {
-  LB: 'DEF',
-  CB: 'DEF',
-  RB: 'DEF',
-  LCB: 'DEF',
-  RCB: 'DEF',
-  LM: 'MID',
-  CM: 'MID',
-  RM: 'MID',
-  LCM: 'MID',
-  RCM: 'MID',
-  LW: 'FWD',
-  RW: 'FWD',
-  ST: 'FWD',
-  CF: 'FWD',
+  LB: PositionCode.DEF,
+  CB: PositionCode.DEF,
+  RB: PositionCode.DEF,
+  LCB: PositionCode.DEF,
+  RCB: PositionCode.DEF,
+  LM: PositionCode.MID,
+  CM: PositionCode.MID,
+  RM: PositionCode.MID,
+  LCM: PositionCode.MID,
+  RCM: PositionCode.MID,
+  LW: PositionCode.FWD,
+  RW: PositionCode.FWD,
+  ST: PositionCode.FWD,
+  CF: PositionCode.FWD,
 };
+
+const SUB_POSITION_REPEAT_WEIGHT = 2;
+const NO_PREFERENCE_GROUP_REPEAT_WEIGHT = 1;
+
+function getPreferredGroups(player: Player | undefined): Set<Position> {
+  const preferred = new Set<Position>();
+  if (!player) return preferred;
+
+  if (player.primaryPosition && player.primaryPosition !== PositionCode.GK) {
+    preferred.add(player.primaryPosition);
+  }
+  for (const secondary of player.secondaryPositions) {
+    if (secondary !== PositionCode.GK) preferred.add(secondary);
+  }
+
+  return preferred;
+}
+
+function getGroupCounts(history: Map<SubPosition, number> | undefined): Record<Position, number> {
+  const counts = Object.fromEntries(POSITION_VALUES.map((position) => [position, 0])) as Record<
+    Position,
+    number
+  >;
+  if (!history) return counts;
+
+  for (const [subPos, timesPlayed] of history.entries()) {
+    counts[SUB_POSITION_GROUP[subPos]] += timesPlayed;
+  }
+
+  return counts;
+}
 
 /**
  * Derive sub-position labels from a single position line and count.
  * e.g. ('DEF', 2) → ['LB', 'RB'], ('MID', 3) → ['LM', 'CM', 'RM']
  */
 function getSubPositionsForCount(position: Position, count: number): SubPosition[] {
-  if (position === 'GK' || count <= 0) return [];
+  if (position === PositionCode.GK || count <= 0) return [];
 
-  const mappings: Record<Exclude<Position, 'GK'>, Record<number, SubPosition[]>> = {
-    DEF: {
+  const mappings: Record<FieldPosition, Record<number, SubPosition[]>> = {
+    [PositionCode.DEF]: {
       1: ['CB'],
       2: ['LB', 'RB'],
       3: ['LB', 'CB', 'RB'],
       4: ['LB', 'LCB', 'RCB', 'RB'],
       5: ['LB', 'LCB', 'CB', 'RCB', 'RB'],
     },
-    MID: {
+    [PositionCode.MID]: {
       1: ['CM'],
       2: ['LM', 'RM'],
       3: ['LM', 'CM', 'RM'],
       4: ['LM', 'LCM', 'RCM', 'RM'],
       5: ['LM', 'LCM', 'CM', 'RCM', 'RM'],
     },
-    FWD: {
+    [PositionCode.FWD]: {
       1: ['ST'],
       2: ['LW', 'RW'],
       3: ['LW', 'ST', 'RW'],
@@ -49,10 +88,11 @@ function getSubPositionsForCount(position: Position, count: number): SubPosition
     },
   };
 
+  const fieldPosition = position as FieldPosition;
   return (
-    mappings[position]?.[count] ??
+    mappings[fieldPosition]?.[count] ??
     (Array(count).fill(
-      position === 'DEF' ? 'CB' : position === 'MID' ? 'CM' : 'ST',
+      fieldPosition === PositionCode.DEF ? 'CB' : fieldPosition === PositionCode.MID ? 'CM' : 'ST',
     ) as SubPosition[])
   );
 }
@@ -67,10 +107,12 @@ export function deriveSubPositions(formation: FormationSlot[]): SubPosition[] {
 
 /**
  * Auto-assign field players to sub-position slots.
- * Finds the minimum-cost assignment where cost = times a player has already
- * played that sub-position (from positionHistory), with primary position match
- * as a tiebreaker. The first rotation (empty history) naturally respects
- * player preferences; subsequent rotations prioritize diversity.
+ * Finds the minimum-cost assignment where cost is:
+ * - repeated sub-position usage (always),
+ * - repeated position-group usage when the player has no preferences,
+ * - mismatch against declared preferred groups.
+ * The first rotation (empty history) naturally respects preferences; later
+ * rotations prioritize diversity.
  *
  * Uses exhaustive search with pruning, matching the pattern used by
  * generateBenchPatterns. Costs are pre-computed and slots are tried in
@@ -95,14 +137,22 @@ export function autoAssignPositions(
     const id = fieldPlayerIds[p];
     const player = playerMap.get(id);
     const playerHist = positionHistory?.get(id);
+    const preferredGroups = getPreferredGroups(player);
+    const hasPreferences = preferredGroups.size > 0;
+    const groupCounts = getGroupCounts(playerHist);
 
     const playerCosts = slots.map((subPos) => {
-      const timesPlayed = playerHist?.get(subPos) ?? 0;
-      const matchesPrimary =
-        !!player?.primaryPosition &&
-        player.primaryPosition !== 'GK' &&
-        SUB_POSITION_GROUP[subPos] === player.primaryPosition;
-      return timesPlayed * 2 + (matchesPrimary ? 0 : 1);
+      const group = SUB_POSITION_GROUP[subPos];
+      const timesPlayedSubPosition = playerHist?.get(subPos) ?? 0;
+      const timesPlayedGroup = groupCounts[group];
+      const groupRepeatPenalty = hasPreferences
+        ? 0
+        : timesPlayedGroup * NO_PREFERENCE_GROUP_REPEAT_WEIGHT;
+      const preferencePenalty = hasPreferences && !preferredGroups.has(group) ? 1 : 0;
+
+      return (
+        timesPlayedSubPosition * SUB_POSITION_REPEAT_WEIGHT + groupRepeatPenalty + preferencePenalty
+      );
     });
 
     costs.push(playerCosts);
@@ -164,12 +214,15 @@ export function getAssignmentDisplay(
   usePositions: boolean,
 ): AssignmentDisplay {
   if (assignment === RotationAssignment.Bench) return { label: '○', className: BENCH_CLASS };
-  if (assignment === RotationAssignment.Goalie) return { label: 'GK', className: GOALIE_CLASS };
+  if (assignment === RotationAssignment.Goalie) {
+    return { label: PositionCode.GK, className: GOALIE_CLASS };
+  }
 
   // Field assignment
   if (usePositions && fieldPosition) {
     const group = SUB_POSITION_GROUP[fieldPosition];
-    const className = group === 'DEF' ? DEF_CLASS : group === 'FWD' ? FWD_CLASS : MID_CLASS;
+    const className =
+      group === PositionCode.DEF ? DEF_CLASS : group === PositionCode.FWD ? FWD_CLASS : MID_CLASS;
     return { label: fieldPosition, className };
   }
 

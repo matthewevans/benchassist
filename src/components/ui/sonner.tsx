@@ -7,14 +7,16 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme="system"
       className="toaster group"
-      position="bottom-center"
-      // Clear the 49px tab bar + safe area inset so toasts are never obscured
-      offset="calc(49px + env(safe-area-inset-bottom) + 8px)"
+      closeButton
+      position="top-center"
+      // Keep clear of device notch/status area.
+      offset="calc(env(safe-area-inset-top) + 8px)"
       toastOptions={{
         classNames: {
+          toast: 'flex items-center gap-3',
           // iOS-style text action button: primary tint, no fill, semibold
           actionButton:
-            'bg-transparent! text-primary! font-semibold! shadow-none! border-none! text-ios-body! px-0! ml-4!',
+            'bg-transparent! text-primary! font-semibold! shadow-none! border-none! text-ios-body! px-0! ml-auto!',
         },
       }}
       style={

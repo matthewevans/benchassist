@@ -183,6 +183,36 @@ describe('exhaustiveSearch', () => {
     ).toThrow();
   });
 
+  it('surfaces specific constraint conflicts in the error message', () => {
+    const players = buildRoster(8, { goalieCount: 2 });
+    const config = gameConfigFactory.build({
+      fieldSize: 7,
+      periods: 2,
+      rotationsPerPeriod: 2,
+      useGoalie: true,
+      goaliePlayFullPeriod: true,
+      goalieRestAfterPeriod: true,
+    });
+    const totalRotations = config.periods * config.rotationsPerPeriod;
+    const fixedGoalie = players[0];
+
+    expect(() =>
+      exhaustiveSearch({
+        players,
+        config,
+        goalieAssignments: [
+          { periodIndex: 0, playerId: fixedGoalie.id },
+          { periodIndex: 1, playerId: fixedGoalie.id },
+        ],
+        manualOverrides: [],
+        totalRotations,
+        benchSlotsPerRotation: players.length - config.fieldSize,
+        onProgress: () => {},
+        cancellation: { cancelled: false },
+      }),
+    ).toThrow(/Goalie rest requires/);
+  });
+
   it('handles a minimal roster (field size equals roster size)', () => {
     const players = buildRoster(7, { goalieCount: 2 });
     const config = gameConfigFactory.build({
@@ -260,5 +290,42 @@ describe('exhaustiveSearch', () => {
     for (const rotation of period1Rotations) {
       expect(rotation.assignments[assignedGoalie.id]).toBe(RotationAssignment.Goalie);
     }
+  });
+
+  it('solves 13-player 7v7 with 1 rotation per period and explicit goalies', () => {
+    const players = buildRoster(13, { goalieCount: 4 });
+    const config = gameConfigFactory.build({
+      fieldSize: 7,
+      periods: 4,
+      rotationsPerPeriod: 1,
+      useGoalie: true,
+      goaliePlayFullPeriod: true,
+      goalieRestAfterPeriod: true,
+      noConsecutiveBench: true,
+      maxConsecutiveBench: 1,
+      enforceMinPlayTime: true,
+      minPlayPercentage: 50,
+      skillBalance: true,
+    });
+    const totalRotations = config.periods * config.rotationsPerPeriod;
+    const goalies = players.filter((p) => p.canPlayGoalie);
+
+    const schedule = exhaustiveSearch({
+      players,
+      config,
+      goalieAssignments: [
+        { periodIndex: 0, playerId: goalies[0].id },
+        { periodIndex: 1, playerId: goalies[1].id },
+        { periodIndex: 2, playerId: goalies[2].id },
+        { periodIndex: 3, playerId: goalies[3].id },
+      ],
+      manualOverrides: [],
+      totalRotations,
+      benchSlotsPerRotation: players.length - config.fieldSize,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    expect(schedule.rotations).toHaveLength(totalRotations);
   });
 });

@@ -157,6 +157,7 @@
   },
   "error": {
     "not_found": "Game or schedule not found",
+    "no_schedule": "This game was saved without rotations. Generate rotations to continue.",
     "back_to_teams": "Back to teams"
   }
 }

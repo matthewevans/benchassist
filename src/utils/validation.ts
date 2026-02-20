@@ -1,5 +1,11 @@
 import { RotationAssignment } from '@/types/domain.ts';
-import type { RotationSchedule, GameConfig, Player, PlayerId } from '@/types/domain.ts';
+import type {
+  RotationSchedule,
+  GameConfig,
+  Player,
+  PlayerId,
+  GoalieAssignment,
+} from '@/types/domain.ts';
 
 export function validateSchedule(
   schedule: RotationSchedule,
@@ -116,6 +122,54 @@ export function validateRosterForGame(
       errors.push(
         `Need at least ${config.periods} goalie-eligible players for goalie rest rotation (have ${goalieEligible.length})`,
       );
+    }
+  }
+
+  return errors;
+}
+
+export function validateGoalieAssignments(
+  players: Player[],
+  config: GameConfig,
+  goalieAssignments: GoalieAssignment[],
+): string[] {
+  if (!config.useGoalie) return [];
+
+  const errors: string[] = [];
+  const playerMap = new Map(players.map((p) => [p.id, p]));
+  const periodToGoalie = new Map<number, PlayerId>();
+
+  for (const assignment of goalieAssignments) {
+    if (assignment.playerId === 'auto') continue;
+    if (assignment.periodIndex < 0 || assignment.periodIndex >= config.periods) continue;
+
+    const player = playerMap.get(assignment.playerId);
+    if (!player) {
+      errors.push(
+        `Goalie assignment for period ${assignment.periodIndex + 1} references a missing or absent player`,
+      );
+      continue;
+    }
+
+    if (!player.canPlayGoalie) {
+      errors.push(
+        `${player.name} is assigned as goalie in period ${assignment.periodIndex + 1} but is not goalie-eligible`,
+      );
+    }
+
+    periodToGoalie.set(assignment.periodIndex, assignment.playerId);
+  }
+
+  if (config.goalieRestAfterPeriod) {
+    for (let period = 0; period < config.periods - 1; period++) {
+      const goalieThisPeriod = periodToGoalie.get(period);
+      const goalieNextPeriod = periodToGoalie.get(period + 1);
+      if (goalieThisPeriod && goalieNextPeriod && goalieThisPeriod === goalieNextPeriod) {
+        const playerName = playerMap.get(goalieThisPeriod)?.name ?? 'Player';
+        errors.push(
+          `${playerName} is assigned goalie in periods ${period + 1} and ${period + 2}. Goalie rest requires them to bench first rotation of period ${period + 2}.`,
+        );
+      }
     }
   }
 

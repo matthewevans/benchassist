@@ -23,12 +23,15 @@ export function useUndoToast() {
       dispatch(action);
 
       if (description) {
+        // Keep a single undo toast visible so it doesn't stack over navigation controls.
+        toast.dismiss('undo-action');
         toast(description, {
+          id: 'undo-action',
           action: {
             label: t('actions.undo'),
             onClick: undo,
           },
-          duration: 8000,
+          duration: 4000,
         });
       }
     },

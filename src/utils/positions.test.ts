@@ -233,9 +233,28 @@ describe('autoAssignPositions', () => {
         history,
       );
 
-      // DEF player should get CM (cost 0) over CB (cost 1)
+      // DEF player should still rotate out of a repeated DEF slot for diversity.
       expect(result[defPlayer.id]).toBe('CM');
       expect(result[nullPlayer.id]).toBe('CB');
+    });
+
+    it('prefers a new position group over same-group swaps when no preferences are set', () => {
+      const players = buildPlayersWithPositions([null, null, null]);
+      const [p1, p2, p3] = players;
+      const playerMap = new Map(players.map((p) => [p.id, p]));
+      const formation: FormationSlot[] = [
+        { position: 'DEF', count: 2 },
+        { position: 'MID', count: 1 },
+      ];
+
+      // p1 already played LB once; with no preferences, this should push to MID next.
+      const history = new Map<string, Map<SubPosition, number>>([
+        [p1.id, new Map([['LB', 1] as [SubPosition, number]])],
+      ]);
+
+      const result = autoAssignPositions([p1.id, p2.id, p3.id], formation, playerMap, history);
+
+      expect(result[p1.id]).toBe('CM');
     });
 
     it('spreads positions across multiple rotations', () => {

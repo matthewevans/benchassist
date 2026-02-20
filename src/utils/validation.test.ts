@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { validateSchedule, validateRosterForGame } from './validation.ts';
+import {
+  validateSchedule,
+  validateRosterForGame,
+  validateGoalieAssignments,
+} from './validation.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { Rotation } from '@/types/domain.ts';
 import {
@@ -404,5 +408,39 @@ describe('validateRosterForGame', () => {
 
     const goalieErrors = errors.filter((e) => e.includes('goalie'));
     expect(goalieErrors).toHaveLength(0);
+  });
+});
+
+describe('validateGoalieAssignments', () => {
+  it('returns conflict when same goalie is assigned in consecutive periods with goalie rest enabled', () => {
+    const players = buildRoster(9, { goalieCount: 2 });
+    const config = gameConfigFactory.build({
+      fieldSize: 7,
+      periods: 2,
+      goalieRestAfterPeriod: true,
+    });
+
+    const errors = validateGoalieAssignments(players, config, [
+      { periodIndex: 0, playerId: players[0].id },
+      { periodIndex: 1, playerId: players[0].id },
+    ]);
+
+    expect(errors).toContainEqual(expect.stringContaining('Goalie rest requires'));
+  });
+
+  it('returns no errors when assignments are compatible', () => {
+    const players = buildRoster(9, { goalieCount: 3 });
+    const config = gameConfigFactory.build({
+      fieldSize: 7,
+      periods: 2,
+      goalieRestAfterPeriod: true,
+    });
+
+    const errors = validateGoalieAssignments(players, config, [
+      { periodIndex: 0, playerId: players[0].id },
+      { periodIndex: 1, playerId: players[1].id },
+    ]);
+
+    expect(errors).toHaveLength(0);
   });
 });

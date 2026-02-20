@@ -13,7 +13,241 @@ import {
   computeStrengthStats,
 } from '@/utils/stats.ts';
 import { autoAssignPositions } from '@/utils/positions.ts';
+import { optimizePositionAssignments } from './position-planner.ts';
 import type { SolverContext, BenchPattern } from './types.ts';
+
+interface PlayerConstraints {
+  player: Player;
+  cannotBench: Set<number>;
+  mustBench: Set<number>;
+}
+
+function searchingMessage(combinations: string): string {
+  return JSON.stringify({
+    key: 'game:solver.searching',
+    combinations,
+  });
+}
+
+function oneBasedRotations(indices: number[]): string {
+  return indices
+    .sort((a, b) => a - b)
+    .map((i) => `R${i + 1}`)
+    .join(', ');
+}
+
+function describePlayerPatternFailure(params: {
+  playerName: string;
+  cannotBench: Set<number>;
+  mustBench: Set<number>;
+  targetBenchCount: number;
+  totalRotations: number;
+  maxConsecutive: number;
+}): string {
+  const { playerName, cannotBench, mustBench, targetBenchCount, totalRotations, maxConsecutive } =
+    params;
+
+  const overlap = [...mustBench].filter((idx) => cannotBench.has(idx));
+  if (overlap.length > 0) {
+    return `${playerName}: conflict on ${oneBasedRotations(overlap)} (must bench and cannot bench).`;
+  }
+
+  const availableSlots = totalRotations - cannotBench.size;
+  if (targetBenchCount > availableSlots) {
+    return `${playerName}: needs ${targetBenchCount} bench rotations but can only bench in ${availableSlots}.`;
+  }
+
+  const patternAtMustOnly = generateBenchPatterns(
+    totalRotations,
+    mustBench.size,
+    cannotBench,
+    mustBench,
+    maxConsecutive,
+  );
+  if (patternAtMustOnly.length === 0) {
+    return `${playerName}: required bench rotations (${oneBasedRotations([...mustBench])}) violate current constraints.`;
+  }
+
+  return `${playerName}: no valid bench pattern fits the current constraints.`;
+}
+
+function findRotationCapacityConflicts(params: {
+  players: Player[];
+  constraintsPerPlayer: PlayerConstraints[];
+  totalRotations: number;
+  benchSlotsPerRotation: number;
+}): string[] {
+  const { players, constraintsPerPlayer, totalRotations, benchSlotsPerRotation } = params;
+  const conflicts: string[] = [];
+
+  for (let rot = 0; rot < totalRotations; rot++) {
+    let forcedBenchCount = 0;
+    let canBenchCount = 0;
+    const forcedPlayers: string[] = [];
+
+    for (let i = 0; i < players.length; i++) {
+      const constraints = constraintsPerPlayer[i];
+      if (constraints.mustBench.has(rot)) {
+        forcedBenchCount++;
+        forcedPlayers.push(players[i].name);
+      }
+      if (!constraints.cannotBench.has(rot)) {
+        canBenchCount++;
+      }
+    }
+
+    if (forcedBenchCount > benchSlotsPerRotation) {
+      conflicts.push(
+        `R${rot + 1}: ${forcedBenchCount} players are forced to bench (max allowed ${benchSlotsPerRotation}). Forced: ${forcedPlayers.join(', ')}.`,
+      );
+    } else if (canBenchCount < benchSlotsPerRotation) {
+      conflicts.push(
+        `R${rot + 1}: only ${canBenchCount} players can bench, but ${benchSlotsPerRotation} bench slots are required.`,
+      );
+    }
+  }
+
+  return conflicts;
+}
+
+function generatePatternPoolForPlayer(params: {
+  constraints: PlayerConstraints;
+  totalRotations: number;
+  maxConsecutive: number;
+  enforceMinPlayTime: boolean;
+  minPlayPercentage: number;
+}): BenchPattern[] {
+  const { constraints, totalRotations, maxConsecutive, enforceMinPlayTime, minPlayPercentage } =
+    params;
+
+  const minBench = constraints.mustBench.size;
+  let maxBench = totalRotations - constraints.cannotBench.size;
+  if (enforceMinPlayTime) {
+    const maxBenchFromMinPlay = Math.floor(totalRotations * (1 - minPlayPercentage / 100));
+    maxBench = Math.min(maxBench, maxBenchFromMinPlay);
+  }
+  if (maxBench < minBench) return [];
+
+  const patterns: BenchPattern[] = [];
+  for (let benchCount = minBench; benchCount <= maxBench; benchCount++) {
+    patterns.push(
+      ...generateBenchPatterns(
+        totalRotations,
+        benchCount,
+        constraints.cannotBench,
+        constraints.mustBench,
+        maxConsecutive,
+      ),
+    );
+  }
+  return patterns;
+}
+
+function findFallbackFeasibleBenchSets(params: {
+  constraintsPerPlayer: PlayerConstraints[];
+  totalRotations: number;
+  benchSlotsPerRotation: number;
+  maxConsecutive: number;
+  enforceMinPlayTime: boolean;
+  minPlayPercentage: number;
+  cancellation: { cancelled: boolean };
+  onProgress: (percentage: number, message: string) => void;
+}): { orderedPlayers: Player[]; benchSets: BenchPattern[] } | null {
+  const {
+    constraintsPerPlayer,
+    totalRotations,
+    benchSlotsPerRotation,
+    maxConsecutive,
+    enforceMinPlayTime,
+    minPlayPercentage,
+    cancellation,
+    onProgress,
+  } = params;
+
+  const playerPools = constraintsPerPlayer
+    .map((constraints) => ({
+      player: constraints.player,
+      patterns: generatePatternPoolForPlayer({
+        constraints,
+        totalRotations,
+        maxConsecutive,
+        enforceMinPlayTime,
+        minPlayPercentage,
+      }),
+    }))
+    .sort((a, b) => a.patterns.length - b.patterns.length);
+
+  if (playerPools.some((p) => p.patterns.length === 0)) return null;
+
+  const benchCountPerRotation = new Array<number>(totalRotations).fill(0);
+  const chosen: BenchPattern[] = new Array<BenchPattern>(playerPools.length);
+  let found = false;
+  let explored = 0;
+  let lastProgressAt = Date.now();
+  let lastReportedProgress = 30;
+
+  onProgress(lastReportedProgress, searchingMessage('0'));
+
+  function search(depth: number) {
+    if (found) return;
+    if (cancellation.cancelled) throw new Error('Cancelled');
+    explored++;
+
+    const now = Date.now();
+    if (now - lastProgressAt >= 300) {
+      const elapsedMs = now - lastProgressAt;
+      const bump = Math.max(1, Math.floor(elapsedMs / 300));
+      lastReportedProgress = Math.min(88, lastReportedProgress + bump);
+      onProgress(lastReportedProgress, searchingMessage(explored.toLocaleString()));
+      lastProgressAt = now;
+    }
+
+    const remainingPlayers = playerPools.length - depth;
+    for (let r = 0; r < totalRotations; r++) {
+      if (benchCountPerRotation[r] > benchSlotsPerRotation) return;
+      if (benchCountPerRotation[r] + remainingPlayers < benchSlotsPerRotation) return;
+    }
+
+    if (depth === playerPools.length) {
+      for (let r = 0; r < totalRotations; r++) {
+        if (benchCountPerRotation[r] !== benchSlotsPerRotation) return;
+      }
+      found = true;
+      return;
+    }
+
+    for (const pattern of playerPools[depth].patterns) {
+      let valid = true;
+      for (const rotIndex of pattern) {
+        if (benchCountPerRotation[rotIndex] + 1 > benchSlotsPerRotation) {
+          valid = false;
+          break;
+        }
+      }
+      if (!valid) continue;
+
+      chosen[depth] = pattern;
+      for (const rotIndex of pattern) {
+        benchCountPerRotation[rotIndex]++;
+      }
+
+      search(depth + 1);
+      if (found) return;
+
+      for (const rotIndex of pattern) {
+        benchCountPerRotation[rotIndex]--;
+      }
+    }
+  }
+
+  search(0);
+
+  if (!found) return null;
+  return {
+    orderedPlayers: playerPools.map((p) => p.player),
+    benchSets: chosen.map((set) => [...set]),
+  };
+}
 
 export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   const {
@@ -34,6 +268,18 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
 
     // Resolve goalie assignments per period
     const goaliePerPeriod = resolveGoalieAssignments(players, config.periods, goalieAssignments);
+    const playerNameById = new Map(players.map((p) => [p.id, p.name]));
+
+    if (config.goalieRestAfterPeriod) {
+      for (let period = 0; period < config.periods - 1; period++) {
+        if (goaliePerPeriod[period] === goaliePerPeriod[period + 1]) {
+          const goalieName = playerNameById.get(goaliePerPeriod[period]) ?? 'Player';
+          throw new Error(
+            `${goalieName} is assigned goalie in periods ${period + 1} and ${period + 2}. Goalie rest requires them to bench first rotation of period ${period + 2}.`,
+          );
+        }
+      }
+    }
 
     // Build goalie map: rotationIndex -> playerId
     for (let period = 0; period < config.periods; period++) {
@@ -105,12 +351,6 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   // Build per-player constraint maps
   const maxConsecutive = config.noConsecutiveBench ? config.maxConsecutiveBench : totalRotations;
 
-  type PlayerConstraints = {
-    player: Player;
-    cannotBench: Set<number>;
-    mustBench: Set<number>;
-  };
-
   const constraintsPerPlayer: PlayerConstraints[] = players.map((player) => {
     const cannotBench = new Set<number>();
     for (const [rotIndex, goalieId] of goalieMap.entries()) {
@@ -174,15 +414,29 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   // First pass: generate patterns, adjusting counts down where needed
   const playerPatterns: { player: Player; patterns: BenchPattern[] }[] = [];
 
-  for (const constraints of constraintsPerPlayer) {
+  for (let i = 0; i < constraintsPerPlayer.length; i++) {
+    const constraints = constraintsPerPlayer[i];
     const { patterns, benchCount } = generatePatternsForPlayer(constraints);
     if (patterns.length === 0) {
       throw new Error(
-        `No valid bench patterns for ${constraints.player.name}. Constraints may be too restrictive.`,
+        describePlayerPatternFailure({
+          playerName: constraints.player.name,
+          cannotBench: constraints.cannotBench,
+          mustBench: constraints.mustBench,
+          targetBenchCount: benchCount,
+          totalRotations,
+          maxConsecutive,
+        }),
       );
     }
     benchCounts.set(constraints.player.id, benchCount);
     playerPatterns.push({ player: constraints.player, patterns });
+
+    const generationProgress = Math.min(
+      19,
+      10 + Math.floor(((i + 1) / constraintsPerPlayer.length) * 9),
+    );
+    ctx.onProgress(generationProgress, 'game:solver.generating_patterns');
   }
 
   // Redistribute deficit: if some players had their bench count reduced,
@@ -231,13 +485,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   }
 
   const totalCombinations = playerPatterns.reduce((p, c) => p * c.patterns.length, 1);
-  ctx.onProgress(
-    20,
-    JSON.stringify({
-      key: 'game:solver.searching',
-      combinations: totalCombinations.toLocaleString(),
-    }),
-  );
+  ctx.onProgress(20, searchingMessage(totalCombinations.toLocaleString()));
 
   // Sort players by number of patterns (ascending) for better pruning
   playerPatterns.sort((a, b) => a.patterns.length - b.patterns.length);
@@ -252,10 +500,32 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
 
   const searchStartTime = Date.now();
   const SEARCH_TIMEOUT_MS = 10_000;
+  let lastProgressAt = searchStartTime;
+  let lastReportedProgress = 20;
+  let nodesVisited = 0;
 
   function search(depth: number) {
     if (cancellation.cancelled) throw new Error('Cancelled');
     if (Date.now() - searchStartTime > SEARCH_TIMEOUT_MS && bestBenchSets) return;
+    nodesVisited++;
+
+    const now = Date.now();
+    if (now - lastProgressAt >= 300) {
+      const elapsedMs = now - searchStartTime;
+      const comboProgress =
+        totalCombinations > 0 ? 20 + Math.floor((combinations / totalCombinations) * 68) : 20;
+      const timeProgress = 20 + Math.floor(elapsedMs / 300);
+      const nodeProgress = 20 + Math.floor(Math.log10(nodesVisited + 1) * 8);
+      const progress = Math.min(
+        88,
+        Math.max(lastReportedProgress, comboProgress, timeProgress, nodeProgress),
+      );
+      if (progress > lastReportedProgress) {
+        lastReportedProgress = progress;
+      }
+      ctx.onProgress(lastReportedProgress, searchingMessage(combinations.toLocaleString()));
+      lastProgressAt = now;
+    }
 
     if (depth === playerPatterns.length) {
       // Validate: each rotation must have exactly benchSlotsPerRotation benched
@@ -266,17 +536,6 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       // Score this solution
       const score = scoreSolution(playerPatterns, currentBenchSets, totalRotations);
       combinations++;
-
-      if (combinations % 10000 === 0) {
-        const progress = Math.min(90, 20 + (combinations / 100000) * 70);
-        ctx.onProgress(
-          progress,
-          JSON.stringify({
-            key: 'game:solver.searching',
-            combinations: combinations.toLocaleString(),
-          }),
-        );
-      }
 
       if (score < bestScore) {
         bestScore = score;
@@ -316,8 +575,43 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   search(0);
 
   if (!bestBenchSets) {
+    const fallback = findFallbackFeasibleBenchSets({
+      constraintsPerPlayer,
+      totalRotations,
+      benchSlotsPerRotation,
+      maxConsecutive,
+      enforceMinPlayTime: config.enforceMinPlayTime,
+      minPlayPercentage: config.minPlayPercentage,
+      cancellation,
+      onProgress: ctx.onProgress,
+    });
+    if (fallback) {
+      const fallbackPlayerPatterns = fallback.orderedPlayers.map((player) => ({
+        player,
+        patterns: [],
+      }));
+      return buildSchedule(
+        fallbackPlayerPatterns,
+        fallback.benchSets,
+        goalieMap,
+        players,
+        config,
+        totalRotations,
+      );
+    }
+
+    const rotationConflicts = findRotationCapacityConflicts({
+      players,
+      constraintsPerPlayer,
+      totalRotations,
+      benchSlotsPerRotation,
+    });
+    if (rotationConflicts.length > 0) {
+      throw new Error(`No valid rotation schedule: ${rotationConflicts.join(' ')}`);
+    }
+
     throw new Error(
-      'No valid rotation schedule found. Try adjusting constraints (reduce min play time, allow more consecutive benching, or add more players).',
+      'No valid rotation schedule found. Constraint combination is infeasible. Check no-consecutive-bench, minimum play time, and goalie rest settings.',
     );
   }
 
@@ -580,6 +874,11 @@ function buildSchedule(
     }
 
     rotations.push(rotation);
+  }
+
+  // Improve position diversity across the full schedule after initial seeding.
+  if (config.usePositions && config.formation.length > 0 && playerMap) {
+    optimizePositionAssignments(rotations, playerMap);
   }
 
   const playerStats = calculatePlayerStats(rotations, allPlayers);

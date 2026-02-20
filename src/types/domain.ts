@@ -26,13 +26,26 @@ export const TEAM_GENDER_DOT_COLORS: Record<TeamGender, string> = {
   girls: 'bg-pink-400',
 };
 
-export type Position = 'GK' | 'DEF' | 'MID' | 'FWD';
+export enum PositionCode {
+  GK = 'GK',
+  DEF = 'DEF',
+  MID = 'MID',
+  FWD = 'FWD',
+}
+
+export type Position = `${PositionCode}`;
+export type FieldPosition = Exclude<Position, `${PositionCode.GK}`>;
+
+export const POSITION_VALUES: Position[] = Object.values(PositionCode);
+export const FIELD_POSITION_VALUES: FieldPosition[] = POSITION_VALUES.filter(
+  (position): position is FieldPosition => position !== PositionCode.GK,
+);
 
 export const POSITION_LABELS: Record<Position, string> = {
-  GK: 'Goalkeeper',
-  DEF: 'Defender',
-  MID: 'Midfielder',
-  FWD: 'Forward',
+  [PositionCode.GK]: 'Goalkeeper',
+  [PositionCode.DEF]: 'Defender',
+  [PositionCode.MID]: 'Midfielder',
+  [PositionCode.FWD]: 'Forward',
 };
 
 export type SubPosition =

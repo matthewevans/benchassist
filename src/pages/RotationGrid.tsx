@@ -103,7 +103,7 @@ export function RotationGrid() {
     }
   }, [g.isLive, g.currentRotationIndex]);
 
-  if (!g.game || !g.schedule || !g.roster) {
+  if (!g.game || !g.roster || !g.config) {
     return (
       <div className="text-center py-12">
         <p className="text-sm text-muted-foreground">{t('error.not_found')}</p>
@@ -136,7 +136,11 @@ export function RotationGrid() {
                   onClick={g.handleRegenerate}
                   disabled={g.solver.isRunning}
                 >
-                  {g.solver.isRunning ? t('live.solving') : t('live.regenerate')}
+                  {g.solver.isRunning
+                    ? t('live.solving')
+                    : g.schedule
+                      ? t('live.regenerate')
+                      : t('setup.generate_rotations')}
                 </button>
                 <button
                   className="flex items-center w-full h-11 px-3 text-ios-body text-destructive rounded-lg active:bg-accent/80 transition-colors"
@@ -175,11 +179,15 @@ export function RotationGrid() {
                     onClick={g.handleRegenerate}
                     disabled={g.solver.isRunning}
                   >
-                    {g.solver.isRunning ? t('live.solving') : t('live.regenerate')}
+                    {g.solver.isRunning
+                      ? t('live.solving')
+                      : g.schedule
+                        ? t('live.regenerate')
+                        : t('setup.generate_rotations')}
                   </button>
                 </PopoverContent>
               </Popover>
-              <Button size="sm" className="my-0.5" onClick={g.handleStartGame}>
+              <Button size="sm" className="h-10" onClick={g.handleStartGame}>
                 {t('live.start_game')}
               </Button>
             </div>
@@ -206,14 +214,14 @@ export function RotationGrid() {
         </div>
 
         {/* Overall stats — setup mode only */}
-        {!g.isLive && !g.isCompleted && (
+        {!g.isLive && !g.isCompleted && g.schedule && (
           <div className="max-w-4xl mx-auto px-4">
             <OverallStatsCards stats={g.schedule.overallStats} />
           </div>
         )}
 
         {/* Swap hint/instruction — stable slot in setup mode to avoid layout shift */}
-        {!g.isLive && !g.isCompleted && (
+        {!g.isLive && !g.isCompleted && g.schedule && (
           <div className="max-w-4xl mx-auto px-4">
             <p className="min-h-[56px] flex items-center text-ios-footnote text-muted-foreground bg-card rounded-[10px] py-3 px-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
               {g.swapSource
@@ -226,8 +234,20 @@ export function RotationGrid() {
           </div>
         )}
 
+        {/* Draft game with no schedule yet */}
+        {!g.schedule && (
+          <div className="max-w-4xl mx-auto px-4">
+            <div className="space-y-3 rounded-[10px] bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
+              <p className="text-ios-footnote text-muted-foreground">{t('error.no_schedule')}</p>
+              <Button size="sm" onClick={g.handleRegenerate} disabled={g.solver.isRunning}>
+                {g.solver.isRunning ? t('setup.generating') : t('setup.generate_rotations')}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Live toolbar: pips + view toggle — inline in content area */}
-        {g.isLive && (
+        {g.isLive && g.schedule && (
           <div className="flex items-center justify-between px-4 max-w-4xl mx-auto">
             <RotationPips
               periodGroups={g.periodGroups}
@@ -271,7 +291,7 @@ export function RotationGrid() {
         )}
 
         {/* Live focus view — default in live mode */}
-        {g.isLive && g.viewMode === 'focus' && g.currentRotation && (
+        {g.isLive && g.schedule && g.viewMode === 'focus' && g.currentRotation && (
           <div className="max-w-4xl mx-auto">
             <LiveFocusView
               currentRotation={g.currentRotation}
@@ -284,7 +304,7 @@ export function RotationGrid() {
         )}
 
         {/* Rotation grid table — full width for horizontal scrolling */}
-        {(!g.isLive || g.viewMode === 'grid') && g.config && (
+        {g.schedule && (!g.isLive || g.viewMode === 'grid') && g.config && (
           <RotationTable
             ref={gridRef}
             periodGroups={g.periodGroups}
@@ -307,8 +327,8 @@ export function RotationGrid() {
         )}
 
         {/* Live bottom bar */}
-        {g.isLive && <div className="h-20" />}
-        {g.isLive && (
+        {g.isLive && g.schedule && <div className="h-20" />}
+        {g.isLive && g.schedule && (
           <LiveBottomBar
             timer={timer}
             onAdvance={g.handleAdvance}

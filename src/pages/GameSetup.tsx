@@ -13,7 +13,7 @@ import { AttendanceList } from '@/components/game/AttendanceList.tsx';
 import { GoalieAssignmentSelector } from '@/components/game/GoalieAssignmentSelector.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { generateId } from '@/utils/id.ts';
-import { validateRosterForGame } from '@/utils/validation.ts';
+import { validateGoalieAssignments, validateRosterForGame } from '@/utils/validation.ts';
 import { createConfigFromTemplate } from '@/utils/gameConfig.ts';
 import { GAME_CONFIG_TEMPLATES } from '@/types/domain.ts';
 import type { Game, GoalieAssignment, PlayerId } from '@/types/domain.ts';
@@ -51,8 +51,16 @@ export function GameSetup() {
 
   const validationErrors = useMemo(() => {
     if (!selectedRoster || !selectedConfig) return [];
-    return validateRosterForGame(selectedRoster.players, selectedConfig, [...absentPlayerIds]);
-  }, [selectedRoster, selectedConfig, absentPlayerIds]);
+    const rosterErrors = validateRosterForGame(selectedRoster.players, selectedConfig, [
+      ...absentPlayerIds,
+    ]);
+    const goalieErrors = validateGoalieAssignments(
+      activePlayers,
+      selectedConfig,
+      goalieAssignments,
+    );
+    return [...rosterErrors, ...goalieErrors];
+  }, [selectedRoster, selectedConfig, absentPlayerIds, activePlayers, goalieAssignments]);
 
   const canGenerate =
     selectedTeam &&
