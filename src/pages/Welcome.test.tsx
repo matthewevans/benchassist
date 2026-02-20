@@ -34,7 +34,7 @@ describe('Welcome', () => {
 
   it('renders welcome title and buttons', () => {
     renderWelcome();
-    expect(screen.getByText('Welcome to BenchBoss')).toBeInTheDocument();
+    expect(screen.getByText('Welcome to BenchAssist')).toBeInTheDocument();
     expect(screen.getByText('Get Started')).toBeInTheDocument();
     expect(screen.getByText('Restore from Backup')).toBeInTheDocument();
   });
