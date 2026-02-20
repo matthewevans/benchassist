@@ -351,8 +351,12 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
     periods: 4,
     periodDurationMinutes: 12,
     rotationsPerPeriod: 2,
-    usePositions: false,
-    formation: [],
+    usePositions: true,
+    formation: [
+      { position: 'DEF', count: 2 },
+      { position: 'MID', count: 2 },
+      { position: 'FWD', count: 1 },
+    ],
     useGoalie: true,
   },
   {
@@ -364,8 +368,12 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
     periods: 4,
     periodDurationMinutes: 12,
     rotationsPerPeriod: 2,
-    usePositions: false,
-    formation: [],
+    usePositions: true,
+    formation: [
+      { position: 'DEF', count: 2 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 1 },
+    ],
     useGoalie: true,
   },
   {
@@ -377,8 +385,12 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
     periods: 4,
     periodDurationMinutes: 15,
     rotationsPerPeriod: 2,
-    usePositions: false,
-    formation: [],
+    usePositions: true,
+    formation: [
+      { position: 'DEF', count: 2 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 1 },
+    ],
     useGoalie: true,
   },
   {
@@ -390,8 +402,12 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
     periods: 2,
     periodDurationMinutes: 30,
     rotationsPerPeriod: 2,
-    usePositions: false,
-    formation: [],
+    usePositions: true,
+    formation: [
+      { position: 'DEF', count: 3 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 2 },
+    ],
     useGoalie: true,
   },
   {
@@ -403,8 +419,12 @@ export const GAME_CONFIG_TEMPLATES: GameConfigTemplate[] = [
     periods: 2,
     periodDurationMinutes: 35,
     rotationsPerPeriod: 2,
-    usePositions: false,
-    formation: [],
+    usePositions: true,
+    formation: [
+      { position: 'DEF', count: 4 },
+      { position: 'MID', count: 3 },
+      { position: 'FWD', count: 3 },
+    ],
     useGoalie: true,
   },
 ];
