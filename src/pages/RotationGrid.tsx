@@ -12,7 +12,6 @@ import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
-import { PlayerStatsCard } from '@/components/game/PlayerStatsCard.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
@@ -305,17 +304,6 @@ export function RotationGrid() {
             onRemovePlayer={(pid) => g.setRemovingPlayerId(pid)}
             onAddPlayerBack={g.handleAddPlayerBack}
           />
-        )}
-
-        {/* Player statistics — setup mode only */}
-        {!g.isLive && !g.isCompleted && g.config && (
-          <div className="max-w-4xl mx-auto px-4">
-            <PlayerStatsCard
-              players={g.allDisplayPlayers}
-              playerStats={g.schedule.playerStats}
-              minPlayPercentage={g.config.minPlayPercentage}
-            />
-          </div>
         )}
 
         {/* Live bottom bar */}

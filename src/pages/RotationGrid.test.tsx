@@ -223,20 +223,6 @@ describe('RotationGrid', () => {
       expect(screen.getByText('Variance')).toBeInTheDocument();
     });
 
-    it('shows player statistics section', () => {
-      const { state, game } = buildTestState();
-      renderGrid(state, game.id);
-      expect(screen.getByText('Player Statistics')).toBeInTheDocument();
-    });
-
-    it('shows play percentage per player', () => {
-      const { state, game } = buildTestState();
-      renderGrid(state, game.id);
-      // 4 of 5 players sit out 1 of 4 rotations = 75% (shown as number in ring)
-      const percentCells = screen.getAllByText('75');
-      expect(percentCells.length).toBeGreaterThanOrEqual(4);
-    });
-
     it('dispatches UPDATE_GAME to start the game', async () => {
       const { state, game } = buildTestState();
       const { dispatch } = renderGrid(state, game.id);
