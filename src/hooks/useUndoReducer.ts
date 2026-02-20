@@ -21,7 +21,7 @@ export const UNDOABLE_ACTIONS = new Set<AppAction['type']>([
   'MERGE_DATA',
 ]);
 
-function getUndoDescription(action: AppAction, state: AppState): string {
+export function getUndoDescription(action: AppAction, state: AppState): string {
   switch (action.type) {
     case 'DELETE_TEAM': {
       const team = state.teams[action.payload];
