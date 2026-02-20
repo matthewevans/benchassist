@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
@@ -13,11 +14,7 @@ import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
 import { createConfigFromTemplate } from '@/utils/gameConfig.ts';
-import {
-  GAME_CONFIG_TEMPLATES,
-  TEAM_GENDER_LABELS,
-  TEAM_GENDER_DOT_COLORS,
-} from '@/types/domain.ts';
+import { GAME_CONFIG_TEMPLATES, TEAM_GENDER_DOT_COLORS } from '@/types/domain.ts';
 import type { GameConfig, GameConfigId, Roster, TeamGender } from '@/types/domain.ts';
 import {
   Select,
@@ -32,6 +29,8 @@ export function TeamManagement() {
   const { state, dispatch } = useAppContext();
   const dispatchWithUndo = useUndoToast();
   const navigate = useNavigate();
+  const { t } = useTranslation('common');
+  const { t: tGame } = useTranslation('game');
   const [isAddingRoster, setIsAddingRoster] = useState(false);
   const [newRosterName, setNewRosterName] = useState('');
   const [isAddingConfig, setIsAddingConfig] = useState(false);
@@ -46,9 +45,9 @@ export function TeamManagement() {
   if (!team) {
     return (
       <div className="text-center py-12">
-        <p className="text-sm text-muted-foreground">Team not found</p>
+        <p className="text-sm text-muted-foreground">{t('team.not_found')}</p>
         <Link to="/" className="text-primary underline mt-2 inline-block">
-          Back to teams
+          {t('team.back_to_teams')}
         </Link>
       </div>
     );
@@ -109,7 +108,7 @@ export function TeamManagement() {
       <NavBar
         title={team.name}
         backTo="/"
-        backLabel="Teams"
+        backLabel={t('nav.teams')}
         trailing={
           <Button
             variant="plain"
@@ -119,14 +118,14 @@ export function TeamManagement() {
               setIsEditing(true);
             }}
           >
-            Edit
+            {t('actions.edit')}
           </Button>
         }
       />
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {/* Team Details */}
-        <GroupedList header="Details">
+        <GroupedList header={t('team.details')}>
           <GroupedListRow
             trailing={
               <Select
@@ -137,13 +136,11 @@ export function TeamManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
+                  {(['coed', 'boys', 'girls'] as const).map((value) => (
                     <SelectItem key={value} value={value}>
                       <span className="flex items-center gap-2">
-                        <span
-                          className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value as TeamGender]}`}
-                        />
-                        {label}
+                        <span className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value]}`} />
+                        {t(`gender.${value}`)}
                       </span>
                     </SelectItem>
                   ))}
@@ -151,7 +148,7 @@ export function TeamManagement() {
               </Select>
             }
           >
-            Gender
+            {t('team.gender_label')}
           </GroupedListRow>
           <GroupedListRow
             last
@@ -169,7 +166,7 @@ export function TeamManagement() {
                       payload: { teamId: teamId!, birthYear: val },
                     });
                   }}
-                  placeholder="e.g., 2017"
+                  placeholder={t('team.birth_year_placeholder')}
                   className="w-24 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
                 />
                 {team.birthYear && (
@@ -180,15 +177,15 @@ export function TeamManagement() {
               </div>
             }
           >
-            Birth Year
+            {t('team.birth_year')}
           </GroupedListRow>
         </GroupedList>
 
         {/* Rosters */}
-        <GroupedList header="Rosters">
+        <GroupedList header={t('team.rosters')}>
           {team.rosters.length === 0 ? (
             <GroupedListRow last>
-              <span className="text-muted-foreground">No rosters yet</span>
+              <span className="text-muted-foreground">{t('team.no_rosters')}</span>
             </GroupedListRow>
           ) : (
             team.rosters.map((roster, i) => (
@@ -197,7 +194,7 @@ export function TeamManagement() {
                   <div>
                     <div className="text-ios-body font-medium">{roster.name}</div>
                     <div className="text-ios-caption1 text-muted-foreground">
-                      {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
+                      {t('player_count', { count: roster.players.length })}
                     </div>
                   </div>
                 </GroupedListRow>
@@ -206,14 +203,14 @@ export function TeamManagement() {
           )}
         </GroupedList>
         <Button variant="secondary" size="sm" onClick={() => setIsAddingRoster(true)}>
-          Add Roster
+          {t('team.add_roster')}
         </Button>
 
         {/* Game Configurations */}
-        <GroupedList header="Game Configurations">
+        <GroupedList header={t('team.game_configs')}>
           {team.gameConfigs.length === 0 ? (
             <GroupedListRow last>
-              <span className="text-muted-foreground">No configurations</span>
+              <span className="text-muted-foreground">{t('team.no_configs')}</span>
             </GroupedListRow>
           ) : (
             team.gameConfigs.map((config, i) => (
@@ -226,8 +223,11 @@ export function TeamManagement() {
                 <div>
                   <div className="text-ios-body font-medium">{config.name}</div>
                   <div className="text-ios-caption1 text-muted-foreground">
-                    {config.fieldSize}v{config.fieldSize} &middot; {config.periods} periods &middot;{' '}
-                    {config.rotationsPerPeriod} rot/period
+                    {t('team.config_summary', {
+                      size: config.fieldSize,
+                      periods: config.periods,
+                      rpp: config.rotationsPerPeriod,
+                    })}
                   </div>
                 </div>
               </GroupedListRow>
@@ -251,34 +251,38 @@ export function TeamManagement() {
             </Button>
           ))}
           <Button variant="secondary" size="capsule" onClick={() => setIsAddingConfig(true)}>
-            Custom...
+            {t('team.custom')}
           </Button>
         </div>
 
         {/* Actions */}
-        <GroupedList header="Actions">
+        <GroupedList header={t('team.actions')}>
           <Link to={`/practice?team=${teamId}`}>
-            <GroupedListRow chevron>Practice Planner</GroupedListRow>
+            <GroupedListRow chevron>{t('team.practice_planner')}</GroupedListRow>
           </Link>
           <Link to={`/games/new?teamId=${teamId}`}>
-            <GroupedListRow chevron>New Game</GroupedListRow>
+            <GroupedListRow chevron>{tGame('history.new_game')}</GroupedListRow>
           </Link>
           <GroupedListRow last onClick={() => setConfirmDeleteTeam(true)}>
-            <span className="text-destructive">Delete Team</span>
+            <span className="text-destructive">{t('team.delete')}</span>
           </GroupedListRow>
         </GroupedList>
       </div>
 
       {/* BottomSheets */}
-      <BottomSheet open={isAddingRoster} onOpenChange={setIsAddingRoster} title="New Roster">
+      <BottomSheet
+        open={isAddingRoster}
+        onOpenChange={setIsAddingRoster}
+        title={t('team.new_roster')}
+      >
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="roster-name">Roster Name</Label>
+            <Label htmlFor="roster-name">{t('team.roster_name')}</Label>
             <Input
               id="roster-name"
               value={newRosterName}
               onChange={(e) => setNewRosterName(e.target.value)}
-              placeholder="e.g., Spring 2026"
+              placeholder={t('team.roster_name_placeholder')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleAddRoster();
               }}
@@ -286,7 +290,7 @@ export function TeamManagement() {
             />
           </div>
           <Button onClick={handleAddRoster} size="lg" disabled={!newRosterName.trim()}>
-            Create Roster
+            {t('team.create_roster')}
           </Button>
         </div>
       </BottomSheet>
@@ -294,7 +298,7 @@ export function TeamManagement() {
       <BottomSheet
         open={isAddingConfig}
         onOpenChange={setIsAddingConfig}
-        title="New Game Configuration"
+        title={t('team.new_config')}
       >
         <GameConfigForm teamId={teamId ?? ''} onSave={handleSaveConfig} />
       </BottomSheet>
@@ -304,7 +308,7 @@ export function TeamManagement() {
         onOpenChange={(open) => {
           if (!open) setEditingConfig(null);
         }}
-        title="Edit Configuration"
+        title={t('team.edit_config')}
       >
         {editingConfig && (
           <>
@@ -316,7 +320,7 @@ export function TeamManagement() {
             <div className="pt-6">
               <GroupedList>
                 <GroupedListRow last onClick={() => setDeletingConfigId(editingConfig.id)}>
-                  <span className="text-destructive">Delete Configuration</span>
+                  <span className="text-destructive">{t('team.delete_config')}</span>
                 </GroupedListRow>
               </GroupedList>
             </div>
@@ -324,10 +328,10 @@ export function TeamManagement() {
         )}
       </BottomSheet>
 
-      <BottomSheet open={isEditing} onOpenChange={setIsEditing} title="Rename Team">
+      <BottomSheet open={isEditing} onOpenChange={setIsEditing} title={t('team.rename')}>
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label htmlFor="team-name">Team Name</Label>
+            <Label htmlFor="team-name">{t('team.name_label')}</Label>
             <Input
               id="team-name"
               value={editName}
@@ -336,12 +340,12 @@ export function TeamManagement() {
                 if (e.key === 'Enter') handleRenameTeam();
                 if (e.key === 'Escape') setIsEditing(false);
               }}
-              aria-label="Team name"
+              aria-label={t('team.name_label')}
               autoFocus
             />
           </div>
           <Button onClick={handleRenameTeam} size="lg" disabled={!editName.trim()}>
-            Save
+            {t('actions.save')}
           </Button>
         </div>
       </BottomSheet>
@@ -350,10 +354,10 @@ export function TeamManagement() {
       <IOSAlert
         open={confirmDeleteTeam}
         onOpenChange={setConfirmDeleteTeam}
-        title={`Delete "${team.name}"?`}
-        message="This will permanently delete the team and all its rosters, configs, and games."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={t('team.delete_title', { name: team.name })}
+        message={t('team.delete_message')}
+        confirmLabel={t('actions.delete')}
+        cancelLabel={t('actions.cancel')}
         onConfirm={() => {
           setConfirmDeleteTeam(false);
           handleDeleteTeam();
@@ -367,10 +371,10 @@ export function TeamManagement() {
         onOpenChange={(open) => {
           if (!open) setDeletingConfigId(null);
         }}
-        title="Delete configuration?"
-        message="This game configuration will be permanently removed."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title={t('team.delete_config_title')}
+        message={t('team.delete_config_message')}
+        confirmLabel={t('actions.delete')}
+        cancelLabel={t('actions.cancel')}
         onConfirm={() => {
           if (teamId && deletingConfigId) {
             dispatchWithUndo({

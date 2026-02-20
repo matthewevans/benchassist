@@ -1,5 +1,6 @@
 import { forwardRef } from 'react';
 import { ChevronRightIcon, ChevronDownIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { SUB_POSITION_LABELS } from '@/types/domain.ts';
@@ -102,13 +103,15 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
       onAddPlayerBack,
     } = props;
 
+    const { t } = useTranslation('game');
+
     return (
       <div className="overflow-x-auto px-4" ref={ref}>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border/50">
               <th className="text-left py-2.5 pr-3 pl-1 sticky left-0 bg-background text-ios-footnote uppercase tracking-wide text-muted-foreground z-10">
-                Player
+                {t('rotation_table.player')}
               </th>
               {periodGroups.map((group) => {
                 if (collapsedPeriods.has(group.periodIndex)) {
@@ -120,7 +123,9 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       <button
                         type="button"
                         className="mx-auto inline-flex min-h-11 min-w-11 items-center justify-center gap-0.5 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80"
-                        aria-label={`Expand period ${group.periodIndex + 1}`}
+                        aria-label={t('rotation_table.expand_period', {
+                          number: group.periodIndex + 1,
+                        })}
                         onClick={() => togglePeriod(group.periodIndex)}
                       >
                         <span className="text-ios-caption1 text-muted-foreground bg-secondary/50 rounded px-2 py-0.5">
@@ -162,7 +167,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                             isNext && 'text-muted-foreground',
                           )}
                         >
-                          {isCurrent ? 'Now' : 'Next'}
+                          {isCurrent ? t('live.now') : t('live.next')}
                         </span>
                       )}
                       <div className="text-xs text-muted-foreground font-normal">
@@ -241,7 +246,9 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                           <button
                             type="button"
                             className="mx-auto min-h-11 min-w-11 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80"
-                            aria-label={`Expand period ${group.periodIndex + 1}`}
+                            aria-label={t('rotation_table.expand_period', {
+                              number: group.periodIndex + 1,
+                            })}
                             onClick={() => togglePeriod(group.periodIndex)}
                           />
                         </td>
@@ -340,7 +347,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
           <tfoot>
             <tr className="border-t border-border/50 font-medium">
               <td className="py-2.5 pr-3 pl-1 sticky left-0 bg-background text-ios-footnote text-muted-foreground z-10">
-                Team Strength
+                {t('live.team_strength')}
               </td>
               {periodGroups.map((group) => {
                 if (collapsedPeriods.has(group.periodIndex)) {

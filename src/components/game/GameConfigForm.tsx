@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import {
@@ -12,7 +13,6 @@ import { Switch } from '@/components/ui/switch.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { generateId } from '@/utils/id.ts';
-import { POSITION_LABELS } from '@/types/domain.ts';
 import type { GameConfig, FormationSlot, Position } from '@/types/domain.ts';
 import { deriveSubPositions } from '@/utils/positions.ts';
 
@@ -23,6 +23,8 @@ interface GameConfigFormProps {
 }
 
 export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigFormProps) {
+  const { t } = useTranslation('game');
+  const { t: tCommon } = useTranslation('common');
   const [name, setName] = useState(initialConfig?.name ?? '');
   const [fieldSize, setFieldSize] = useState(initialConfig?.fieldSize ?? 7);
   const [periods, setPeriods] = useState(initialConfig?.periods ?? 2);
@@ -94,8 +96,14 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
     onSave(config);
   }
 
+  const formationDiff = formationTotal - fieldPlayerSlots;
   const positionFooter = usePositions
-    ? `Total: ${formationTotal} / ${fieldPlayerSlots} field players${formationTotal !== fieldPlayerSlots ? (formationTotal < fieldPlayerSlots ? ' — need more' : ' — too many') : ''}`
+    ? t('config_form.formation_total', { current: formationTotal, max: fieldPlayerSlots }) +
+      (formationDiff !== 0
+        ? formationDiff < 0
+          ? t('config_form.formation_need_more', { count: -formationDiff })
+          : t('config_form.formation_too_many', { count: formationDiff })
+        : '')
     : undefined;
 
   return (
@@ -108,17 +116,17 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Regular Season 7v7"
+              placeholder={t('config_form.name_placeholder')}
               className="w-44 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
             />
           }
         >
-          <span className="text-ios-body">Configuration Name</span>
+          <span className="text-ios-body">{t('config_form.name_label')}</span>
         </GroupedListRow>
       </GroupedList>
 
       {/* Section 2: Format */}
-      <GroupedList header="Format">
+      <GroupedList header={t('config_form.format')}>
         <GroupedListRow
           trailing={
             <Input
@@ -131,7 +139,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
             />
           }
         >
-          <span className="text-ios-body">Field Size</span>
+          <span className="text-ios-body">{t('config_form.field_size')}</span>
         </GroupedListRow>
         <GroupedListRow
           trailing={
@@ -145,7 +153,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
             />
           }
         >
-          <span className="text-ios-body">Periods</span>
+          <span className="text-ios-body">{t('config_form.periods')}</span>
         </GroupedListRow>
         <GroupedListRow
           trailing={
@@ -158,11 +166,13 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
                 onChange={(e) => setPeriodDuration(Number(e.target.value))}
                 className="w-16 text-right border-none shadow-none bg-transparent px-0 focus-visible:ring-0 h-auto text-ios-body"
               />
-              <span className="text-ios-body text-muted-foreground">min</span>
+              <span className="text-ios-body text-muted-foreground">
+                {t('config_form.period_duration_unit')}
+              </span>
             </div>
           }
         >
-          <span className="text-ios-body">Period Duration</span>
+          <span className="text-ios-body">{t('config_form.period_duration')}</span>
         </GroupedListRow>
         <GroupedListRow
           last
@@ -177,19 +187,19 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
             />
           }
         >
-          <span className="text-ios-body">Rotations / Period</span>
+          <span className="text-ios-body">{t('config_form.rotations_per_period')}</span>
         </GroupedListRow>
       </GroupedList>
 
       {/* Section 3: Rules */}
-      <GroupedList header="Rules">
+      <GroupedList header={t('config_form.rules')}>
         <GroupedListRow
           trailing={<Switch checked={noConsecutiveBench} onCheckedChange={setNoConsecutiveBench} />}
         >
           <div>
-            <div className="text-ios-body">No consecutive bench</div>
+            <div className="text-ios-body">{t('config_form.no_consecutive_bench')}</div>
             <div className="text-ios-caption1 text-muted-foreground">
-              Prevent back-to-back bench rotations
+              {t('config_form.no_consecutive_bench_desc')}
             </div>
           </div>
         </GroupedListRow>
@@ -206,16 +216,16 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
               />
             }
           >
-            <span className="text-ios-body">Max consecutive</span>
+            <span className="text-ios-body">{t('config_form.max_consecutive')}</span>
           </GroupedListRow>
         )}
         <GroupedListRow
           trailing={<Switch checked={enforceMinPlayTime} onCheckedChange={setEnforceMinPlayTime} />}
         >
           <div>
-            <div className="text-ios-body">Minimum play time</div>
+            <div className="text-ios-body">{t('config_form.min_play_time')}</div>
             <div className="text-ios-caption1 text-muted-foreground">
-              Every player plays at least this %
+              {t('config_form.min_play_time_desc')}
             </div>
           </div>
         </GroupedListRow>
@@ -236,21 +246,21 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
               </div>
             }
           >
-            <span className="text-ios-body">Min play %</span>
+            <span className="text-ios-body">{t('config_form.min_play_pct')}</span>
           </GroupedListRow>
         )}
       </GroupedList>
 
       {/* Section 4: Goalkeeper */}
-      <GroupedList header="Goalkeeper">
+      <GroupedList header={t('config_form.goalkeeper')}>
         <GroupedListRow
           last={!useGoalie}
           trailing={<Switch checked={useGoalie} onCheckedChange={setUseGoalie} />}
         >
           <div>
-            <div className="text-ios-body">Uses goalkeeper</div>
+            <div className="text-ios-body">{t('config_form.uses_goalkeeper')}</div>
             <div className="text-ios-caption1 text-muted-foreground">
-              Format includes a dedicated GK
+              {t('config_form.uses_goalkeeper_desc')}
             </div>
           </div>
         </GroupedListRow>
@@ -262,9 +272,9 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
               }
             >
               <div>
-                <div className="text-ios-body">Full period only</div>
+                <div className="text-ios-body">{t('config_form.full_period_only')}</div>
                 <div className="text-ios-caption1 text-muted-foreground">
-                  No mid-period goalie swaps
+                  {t('config_form.full_period_only_desc')}
                 </div>
               </div>
             </GroupedListRow>
@@ -278,9 +288,9 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
               }
             >
               <div>
-                <div className="text-ios-body">Rest after period</div>
+                <div className="text-ios-body">{t('config_form.rest_after_period')}</div>
                 <div className="text-ios-caption1 text-muted-foreground">
-                  Goalie benches first rotation next period
+                  {t('config_form.rest_after_period_desc')}
                 </div>
               </div>
             </GroupedListRow>
@@ -289,15 +299,15 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
       </GroupedList>
 
       {/* Section 5: Positions */}
-      <GroupedList header="Positions" footer={positionFooter}>
+      <GroupedList header={t('config_form.positions')} footer={positionFooter}>
         <GroupedListRow
           last={!usePositions}
           trailing={<Switch checked={usePositions} onCheckedChange={setUsePositions} />}
         >
           <div>
-            <div className="text-ios-body">Use positions</div>
+            <div className="text-ios-body">{t('config_form.use_positions')}</div>
             <div className="text-ios-caption1 text-muted-foreground">
-              Assign field positions (DEF, MID, FWD)
+              {t('config_form.use_positions_desc')}
             </div>
           </div>
         </GroupedListRow>
@@ -320,7 +330,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
                   />
                 }
               >
-                <span className="text-ios-body">{POSITION_LABELS[pos]}s</span>
+                <span className="text-ios-body">{tCommon(`position_plural.${pos}`)}</span>
               </GroupedListRow>
             );
           })}
@@ -336,7 +346,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
       )}
 
       {/* Section 6: Balance */}
-      <GroupedList header="Balance">
+      <GroupedList header={t('config_form.balance')}>
         <GroupedListRow
           last
           trailing={
@@ -348,14 +358,14 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="strict">Strict</SelectItem>
-                <SelectItem value="balanced">Balanced</SelectItem>
-                <SelectItem value="off">Off</SelectItem>
+                <SelectItem value="strict">{t('config_form.balance_strict')}</SelectItem>
+                <SelectItem value="balanced">{t('config_form.balance_balanced')}</SelectItem>
+                <SelectItem value="off">{t('config_form.balance_off')}</SelectItem>
               </SelectContent>
             </Select>
           }
         >
-          <span className="text-ios-body">Priority</span>
+          <span className="text-ios-body">{t('config_form.balance_priority')}</span>
         </GroupedListRow>
       </GroupedList>
 
@@ -365,7 +375,7 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
         onClick={handleSave}
         disabled={!name.trim() || (usePositions && formationTotal !== fieldPlayerSlots)}
       >
-        {initialConfig ? 'Save Changes' : 'Create Configuration'}
+        {initialConfig ? t('config_form.save') : t('config_form.create')}
       </Button>
     </div>
   );

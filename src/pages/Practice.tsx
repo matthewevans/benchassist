@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { usePracticePlan, PHASE_ORDER } from '@/hooks/usePracticePlan.ts';
 import { DrillCard } from '@/components/DrillCard.tsx';
@@ -15,8 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select.tsx';
 import { TRAINING_FOCUSES } from '@/data/training-focuses.ts';
-import { getUAge, uAgeToBirthYear, DRILL_BRACKET_LABELS } from '@/utils/age.ts';
-import { DRILL_CATEGORY_LABELS, DRILL_PHASE_LABELS } from '@/types/drill.ts';
+import { getUAge, uAgeToBirthYear } from '@/utils/age.ts';
+import { getLocalized } from '@/types/drill.ts';
 import { cn } from '@/lib/utils.ts';
 import type { DrillCategory } from '@/types/drill.ts';
 
@@ -56,6 +57,8 @@ function PracticeChip({ selected, onClick, children }: PracticeChipProps) {
 }
 
 export function Practice() {
+  const { t, i18n } = useTranslation('practice');
+  const locale = i18n.language;
   const { state, dispatch } = useAppContext();
   const [searchParams] = useSearchParams();
   const teamId = searchParams.get('team');
@@ -77,7 +80,7 @@ export function Practice() {
   return (
     <div>
       <NavBar
-        title="Practice"
+        title={t('title')}
         largeTitle
         trailing={
           p.birthYear != null ? (
@@ -87,7 +90,7 @@ export function Practice() {
               className="h-11 px-2 text-ios-footnote"
               onClick={p.reset}
             >
-              Reset
+              {t('reset')}
             </Button>
           ) : undefined
         }
@@ -95,20 +98,21 @@ export function Practice() {
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {/* Age group section */}
-        <GroupedList header="Age Group">
+        <GroupedList header={t('age_group')}>
           <GroupedListRow last>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Input
                   type="number"
-                  placeholder="Birth year"
+                  placeholder={t('birth_year_placeholder')}
                   value={p.birthYear ?? ''}
                   onChange={(e) => p.handleBirthYearInput(e.target.value)}
                   className="w-32"
                 />
                 {p.birthYear && p.drillBracket && (
                   <span className="text-ios-footnote text-muted-foreground">
-                    U{getUAge(p.birthYear)} · {DRILL_BRACKET_LABELS[p.drillBracket]} drills
+                    U{getUAge(p.birthYear)} ·{' '}
+                    {t(`age_brackets.${p.drillBracket.toLowerCase() as 'u6'}`)} drills
                   </span>
                 )}
               </div>
@@ -132,7 +136,7 @@ export function Practice() {
         </GroupedList>
 
         {/* Settings section */}
-        <GroupedList header="Settings">
+        <GroupedList header={t('settings_section')}>
           <GroupedListRow
             trailing={
               <Input
@@ -145,7 +149,7 @@ export function Practice() {
               />
             }
           >
-            <span className="text-ios-body">Players</span>
+            <span className="text-ios-body">{t('players')}</span>
           </GroupedListRow>
           <GroupedListRow
             trailing={
@@ -159,32 +163,29 @@ export function Practice() {
                 <SelectContent>
                   {DURATION_OPTIONS.map((mins) => (
                     <SelectItem key={mins} value={String(mins)}>
-                      {mins} min
+                      {mins} {t('min_suffix')}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             }
           >
-            <span className="text-ios-body">Duration</span>
+            <span className="text-ios-body">{t('duration')}</span>
           </GroupedListRow>
           <GroupedListRow
             last
             trailing={<Switch checked={p.favoritesOnly} onCheckedChange={p.setFavoritesOnly} />}
           >
             <div>
-              <div className="text-ios-body">Favorites only</div>
+              <div className="text-ios-body">{t('favorites_only')}</div>
             </div>
           </GroupedListRow>
         </GroupedList>
 
         {/* Practice themes */}
         {p.drillBracket && (
-          <GroupedList
-            header="Practice Presets"
-            footer="Tap a preset to apply its focus mix and regenerate the plan."
-          >
-            {TRAINING_FOCUSES.filter((t) => t.ageGroups.includes(p.drillBracket!)).map(
+          <GroupedList header={t('presets')} footer={t('presets_hint')}>
+            {TRAINING_FOCUSES.filter((tf) => tf.ageGroups.includes(p.drillBracket!)).map(
               (template, index, list) => (
                 <GroupedListRow
                   key={template.id}
@@ -198,9 +199,11 @@ export function Practice() {
                   }}
                 >
                   <div>
-                    <div className="text-ios-body font-medium">{template.name}</div>
+                    <div className="text-ios-body font-medium">
+                      {getLocalized(template.name, locale)}
+                    </div>
                     <div className="text-ios-caption1 text-muted-foreground">
-                      {template.description}
+                      {getLocalized(template.description, locale)}
                     </div>
                   </div>
                 </GroupedListRow>
@@ -213,7 +216,7 @@ export function Practice() {
         {p.drillBracket && (
           <section>
             <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
-              Focus Areas
+              {t('focus_areas')}
             </h3>
             <div className="bg-card rounded-[10px] px-3 py-3">
               <div className="flex flex-wrap gap-1.5">
@@ -225,7 +228,7 @@ export function Practice() {
                       selected={isSelected}
                       onClick={() => p.toggleCategory(cat)}
                     >
-                      {DRILL_CATEGORY_LABELS[cat]}
+                      {t(`category.${cat}`)}
                     </PracticeChip>
                   );
                 })}
@@ -239,7 +242,7 @@ export function Practice() {
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-ios-title3 font-semibold">
-                Practice Plan · {p.totalDuration} min
+                {t('plan_header', { minutes: p.totalDuration })}
               </h2>
               <Button
                 size="xs"
@@ -247,7 +250,7 @@ export function Practice() {
                 className="h-11 px-2 text-ios-footnote"
                 onClick={() => p.setSeed(Date.now())}
               >
-                Shuffle All
+                {t('shuffle_all')}
               </Button>
             </div>
             <div className="space-y-3">
@@ -274,11 +277,11 @@ export function Practice() {
             {/* Browse filters */}
             <section>
               <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
-                Browse Drills
+                {t('browse_drills')}
               </h3>
               <div className="bg-card rounded-[10px] px-3 py-3 space-y-3">
                 <Input
-                  placeholder="Search drills…"
+                  placeholder={t('search_placeholder')}
                   value={p.browseSearch}
                   onChange={(e) => p.setBrowseSearch(e.target.value)}
                 />
@@ -295,7 +298,7 @@ export function Practice() {
                       selected={p.browseCategory === cat}
                       onClick={() => p.setBrowseCategory(p.browseCategory === cat ? null : cat)}
                     >
-                      {DRILL_CATEGORY_LABELS[cat]}
+                      {t(`category.${cat}`)}
                     </PracticeChip>
                   ))}
                 </div>
@@ -312,7 +315,7 @@ export function Practice() {
               return (
                 <section key={phase} className="space-y-2">
                   <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4">
-                    {DRILL_PHASE_LABELS[phase]}
+                    {t(`phase.${phase}`)}
                   </h2>
                   <div className="space-y-3">
                     {drills.map((drill) => (
@@ -338,10 +341,10 @@ export function Practice() {
             <GroupedListRow last>
               <div className="text-center py-4">
                 <div className="text-ios-body font-medium text-muted-foreground">
-                  Select a birth year to get started
+                  {t('empty_state')}
                 </div>
                 <div className="text-ios-caption1 text-muted-foreground mt-1">
-                  Choose the team birth year above to browse drills and generate practice plans.
+                  {t('empty_state_detail')}
                 </div>
               </div>
             </GroupedListRow>

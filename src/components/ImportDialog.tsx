@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
@@ -22,6 +23,7 @@ export function ImportDialog({
   onImportSelected,
   onReplaceAll,
 }: ImportDialogProps) {
+  const { t } = useTranslation('settings');
   const teamList = Object.values(importData.teams).sort((a, b) => b.updatedAt - a.updatedAt);
   const selectionState = useSelectionState(teamList);
   const { selections, hasAnySelected } = selectionState;
@@ -41,7 +43,7 @@ export function ImportDialog({
 
   return (
     <>
-      <BottomSheet open={open} onOpenChange={onOpenChange} title="Import Backup">
+      <BottomSheet open={open} onOpenChange={onOpenChange} title={t('data.import_title')}>
         <TeamSelectionTree
           teams={teamList}
           games={importData.games}
@@ -50,23 +52,21 @@ export function ImportDialog({
 
         <div className="flex flex-col gap-2 pt-4">
           <Button onClick={handleImportSelected} disabled={!hasAnySelected} className="w-full">
-            Import Selected
+            {t('data.import_selected')}
           </Button>
           <Button variant="destructive" onClick={() => setConfirmReplace(true)} className="w-full">
-            Replace All Data
+            {t('data.replace_all')}
           </Button>
-          <p className="text-xs text-muted-foreground text-center">
-            Deletes all current data and replaces with this backup.
-          </p>
+          <p className="text-xs text-muted-foreground text-center">{t('data.replace_all_desc')}</p>
         </div>
       </BottomSheet>
 
       <IOSAlert
         open={confirmReplace}
         onOpenChange={setConfirmReplace}
-        title="Replace all data?"
-        message="This will delete all your current teams, rosters, and game history and replace them with the imported backup. This action can be undone."
-        confirmLabel="Replace All"
+        title={t('data.replace_confirm_title')}
+        message={t('data.replace_confirm_message')}
+        confirmLabel={t('data.replace_confirm')}
         onConfirm={handleReplaceAll}
         onCancel={() => setConfirmReplace(false)}
         destructive

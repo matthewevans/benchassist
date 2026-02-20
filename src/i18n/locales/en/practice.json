@@ -1,0 +1,74 @@
+{
+  "title": "Practice",
+  "plan_title": "Practice Plan",
+  "plan_header": "Practice Plan · {{minutes}} min",
+  "empty_state": "Select a birth year to get started",
+  "empty_state_detail": "Choose the team birth year above to browse drills and generate practice plans.",
+  "focus_areas": "Focus Areas",
+  "browse_drills": "Browse Drills",
+  "age_group": "Age Group",
+  "birth_year_placeholder": "Birth year",
+  "settings_section": "Settings",
+  "players": "Players",
+  "duration": "Duration",
+  "favorites_only": "Favorites only",
+  "presets": "Practice Presets",
+  "presets_hint": "Tap a preset to apply its focus mix and regenerate the plan.",
+  "shuffle_all": "Shuffle All",
+  "shuffle_drill": "Swap",
+  "reset": "Reset",
+  "search_placeholder": "Search drills…",
+  "min_suffix": "min",
+  "phase": {
+    "warm-up": "Warm-up",
+    "main": "Main",
+    "scrimmage": "Scrimmage",
+    "cool-down": "Cool-down"
+  },
+  "category": {
+    "passing": "Passing",
+    "dribbling": "Dribbling",
+    "shooting": "Shooting",
+    "first-touch": "First Touch",
+    "goalkeeping": "Goalkeeping",
+    "attacking": "Attacking",
+    "defending": "Defending",
+    "possession": "Possession",
+    "transition": "Transition",
+    "set-pieces": "Set Pieces"
+  },
+  "intensity": {
+    "low": "Low",
+    "medium": "Med",
+    "high": "High"
+  },
+  "drill": {
+    "setup": "Setup:",
+    "tip": "Tip:",
+    "more_tips": "More tips:",
+    "equipment": "Equipment:",
+    "variations": "Variations:",
+    "show_less": "Show Less",
+    "show_more": "Show More",
+    "min_players": "{{count}} players min",
+    "duration_min": "{{minutes}} min",
+    "pace": "Pace:"
+  },
+  "equipment": {
+    "balls": "Balls",
+    "cones": "Cones",
+    "pinnies": "Pinnies",
+    "goals": "Goals",
+    "gloves": "Gloves",
+    "ladder": "Ladder"
+  },
+  "age_brackets": {
+    "u6": "U6 (5-6)",
+    "u8": "U8 (7-8)",
+    "u10": "U10 (9-10)",
+    "u12": "U12 (11-12)",
+    "u14": "U14 (13-14)",
+    "u16": "U16 (15-16)",
+    "u18": "U18 (17-18)"
+  }
+}

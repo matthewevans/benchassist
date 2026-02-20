@@ -1,4 +1,5 @@
 import { cloneElement, isValidElement, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
@@ -34,6 +35,8 @@ export function PlayerImportDialog({
   onImport,
   trigger,
 }: PlayerImportDialogProps) {
+  const { t } = useTranslation('roster');
+  const { t: tCommon } = useTranslation('common');
   const [open, setOpen] = useState(false);
   const [importText, setImportText] = useState('');
   const [importStep, setImportStep] = useState<'paste' | 'preview'>('paste');
@@ -98,23 +101,23 @@ export function PlayerImportDialog({
         onOpenChange={(o) => {
           if (!o) handleClose();
         }}
-        title={importStep === 'paste' ? 'Import Players' : 'Review Import'}
+        title={importStep === 'paste' ? t('import_players') : t('review_import')}
       >
         {importStep === 'paste' ? (
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="import-text">Paste player list (Name: Skill per line)</Label>
+              <Label htmlFor="import-text">{t('import_paste_label')}</Label>
               <textarea
                 id="import-text"
                 className="w-full min-h-[200px] rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
-                placeholder={'Alex: 4\nJordan: 3\nSam: 5'}
+                placeholder={t('import_placeholder')}
                 autoFocus
               />
             </div>
             <Button onClick={handleParse} className="w-full" disabled={!importText.trim()}>
-              Preview
+              {t('import_preview_btn')}
             </Button>
           </div>
         ) : (
@@ -156,14 +159,14 @@ export function PlayerImportDialog({
                         onCheckedChange={(checked) =>
                           updateRow(i, { canPlayGoalie: checked as boolean })
                         }
-                        aria-label="Can play goalie"
+                        aria-label={t('can_play_goalie_aria')}
                       />
                       {row.existingPlayerId ? (
                         <Badge variant="secondary" className="text-ios-caption2 shrink-0">
-                          Update
+                          {t('import_update')}
                         </Badge>
                       ) : (
-                        <Badge className="text-ios-caption2 shrink-0">New</Badge>
+                        <Badge className="text-ios-caption2 shrink-0">{t('import_new')}</Badge>
                       )}
                     </>
                   )}
@@ -172,7 +175,7 @@ export function PlayerImportDialog({
                     size="sm"
                     className="text-destructive shrink-0"
                     onClick={() => removeRow(i)}
-                    aria-label="Remove player"
+                    aria-label={t('import_remove_aria')}
                   >
                     X
                   </Button>
@@ -182,14 +185,14 @@ export function PlayerImportDialog({
 
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setImportStep('paste')} className="flex-1">
-                Back
+                {tCommon('actions.back')}
               </Button>
               <Button
                 onClick={handleSave}
                 className="flex-1"
                 disabled={importRows.filter((r) => !r.error).length === 0}
               >
-                Import {importRows.filter((r) => !r.error).length} Players
+                {t('import_add', { count: importRows.filter((r) => !r.error).length })}
               </Button>
             </div>
           </div>

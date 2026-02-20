@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui';
 import { ChevronRight, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { NavBar } from '@/components/layout/NavBar.tsx';
@@ -10,11 +11,13 @@ import { Button } from '@/components/ui/button.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwipeableRow } from '@/components/ui/swipeable-row.tsx';
-import { GAME_STATUS_LABELS, GAME_STATUS_STYLES } from '@/types/domain.ts';
+import { GAME_STATUS_STYLES } from '@/types/domain.ts';
 
 export function GameHistory() {
   const { state } = useAppContext();
   const dispatchWithUndo = useUndoToast();
+  const { t } = useTranslation('game');
+  const { t: tCommon } = useTranslation('common');
   const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
 
   const games = Object.values(state.games).sort((a, b) => b.createdAt - a.createdAt);
@@ -28,11 +31,11 @@ export function GameHistory() {
   return (
     <div>
       <NavBar
-        title="Games"
+        title={t('history.title')}
         largeTitle
         trailing={
           <Button asChild variant="plain" size="icon">
-            <Link to="/games/new" aria-label="Create new game">
+            <Link to="/games/new" aria-label={t('history.create_new_aria')}>
               <Plus className="size-[22px]" />
             </Link>
           </Button>
@@ -44,9 +47,11 @@ export function GameHistory() {
           <GroupedList>
             <GroupedListRow last>
               <div className="text-center py-4">
-                <div className="text-ios-body font-medium text-muted-foreground">No games yet</div>
+                <div className="text-ios-body font-medium text-muted-foreground">
+                  {t('history.empty')}
+                </div>
                 <div className="text-ios-caption1 text-muted-foreground mt-1">
-                  Tap + to create your first game.
+                  {t('history.empty_sub')}
                 </div>
               </div>
             </GroupedListRow>
@@ -68,7 +73,7 @@ export function GameHistory() {
                           trailing={
                             <div className="flex items-center gap-2">
                               <Badge className={GAME_STATUS_STYLES[game.status]}>
-                                {GAME_STATUS_LABELS[game.status]}
+                                {tCommon(`game_status.${game.status}`)}
                               </Badge>
                               <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
                             </div>
@@ -89,7 +94,7 @@ export function GameHistory() {
                           className="flex items-center rounded-lg px-3 py-2 text-ios-subheadline text-destructive outline-hidden select-none data-[highlighted]:bg-accent cursor-default"
                           onSelect={() => setDeletingGameId(game.id)}
                         >
-                          Delete
+                          {tCommon('actions.delete')}
                         </ContextMenuPrimitive.Item>
                       </ContextMenuPrimitive.Content>
                     </ContextMenuPrimitive.Portal>
@@ -108,9 +113,9 @@ export function GameHistory() {
         }}
         onConfirm={handleDeleteGame}
         onCancel={() => setDeletingGameId(null)}
-        title="Delete game?"
-        message="This will permanently remove this game and its rotation schedule."
-        confirmLabel="Delete"
+        title={t('history.delete_title')}
+        message={t('history.delete_message')}
+        confirmLabel={tCommon('actions.delete')}
         destructive
       />
     </div>

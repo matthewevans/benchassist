@@ -7,6 +7,7 @@ import {
   ChevronRightIcon,
   ChevronsRightIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 import type { UsePeriodTimerResult } from '@/hooks/usePeriodTimer.ts';
@@ -32,6 +33,7 @@ export function LiveBottomBar({
   swapPlayerName,
   onCancelSwap,
 }: LiveBottomBarProps) {
+  const { t } = useTranslation('game');
   const nextMarker = timer.markers.find((m) => timer.elapsedMs < m.timeMs);
   const nextSubMin = nextMarker ? Math.ceil((nextMarker.timeMs - timer.elapsedMs) / 60000) : null;
 
@@ -85,7 +87,7 @@ export function LiveBottomBar({
               size="icon"
               className="size-11"
               onClick={timer.pause}
-              aria-label="Pause timer"
+              aria-label={t('live.timer_pause')}
             >
               <PauseIcon className="size-[18px]" />
             </Button>
@@ -95,7 +97,7 @@ export function LiveBottomBar({
               size="icon"
               className="size-11"
               onClick={timer.play}
-              aria-label="Start timer"
+              aria-label={t('live.timer_start')}
             >
               <PlayIcon className="size-[18px]" />
             </Button>
@@ -105,7 +107,7 @@ export function LiveBottomBar({
             size="icon"
             className="size-11"
             onClick={timer.reset}
-            aria-label="Reset timer"
+            aria-label={t('live.timer_reset')}
           >
             <RotateCcwIcon className="size-4" />
           </Button>
@@ -116,22 +118,22 @@ export function LiveBottomBar({
           {swapPlayerName ? (
             <div className="flex items-center justify-center gap-2">
               <span className="text-primary truncate text-ios-subheadline">
-                Swapping {swapPlayerName}
+                {t('live.swapping', { name: swapPlayerName })}
               </span>
               <Button
                 variant="secondary"
                 size="capsule"
                 className="shrink-0"
                 onClick={onCancelSwap}
-                aria-label="Cancel swap"
+                aria-label={t('live.cancel_swap')}
               >
                 <XIcon className="size-3 mr-1" />
-                Cancel
+                {t('swap.cancel')}
               </Button>
             </div>
           ) : nextSubMin != null && !timer.isOvertime ? (
             <span className="text-muted-foreground whitespace-nowrap text-ios-caption1">
-              Sub ~{nextSubMin}m
+              {t('live.sub_hint', { minutes: nextSubMin })}
             </span>
           ) : null}
         </div>
@@ -144,7 +146,7 @@ export function LiveBottomBar({
             className="size-11 rounded-full"
             onClick={onRetreat}
             disabled={isFirstRotation}
-            aria-label="Previous rotation"
+            aria-label={t('live.previous_rotation')}
           >
             <ChevronLeftIcon className="size-5" />
           </Button>
@@ -153,17 +155,17 @@ export function LiveBottomBar({
               variant="destructive"
               className="h-11 px-5 text-ios-subheadline font-semibold rounded-full"
               onClick={onAdvance}
-              aria-label="End Game"
+              aria-label={t('live.end_game')}
             >
-              End Game
+              {t('live.end_game')}
             </Button>
           ) : (
             <Button
               className="h-11 px-5 text-ios-subheadline font-semibold rounded-full"
               onClick={onAdvance}
-              aria-label={isCrossingPeriod ? 'Next period' : 'Next'}
+              aria-label={isCrossingPeriod ? t('live.next_period') : t('live.next')}
             >
-              Next
+              {t('live.next')}
               {isCrossingPeriod ? (
                 <ChevronsRightIcon className="size-4 ml-0.5" />
               ) : (

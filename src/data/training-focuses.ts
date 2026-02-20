@@ -8,9 +8,10 @@ const OLDER_BRACKETS: DrillAgeGroup[] = ['U12', 'U14', 'U16', 'U18'];
 export const TRAINING_FOCUSES: TrainingFocusTemplate[] = [
   {
     id: 'focus-passing-day',
-    name: 'Passing Day',
-    description:
-      'A session focused on passing technique, combination play, and moving the ball accurately under varying levels of pressure.',
+    name: { en: 'Passing Day' },
+    description: {
+      en: 'A session focused on passing technique, combination play, and moving the ball accurately under varying levels of pressure.',
+    },
     ageGroups: ALL_BRACKETS,
     slots: [
       { phase: 'warm-up', preferredCategories: ['passing', 'first-touch'], count: 1 },
@@ -23,9 +24,10 @@ export const TRAINING_FOCUSES: TrainingFocusTemplate[] = [
 
   {
     id: 'focus-dribbling-day',
-    name: 'Dribbling Day',
-    description:
-      'A session centered on ball mastery, close control, dribbling moves, and 1v1 situations. Players will develop confidence on the ball.',
+    name: { en: 'Dribbling Day' },
+    description: {
+      en: 'A session centered on ball mastery, close control, dribbling moves, and 1v1 situations. Players will develop confidence on the ball.',
+    },
     ageGroups: ALL_BRACKETS,
     slots: [
       { phase: 'warm-up', preferredCategories: ['dribbling', 'first-touch'], count: 1 },
@@ -38,9 +40,10 @@ export const TRAINING_FOCUSES: TrainingFocusTemplate[] = [
 
   {
     id: 'focus-shooting-day',
-    name: 'Shooting Day',
-    description:
-      'A session dedicated to finishing: shooting technique from various positions, volleys, turning and shooting, and scoring in game-like situations.',
+    name: { en: 'Shooting Day' },
+    description: {
+      en: 'A session dedicated to finishing: shooting technique from various positions, volleys, turning and shooting, and scoring in game-like situations.',
+    },
     ageGroups: ALL_BRACKETS,
     slots: [
       { phase: 'warm-up', preferredCategories: ['passing', 'dribbling'], count: 1 },
@@ -53,9 +56,10 @@ export const TRAINING_FOCUSES: TrainingFocusTemplate[] = [
 
   {
     id: 'focus-defense-day',
-    name: 'Defense Day',
-    description:
-      'A session focused on individual defending (jockeying, tackling), defensive shape, and organized pressing as a team.',
+    name: { en: 'Defense Day' },
+    description: {
+      en: 'A session focused on individual defending (jockeying, tackling), defensive shape, and organized pressing as a team.',
+    },
     ageGroups: OLDER_BRACKETS,
     slots: [
       { phase: 'warm-up', preferredCategories: ['passing', 'first-touch'], count: 1 },
@@ -68,9 +72,10 @@ export const TRAINING_FOCUSES: TrainingFocusTemplate[] = [
 
   {
     id: 'focus-possession-day',
-    name: 'Possession Day',
-    description:
-      'A session that develops the ability to keep the ball as a team through rondos, positional play, and zonal possession games.',
+    name: { en: 'Possession Day' },
+    description: {
+      en: 'A session that develops the ability to keep the ball as a team through rondos, positional play, and zonal possession games.',
+    },
     ageGroups: OLDER_BRACKETS,
     slots: [
       { phase: 'warm-up', preferredCategories: ['passing', 'first-touch'], count: 1 },
@@ -83,9 +88,10 @@ export const TRAINING_FOCUSES: TrainingFocusTemplate[] = [
 
   {
     id: 'focus-match-prep',
-    name: 'Match Prep',
-    description:
-      'A pre-match session that combines set-piece rehearsal, tactical walk-throughs, and a conditioned scrimmage to prepare for an upcoming game.',
+    name: { en: 'Match Prep' },
+    description: {
+      en: 'A pre-match session that combines set-piece rehearsal, tactical walk-throughs, and a conditioned scrimmage to prepare for an upcoming game.',
+    },
     ageGroups: OLDER_BRACKETS,
     slots: [
       { phase: 'warm-up', preferredCategories: ['passing', 'dribbling'], count: 1 },
@@ -98,9 +104,10 @@ export const TRAINING_FOCUSES: TrainingFocusTemplate[] = [
 
   {
     id: 'focus-fitness-and-fun',
-    name: 'Fitness & Fun',
-    description:
-      'A high-energy session that combines fitness-oriented drills with fun games and competitions. Keeps players engaged while building endurance and agility.',
+    name: { en: 'Fitness & Fun' },
+    description: {
+      en: 'A high-energy session that combines fitness-oriented drills with fun games and competitions. Keeps players engaged while building endurance and agility.',
+    },
     ageGroups: ALL_BRACKETS,
     slots: [
       { phase: 'warm-up', preferredCategories: ['dribbling', 'first-touch'], count: 1 },

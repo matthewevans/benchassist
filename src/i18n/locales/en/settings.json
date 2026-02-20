@@ -1,0 +1,51 @@
+{
+  "title": "Settings",
+  "sections": {
+    "appearance": "Appearance",
+    "language": "Language",
+    "data": "Data",
+    "about": "About"
+  },
+  "data": {
+    "export_backup": "Export Backup",
+    "import_backup": "Import Backup",
+    "copy_as_text": "Copy as Text",
+    "copied": "Copied to Clipboard",
+    "copy_again": "Copy Again",
+    "paste_placeholder": "Paste backup text here…",
+    "load_backup": "Load Backup",
+    "invalid_file": "Invalid backup file.",
+    "invalid_data": "Invalid backup data. Check that you copied the full text.",
+    "choose_file": "Choose File",
+    "paste_text": "Paste Text",
+    "import_title": "Import Backup",
+    "import_selected": "Import Selected",
+    "replace_all": "Replace All Data",
+    "replace_all_desc": "Deletes all current data and replaces with this backup.",
+    "replace_confirm_title": "Replace All Data?",
+    "replace_confirm_message": "This will permanently delete all current teams, rosters, and games, then replace with the imported data.",
+    "replace_confirm": "Replace All",
+    "export_title": "Export Backup",
+    "share": "Share",
+    "copy_text": "Copy the text below",
+    "done": "Done",
+    "back": "Back",
+    "rosters_label": "Rosters",
+    "configs_label": "Game Configs",
+    "history_label": "Game History",
+    "game_count_one": "{{count}} game",
+    "game_count_other": "{{count}} games"
+  },
+  "about": {
+    "version": "Version",
+    "build": "Build",
+    "app_update": "App Update",
+    "up_to_date": "Up to date",
+    "update_available": "Update Available",
+    "refresh": "Refresh"
+  },
+  "pull_to_check": "Pull to check for updates",
+  "release_to_check": "Release to check for updates",
+  "checking_updates": "Checking for updates...",
+  "update_found": "Update found"
+}

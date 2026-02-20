@@ -1,0 +1,121 @@
+{
+  "actions": {
+    "save": "Save",
+    "save_changes": "Save Changes",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "done": "Done",
+    "back": "Back",
+    "close": "Close",
+    "confirm": "Confirm",
+    "import": "Import",
+    "export": "Export",
+    "undo": "Undo",
+    "shuffle": "Shuffle",
+    "generate": "Generate",
+    "reset": "Reset",
+    "copy": "Copy",
+    "share": "Share",
+    "refresh": "Refresh",
+    "manage": "Manage",
+    "select_all": "Select All",
+    "clear_all": "Clear All"
+  },
+  "nav": {
+    "teams": "Teams",
+    "games": "Games",
+    "practice": "Practice",
+    "settings": "Settings"
+  },
+  "gender": {
+    "coed": "Co-ed",
+    "boys": "Boys",
+    "girls": "Girls"
+  },
+  "position": {
+    "GK": "Goalkeeper",
+    "DEF": "Defender",
+    "MID": "Midfielder",
+    "FWD": "Forward"
+  },
+  "position_plural": {
+    "DEF": "Defenders",
+    "MID": "Midfielders",
+    "FWD": "Forwards"
+  },
+  "sub_position": {
+    "LB": "Left Back",
+    "CB": "Center Back",
+    "RB": "Right Back",
+    "LCB": "Left Center Back",
+    "RCB": "Right Center Back",
+    "LM": "Left Mid",
+    "CM": "Center Mid",
+    "RM": "Right Mid",
+    "LCM": "Left Center Mid",
+    "RCM": "Right Center Mid",
+    "LW": "Left Wing",
+    "RW": "Right Wing",
+    "ST": "Striker",
+    "CF": "Center Forward"
+  },
+  "game_status": {
+    "setup": "Ready",
+    "in-progress": "Live",
+    "completed": "Done"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "toast": {
+    "action_completed": "Action completed"
+  },
+  "player_count": "{{count}} player",
+  "player_count_plural": "{{count}} players",
+  "dashboard": {
+    "get_started": "Get Started",
+    "step_1": "1. Create a team",
+    "step_2": "2. Add players to a roster",
+    "step_3": "3. Set up a game format (5v5, 7v7, etc.)",
+    "step_4": "4. Generate fair rotations",
+    "create_first_team": "Create Your First Team"
+  },
+  "team": {
+    "new_team": "New Team",
+    "name_label": "Team Name",
+    "name_placeholder": "e.g., Thunder FC U12",
+    "gender_label": "Gender",
+    "create": "Create Team",
+    "details": "Details",
+    "birth_year": "Birth Year",
+    "birth_year_placeholder": "e.g., 2017",
+    "rosters": "Rosters",
+    "no_rosters": "No rosters yet",
+    "add_roster": "Add Roster",
+    "new_roster": "New Roster",
+    "roster_name": "Roster Name",
+    "roster_name_placeholder": "e.g., Spring 2026",
+    "create_roster": "Create Roster",
+    "game_configs": "Game Configurations",
+    "no_configs": "No configurations",
+    "config_summary": "{{size}}v{{size}} · {{periods}} periods · {{rpp}} rot/period",
+    "new_config": "New Game Configuration",
+    "edit_config": "Edit Configuration",
+    "delete_config": "Delete Configuration",
+    "delete_config_title": "Delete configuration?",
+    "delete_config_message": "This game configuration will be permanently removed.",
+    "custom": "Custom...",
+    "actions": "Actions",
+    "practice_planner": "Practice Planner",
+    "rename": "Rename Team",
+    "delete": "Delete Team",
+    "delete_title": "Delete \"{{name}}\"?",
+    "delete_message": "This will permanently delete the team and all its rosters, configs, and games.",
+    "not_found": "Team not found",
+    "back_to_teams": "Back to teams"
+  }
+}

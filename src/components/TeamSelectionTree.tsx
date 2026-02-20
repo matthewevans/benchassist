@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
 import {
   Collapsible,
@@ -16,6 +17,7 @@ interface TeamSelectionTreeProps {
 }
 
 export function TeamSelectionTree({ teams, games, selectionState }: TeamSelectionTreeProps) {
+  const { t } = useTranslation('common');
   const { selections, toggleField, getTeamState, toggleTeam, selectAll, clearAll } = selectionState;
 
   function gameCountForTeam(teamId: string): number {
@@ -26,11 +28,11 @@ export function TeamSelectionTree({ teams, games, selectionState }: TeamSelectio
     <div className="space-y-1">
       <div className="flex gap-2 text-xs text-muted-foreground mb-2">
         <button type="button" className="hover:underline" onClick={selectAll}>
-          Select all
+          {t('actions.select_all')}
         </button>
         <span>·</span>
         <button type="button" className="hover:underline" onClick={clearAll}>
-          Clear all
+          {t('actions.clear_all')}
         </button>
       </div>
 
@@ -66,6 +68,8 @@ function TeamRow({
   onToggleTeam,
   onToggleField,
 }: TeamRowProps) {
+  const { t } = useTranslation('settings');
+  const { t: tCommon } = useTranslation('common');
   const [expanded, setExpanded] = useState(false);
   const playerCount = team.rosters.reduce((sum, r) => sum + r.players.length, 0);
 
@@ -87,15 +91,17 @@ function TeamRow({
               checked={selection.rosters}
               onCheckedChange={() => onToggleField('rosters')}
             />
-            <span>Rosters</span>
-            <span className="text-xs text-muted-foreground">({playerCount} players)</span>
+            <span>{t('data.rosters_label')}</span>
+            <span className="text-xs text-muted-foreground">
+              ({tCommon('player_count', { count: playerCount })})
+            </span>
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <Checkbox
               checked={selection.configs}
               onCheckedChange={() => onToggleField('configs')}
             />
-            <span>Game Configs</span>
+            <span>{t('data.configs_label')}</span>
             <span className="text-xs text-muted-foreground">({team.gameConfigs.length})</span>
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -103,8 +109,10 @@ function TeamRow({
               checked={selection.history}
               onCheckedChange={() => onToggleField('history')}
             />
-            <span>Game History</span>
-            <span className="text-xs text-muted-foreground">({gameCount} games)</span>
+            <span>{t('data.history_label')}</span>
+            <span className="text-xs text-muted-foreground">
+              ({t('data.game_count', { count: gameCount })})
+            </span>
           </label>
         </div>
       </CollapsibleContent>

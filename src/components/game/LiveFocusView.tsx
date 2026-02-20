@@ -1,4 +1,5 @@
 import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { PlayerId, Player, Rotation, SubPosition } from '@/types/domain.ts';
@@ -109,6 +110,7 @@ function PlayerRow({
   isGoingOut,
   isLast,
 }: PlayerRowProps) {
+  const { t } = useTranslation('game');
   const display = getAssignmentDisplay(assignment, fieldPos, usePositions);
   const isBench = assignment === RotationAssignment.Bench;
 
@@ -142,13 +144,13 @@ function PlayerRow({
       {isComingIn && (
         <span className="flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">
           <ArrowUpIcon className="size-3.5" />
-          IN
+          {t('live.sub_in')}
         </span>
       )}
       {isGoingOut && (
         <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 shrink-0">
           <ArrowDownIcon className="size-3.5" />
-          OUT
+          {t('live.sub_out')}
         </span>
       )}
     </div>
@@ -231,6 +233,8 @@ export function LiveFocusView({
   changingPlayerIds,
   usePositions,
 }: Props) {
+  const { t } = useTranslation('game');
+
   // Compute substitution summary for the transition
   const comingIn: string[] = [];
   const goingOut: string[] = [];
@@ -252,8 +256,8 @@ export function LiveFocusView({
       {/* Current rotation */}
       <RotationSection
         rotation={currentRotation}
-        label="Now"
-        sublabel={`Rotation ${currentRotation.index + 1}`}
+        label={t('live.now')}
+        sublabel={t('live.rotation', { index: currentRotation.index + 1 })}
         isCurrent={true}
         playerMap={playerMap}
         changingPlayerIds={new Set()}
@@ -264,7 +268,7 @@ export function LiveFocusView({
       {nextRotation && (comingIn.length > 0 || goingOut.length > 0) && (
         <div className="mx-4 rounded-[10px] bg-muted/50 px-4 py-3 space-y-1.5">
           <p className="text-ios-caption1 uppercase tracking-wide text-muted-foreground">
-            Substitutions
+            {t('live.substitutions')}
           </p>
           {comingIn.length > 0 && (
             <div className="flex items-start gap-2">
@@ -289,8 +293,8 @@ export function LiveFocusView({
       {nextRotation ? (
         <RotationSection
           rotation={nextRotation}
-          label="Next"
-          sublabel={`Rotation ${nextRotation.index + 1}`}
+          label={t('live.next')}
+          sublabel={t('live.rotation', { index: nextRotation.index + 1 })}
           isCurrent={false}
           playerMap={playerMap}
           changingPlayerIds={changingPlayerIds}
@@ -298,7 +302,7 @@ export function LiveFocusView({
         />
       ) : (
         <div className="mx-4 rounded-[10px] bg-card px-4 py-6 text-center">
-          <p className="text-ios-footnote text-muted-foreground">Last rotation</p>
+          <p className="text-ios-footnote text-muted-foreground">{t('live.last_rotation')}</p>
         </div>
       )}
     </div>

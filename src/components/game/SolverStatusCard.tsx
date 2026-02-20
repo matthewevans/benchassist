@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface SolverStatusCardProps {
   isRunning: boolean;
   progress: number;
@@ -5,13 +7,57 @@ interface SolverStatusCardProps {
   error: string | null;
 }
 
+// Maps solver message keys (with 'game:' prefix) to their game namespace key paths
+const SOLVER_KEY_MAP: Record<string, string> = {
+  'game:solver.initializing': 'solver.initializing',
+  'game:solver.calculating_goalie': 'solver.calculating_goalie',
+  'game:solver.generating_patterns': 'solver.generating_patterns',
+  'game:solver.building_schedule': 'solver.building_schedule',
+  'game:solver.complete': 'solver.complete',
+  'game:solver.searching': 'solver.searching',
+};
+
+function useTranslatedMessage(message: string): string {
+  const { t } = useTranslation('game');
+
+  if (!message) return message;
+
+  // Check if message is a JSON-encoded parameterized key (e.g. solver.searching with combinations)
+  if (message.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(message) as { key: string; combinations?: string };
+      if (SOLVER_KEY_MAP[parsed.key]) {
+        return t('solver.searching', { combinations: parsed.combinations ?? '' });
+      }
+    } catch {
+      // Not valid JSON — fall through
+    }
+  }
+
+  // Check if message is a plain solver key
+  const localKey = SOLVER_KEY_MAP[message];
+  if (localKey) {
+    const keyPath = localKey as
+      | 'solver.initializing'
+      | 'solver.calculating_goalie'
+      | 'solver.generating_patterns'
+      | 'solver.building_schedule'
+      | 'solver.complete';
+    return t(keyPath);
+  }
+
+  return message;
+}
+
 export function SolverStatusCard({ isRunning, progress, message, error }: SolverStatusCardProps) {
+  const displayMessage = useTranslatedMessage(message);
+
   return (
     <>
       {isRunning && (
         <div className="bg-card rounded-[10px] px-4 py-3 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
           <div className="flex justify-between text-ios-footnote mb-1.5">
-            <span>{message}</span>
+            <span>{displayMessage}</span>
             <span className="text-muted-foreground tabular-nums">{progress}%</span>
           </div>
           <div className="w-full bg-secondary rounded-full h-1">

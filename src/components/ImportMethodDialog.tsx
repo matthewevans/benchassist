@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { Button } from '@/components/ui/button.tsx';
@@ -15,6 +16,7 @@ interface ImportMethodDialogProps {
 }
 
 export function ImportMethodDialog({ open, onOpenChange, onDataLoaded }: ImportMethodDialogProps) {
+  const { t } = useTranslation('settings');
   const [view, setView] = useState<View>('choose');
   const [pasteText, setPasteText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export function ImportMethodDialog({ open, onOpenChange, onDataLoaded }: ImportM
       onDataLoaded(data);
       handleClose(false);
     } catch {
-      setError('Invalid backup file.');
+      setError(t('data.invalid_file'));
     }
   }
 
@@ -49,24 +51,24 @@ export function ImportMethodDialog({ open, onOpenChange, onDataLoaded }: ImportM
       onDataLoaded(data);
       handleClose(false);
     } catch {
-      setError('Invalid backup data. Check that you copied the full text.');
+      setError(t('data.invalid_data'));
     }
   }
 
   return (
-    <BottomSheet open={open} onOpenChange={handleClose} title="Import Backup">
+    <BottomSheet open={open} onOpenChange={handleClose} title={t('data.import_title')}>
       {view === 'choose' ? (
         <GroupedList>
           <GroupedListRow onClick={() => fileInputRef.current?.click()} chevron>
             <div className="flex items-center gap-3">
               <FileText className="size-5 text-primary" />
-              <span>Choose File</span>
+              <span>{t('data.choose_file')}</span>
             </div>
           </GroupedListRow>
           <GroupedListRow onClick={() => setView('paste')} chevron last>
             <div className="flex items-center gap-3">
               <ClipboardPaste className="size-5 text-primary" />
-              <span>Paste Text</span>
+              <span>{t('data.paste_text')}</span>
             </div>
           </GroupedListRow>
         </GroupedList>
@@ -78,12 +80,12 @@ export function ImportMethodDialog({ open, onOpenChange, onDataLoaded }: ImportM
               setPasteText(e.target.value);
               setError(null);
             }}
-            placeholder="Paste backup text here…"
+            placeholder={t('data.paste_placeholder')}
             className="w-full h-40 p-3 rounded-lg bg-secondary text-ios-body font-mono resize-none placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           {error && <p className="text-ios-footnote text-destructive px-1">{error}</p>}
           <Button onClick={handleLoadText} disabled={!pasteText.trim()} className="w-full">
-            Load Backup
+            {t('data.load_backup')}
           </Button>
           <Button
             variant="plain"
@@ -94,7 +96,7 @@ export function ImportMethodDialog({ open, onOpenChange, onDataLoaded }: ImportM
             }}
             className="w-full"
           >
-            Back
+            {t('data.back')}
           </Button>
         </div>
       )}

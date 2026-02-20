@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { RotationSchedule, Player } from '@/types/domain.ts';
 
 interface PlayerStatsCardProps {
@@ -7,10 +8,12 @@ interface PlayerStatsCardProps {
 }
 
 export function PlayerStatsCard({ players, playerStats, minPlayPercentage }: PlayerStatsCardProps) {
+  const { t } = useTranslation('game');
+
   return (
     <section>
       <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase pb-1.5">
-        Player Statistics
+        {t('player.stats_title')}
       </h3>
       <div className="bg-card rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
         {players.map((player, i) => {
@@ -25,8 +28,12 @@ export function PlayerStatsCard({ players, playerStats, minPlayPercentage }: Pla
             >
               <span>{player.name}</span>
               <div className="flex items-center gap-3 text-ios-caption1 text-muted-foreground">
-                <span>{stats.rotationsPlayed} played</span>
-                <span>{stats.rotationsBenched} bench</span>
+                <span>
+                  {stats.rotationsPlayed} {t('player.played')}
+                </span>
+                <span>
+                  {stats.rotationsBenched} {t('player.bench')}
+                </span>
                 {stats.rotationsGoalie > 0 && <span>{stats.rotationsGoalie} GK</span>}
                 <span
                   className={`font-medium ${

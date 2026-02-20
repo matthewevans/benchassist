@@ -1,0 +1,51 @@
+{
+  "title": "Ajustes",
+  "sections": {
+    "appearance": "Apariencia",
+    "language": "Idioma",
+    "data": "Datos",
+    "about": "Acerca de"
+  },
+  "data": {
+    "export_backup": "Exportar copia de seguridad",
+    "import_backup": "Importar copia de seguridad",
+    "copy_as_text": "Copiar como texto",
+    "copied": "Copiado al portapapeles",
+    "copy_again": "Copiar de nuevo",
+    "paste_placeholder": "Pega el texto de copia de seguridad aquí…",
+    "load_backup": "Cargar copia de seguridad",
+    "invalid_file": "Archivo de copia inválido.",
+    "invalid_data": "Datos inválidos. Asegúrate de haber copiado el texto completo.",
+    "choose_file": "Elegir archivo",
+    "paste_text": "Pegar texto",
+    "import_title": "Importar copia de seguridad",
+    "import_selected": "Importar seleccionados",
+    "replace_all": "Reemplazar todos los datos",
+    "replace_all_desc": "Elimina todos los datos actuales y los reemplaza con esta copia.",
+    "replace_confirm_title": "¿Reemplazar todos los datos?",
+    "replace_confirm_message": "Esto eliminará permanentemente todos los equipos, plantillas y partidos actuales, y los reemplazará con los datos importados.",
+    "replace_confirm": "Reemplazar todo",
+    "export_title": "Exportar copia de seguridad",
+    "share": "Compartir",
+    "copy_text": "Copia el texto a continuación",
+    "done": "Listo",
+    "back": "Regresar",
+    "rosters_label": "Plantillas",
+    "configs_label": "Configuraciones",
+    "history_label": "Historial de partidos",
+    "game_count_one": "{{count}} partido",
+    "game_count_other": "{{count}} partidos"
+  },
+  "about": {
+    "version": "Versión",
+    "build": "Compilación",
+    "app_update": "Actualización de la app",
+    "up_to_date": "Al día",
+    "update_available": "Actualización disponible",
+    "refresh": "Actualizar"
+  },
+  "pull_to_check": "Desliza para buscar actualizaciones",
+  "release_to_check": "Suelta para buscar actualizaciones",
+  "checking_updates": "Buscando actualizaciones...",
+  "update_found": "Actualización encontrada"
+}

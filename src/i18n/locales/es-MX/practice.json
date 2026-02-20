@@ -1,0 +1,74 @@
+{
+  "title": "Práctica",
+  "plan_title": "Plan de práctica",
+  "plan_header": "Plan de práctica · {{minutes}} min",
+  "empty_state": "Selecciona un año de nacimiento para comenzar",
+  "empty_state_detail": "Elige el año de nacimiento del equipo para ver ejercicios y generar planes de práctica.",
+  "focus_areas": "Áreas de enfoque",
+  "browse_drills": "Explorar ejercicios",
+  "age_group": "Grupo de edad",
+  "birth_year_placeholder": "Año de nacimiento",
+  "settings_section": "Ajustes",
+  "players": "Jugadores",
+  "duration": "Duración",
+  "favorites_only": "Solo favoritos",
+  "presets": "Presets de práctica",
+  "presets_hint": "Toca un preset para aplicar su combinación de enfoque y regenerar el plan.",
+  "shuffle_all": "Mezclar todo",
+  "shuffle_drill": "Cambiar",
+  "reset": "Restablecer",
+  "search_placeholder": "Buscar ejercicios…",
+  "min_suffix": "min",
+  "phase": {
+    "warm-up": "Calentamiento",
+    "main": "Principal",
+    "scrimmage": "Partido",
+    "cool-down": "Enfriamiento"
+  },
+  "category": {
+    "passing": "Pases",
+    "dribbling": "Regate",
+    "shooting": "Tiro",
+    "first-touch": "Primer toque",
+    "goalkeeping": "Portería",
+    "attacking": "Ataque",
+    "defending": "Defensa",
+    "possession": "Posesión",
+    "transition": "Transición",
+    "set-pieces": "Jugadas a balón parado"
+  },
+  "intensity": {
+    "low": "Bajo",
+    "medium": "Medio",
+    "high": "Alto"
+  },
+  "drill": {
+    "setup": "Preparación:",
+    "tip": "Consejo:",
+    "more_tips": "Más consejos:",
+    "equipment": "Material:",
+    "variations": "Variaciones:",
+    "show_less": "Ver menos",
+    "show_more": "Ver más",
+    "min_players": "Mín. {{count}} jugadores",
+    "duration_min": "{{minutes}} min",
+    "pace": "Intensidad:"
+  },
+  "equipment": {
+    "balls": "Balones",
+    "cones": "Conos",
+    "pinnies": "Petos",
+    "goals": "Porterías",
+    "gloves": "Guantes",
+    "ladder": "Escalera de agilidad"
+  },
+  "age_brackets": {
+    "u6": "Sub-6 (5-6)",
+    "u8": "Sub-8 (7-8)",
+    "u10": "Sub-10 (9-10)",
+    "u12": "Sub-12 (11-12)",
+    "u14": "Sub-14 (13-14)",
+    "u16": "Sub-16 (15-16)",
+    "u18": "Sub-18 (17-18)"
+  }
+}

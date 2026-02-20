@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
@@ -30,14 +31,6 @@ import { PlayerImportDialog, type ImportRow } from '@/components/game/PlayerImpo
 import { POSITION_LABELS } from '@/types/domain.ts';
 import type { Player, SkillRanking, Position } from '@/types/domain.ts';
 
-const SKILL_LABELS: Record<SkillRanking, string> = {
-  1: '1 - Beginner',
-  2: '2 - Developing',
-  3: '3 - Average',
-  4: '4 - Above Average',
-  5: '5 - Advanced',
-};
-
 interface PlayerFormData {
   name: string;
   skillRanking: SkillRanking;
@@ -58,6 +51,8 @@ export function RosterEditor() {
   const { teamId, rosterId } = useParams<{ teamId: string; rosterId: string }>();
   const { state, dispatch } = useAppContext();
   const dispatchWithUndo = useUndoToast();
+  const { t } = useTranslation('roster');
+  const { t: tCommon } = useTranslation('common');
   const [isAdding, setIsAdding] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [form, setForm] = useState<PlayerFormData>(DEFAULT_FORM);
@@ -69,9 +64,9 @@ export function RosterEditor() {
   if (!team || !roster) {
     return (
       <div className="text-center py-12">
-        <p className="text-sm text-muted-foreground">Roster not found</p>
+        <p className="text-sm text-muted-foreground">{t('not_found')}</p>
         <Link to="/" className="text-primary underline mt-2 inline-block">
-          Back to teams
+          {t('back_to_teams')}
         </Link>
       </div>
     );
@@ -197,15 +192,13 @@ export function RosterEditor() {
 
       <div className="max-w-4xl mx-auto px-4 space-y-4 py-4 mb-2">
         <p className="text-ios-footnote text-muted-foreground">
-          {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
+          {tCommon('player_count', { count: roster.players.length })}
         </p>
 
         {sortedPlayers.length === 0 ? (
           <GroupedList>
             <GroupedListRow last>
-              <span className="text-muted-foreground">
-                No players yet. Add players to this roster.
-              </span>
+              <span className="text-muted-foreground">{t('no_players')}</span>
             </GroupedListRow>
           </GroupedList>
         ) : (
@@ -220,9 +213,9 @@ export function RosterEditor() {
                         <button
                           className="text-ios-subheadline text-muted-foreground active:text-foreground transition-colors cursor-pointer"
                           onClick={(e) => e.stopPropagation()}
-                          aria-label={`Skill ${player.skillRanking}, tap to change`}
+                          aria-label={t('skill_tap_label', { rank: player.skillRanking })}
                         >
-                          Skill {player.skillRanking}
+                          {t('skill_value', { rank: player.skillRanking })}
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -241,7 +234,7 @@ export function RosterEditor() {
                               });
                             }}
                           >
-                            {SKILL_LABELS[rank]}
+                            {t(`skill_labels.${rank}`)}
                           </DropdownMenuCheckboxItem>
                         ))}
                       </DropdownMenuContent>
@@ -274,7 +267,7 @@ export function RosterEditor() {
           onImport={handleImportRows}
           trigger={
             <Button variant="secondary" size="sm">
-              Import Players
+              {t('import_players')}
             </Button>
           }
         />
@@ -289,7 +282,7 @@ export function RosterEditor() {
             setEditingPlayerId(null);
           }
         }}
-        title={editingPlayerId ? 'Edit Player' : 'Add Player'}
+        title={editingPlayerId ? t('edit_player') : t('add_player')}
       >
         <div className="space-y-6">
           <GroupedList className="-mx-4">
@@ -297,7 +290,7 @@ export function RosterEditor() {
               <Input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Name"
+                placeholder={t('name_placeholder')}
                 autoFocus
                 className="h-auto rounded-none bg-transparent px-0 py-0 focus-visible:ring-0"
               />
@@ -314,12 +307,12 @@ export function RosterEditor() {
                   </SelectTrigger>
                 }
               >
-                Skill Ranking
+                {t('skill_ranking')}
               </GroupedListRow>
               <SelectContent>
                 {([1, 2, 3, 4, 5] as const).map((rank) => (
                   <SelectItem key={rank} value={String(rank)}>
-                    {SKILL_LABELS[rank]}
+                    {t(`skill_labels.${rank}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -334,14 +327,14 @@ export function RosterEditor() {
               <GroupedListRow
                 trailing={
                   <SelectTrigger className="border-0 shadow-none h-auto p-0 text-[17px] text-muted-foreground focus-visible:ring-0 w-auto">
-                    <SelectValue placeholder="None" />
+                    <SelectValue placeholder={t('position_none')} />
                   </SelectTrigger>
                 }
               >
-                Position
+                {t('position')}
               </GroupedListRow>
               <SelectContent>
-                <SelectItem value="none">None</SelectItem>
+                <SelectItem value="none">{t('position_none')}</SelectItem>
                 {(Object.keys(POSITION_LABELS) as Position[]).map((pos) => (
                   <SelectItem key={pos} value={pos}>
                     {POSITION_LABELS[pos]}
@@ -361,12 +354,12 @@ export function RosterEditor() {
                 />
               }
             >
-              Can Play Goalkeeper
+              {t('can_play_goalie')}
             </GroupedListRow>
           </GroupedList>
 
           <Button onClick={handleSavePlayer} className="w-full" disabled={!form.name.trim()}>
-            {editingPlayerId ? 'Save Changes' : 'Add Player'}
+            {editingPlayerId ? t('save_changes') : t('add_player')}
           </Button>
 
           {editingPlayerId && (
@@ -380,7 +373,7 @@ export function RosterEditor() {
                   setDeletingPlayerId(editingPlayerId);
                 }}
               >
-                <span className="text-destructive block text-center">Delete Player</span>
+                <span className="text-destructive block text-center">{t('delete_player')}</span>
               </GroupedListRow>
             </GroupedList>
           )}
@@ -392,10 +385,12 @@ export function RosterEditor() {
         onOpenChange={(open) => {
           if (!open) setDeletingPlayerId(null);
         }}
-        title={`Remove ${roster.players.find((p) => p.id === deletingPlayerId)?.name ?? 'player'}?`}
-        message="This player will be permanently removed from this roster."
-        confirmLabel="Remove"
-        cancelLabel="Cancel"
+        title={t('delete_confirm_title', {
+          name: roster.players.find((p) => p.id === deletingPlayerId)?.name ?? '',
+        })}
+        message={t('delete_confirm_message')}
+        confirmLabel={t('delete_confirm_action')}
+        cancelLabel={tCommon('actions.cancel')}
         onConfirm={() => {
           if (deletingPlayerId) handleDeletePlayer(deletingPlayerId);
           setDeletingPlayerId(null);

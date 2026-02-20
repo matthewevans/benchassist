@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 
 export function LiveGameBar() {
   const { state } = useAppContext();
+  const { t } = useTranslation('game');
   const location = useLocation();
 
   const activeGame = Object.values(state.games).find((g) => g.status === 'in-progress');
@@ -49,7 +51,7 @@ export function LiveGameBar() {
           </div>
         </Link>
         <Button asChild variant="secondary" size="capsule" className="shrink-0 font-semibold">
-          <Link to={gameUrl}>Resume</Link>
+          <Link to={gameUrl}>{t('live.resume')}</Link>
         </Button>
       </div>
     </div>

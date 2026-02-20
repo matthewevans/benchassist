@@ -1,0 +1,121 @@
+{
+  "actions": {
+    "save": "Guardar",
+    "save_changes": "Guardar cambios",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "done": "Listo",
+    "back": "Regresar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "import": "Importar",
+    "export": "Exportar",
+    "undo": "Deshacer",
+    "shuffle": "Mezclar",
+    "generate": "Generar",
+    "reset": "Restablecer",
+    "copy": "Copiar",
+    "share": "Compartir",
+    "refresh": "Actualizar",
+    "manage": "Administrar",
+    "select_all": "Seleccionar todo",
+    "clear_all": "Limpiar todo"
+  },
+  "nav": {
+    "teams": "Equipos",
+    "games": "Partidos",
+    "practice": "Práctica",
+    "settings": "Ajustes"
+  },
+  "gender": {
+    "coed": "Mixto",
+    "boys": "Varones",
+    "girls": "Mujeres"
+  },
+  "position": {
+    "GK": "Portero",
+    "DEF": "Defensa",
+    "MID": "Mediocampista",
+    "FWD": "Delantero"
+  },
+  "position_plural": {
+    "DEF": "Defensas",
+    "MID": "Mediocampistas",
+    "FWD": "Delanteros"
+  },
+  "sub_position": {
+    "LB": "Lateral Izquierdo",
+    "CB": "Central",
+    "RB": "Lateral Derecho",
+    "LCB": "Central Izquierdo",
+    "RCB": "Central Derecho",
+    "LM": "Medio Izquierdo",
+    "CM": "Medio Centro",
+    "RM": "Medio Derecho",
+    "LCM": "Medio Centro Izq.",
+    "RCM": "Medio Centro Der.",
+    "LW": "Extremo Izquierdo",
+    "RW": "Extremo Derecho",
+    "ST": "Delantero Centro",
+    "CF": "Centro Delantero"
+  },
+  "game_status": {
+    "setup": "Listo",
+    "in-progress": "En vivo",
+    "completed": "Finalizado"
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
+  "toast": {
+    "action_completed": "Acción completada"
+  },
+  "player_count": "{{count}} jugador",
+  "player_count_plural": "{{count}} jugadores",
+  "dashboard": {
+    "get_started": "Comenzar",
+    "step_1": "1. Crea un equipo",
+    "step_2": "2. Agrega jugadores a una plantilla",
+    "step_3": "3. Configura un formato de juego (5v5, 7v7, etc.)",
+    "step_4": "4. Genera rotaciones justas",
+    "create_first_team": "Crear mi primer equipo"
+  },
+  "team": {
+    "new_team": "Nuevo equipo",
+    "name_label": "Nombre del equipo",
+    "name_placeholder": "ej., Tigres FC Sub-12",
+    "gender_label": "Género",
+    "create": "Crear equipo",
+    "details": "Detalles",
+    "birth_year": "Año de nacimiento",
+    "birth_year_placeholder": "ej., 2017",
+    "rosters": "Plantillas",
+    "no_rosters": "Sin plantillas aún",
+    "add_roster": "Agregar plantilla",
+    "new_roster": "Nueva plantilla",
+    "roster_name": "Nombre de la plantilla",
+    "roster_name_placeholder": "ej., Primavera 2026",
+    "create_roster": "Crear plantilla",
+    "game_configs": "Configuraciones de partido",
+    "no_configs": "Sin configuraciones",
+    "config_summary": "{{size}}v{{size}} · {{periods}} tiempos · {{rpp}} rot/tiempo",
+    "new_config": "Nueva configuración de partido",
+    "edit_config": "Editar configuración",
+    "delete_config": "Eliminar configuración",
+    "delete_config_title": "¿Eliminar configuración?",
+    "delete_config_message": "Esta configuración de partido será eliminada permanentemente.",
+    "custom": "Personalizado...",
+    "actions": "Acciones",
+    "practice_planner": "Planificador de práctica",
+    "rename": "Renombrar equipo",
+    "delete": "Eliminar equipo",
+    "delete_title": "¿Eliminar \"{{name}}\"?",
+    "delete_message": "Esto eliminará permanentemente el equipo y todas sus plantillas, configuraciones y partidos.",
+    "not_found": "Equipo no encontrado",
+    "back_to_teams": "Regresar a equipos"
+  }
+}

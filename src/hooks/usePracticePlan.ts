@@ -1,8 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import i18n from '@/i18n/config.ts';
 import { DRILLS } from '@/data/drills.ts';
 import { getDrillBracket, uAgeToBirthYear } from '@/utils/age.ts';
 import { generatePracticePlan } from '@/utils/practiceGenerator.ts';
-import { YOUNG_CATEGORIES, ALL_CATEGORIES } from '@/types/drill.ts';
+import { YOUNG_CATEGORIES, ALL_CATEGORIES, getLocalized } from '@/types/drill.ts';
 import type { DrillCategory, Drill, DrillPhase } from '@/types/drill.ts';
 import type { DrillAgeGroup } from '@/utils/age.ts';
 
@@ -142,8 +143,10 @@ export function usePracticePlan(options: {
       if (browseCategory && d.category !== browseCategory) return false;
       if (browseSearch) {
         const q = browseSearch.toLowerCase();
-        if (!d.name.toLowerCase().includes(q) && !d.description.toLowerCase().includes(q))
-          return false;
+        const locale = i18n.language;
+        const name = getLocalized(d.name, locale).toLowerCase();
+        const description = getLocalized(d.description, locale).toLowerCase();
+        if (!name.includes(q) && !description.includes(q)) return false;
       }
       return true;
     });

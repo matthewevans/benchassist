@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
 
@@ -18,26 +19,28 @@ export function SwapScopeDialog({
   onAllRemaining,
   onCancel,
 }: SwapScopeDialogProps) {
+  const { t } = useTranslation('game');
+
   return (
     <BottomSheet
       open={open}
       onOpenChange={(v) => {
         if (!v) onCancel();
       }}
-      title={`Swap ${playerA} and ${playerB}`}
+      title={t('swap.title', { playerA, playerB })}
     >
       <p className="text-ios-footnote text-muted-foreground text-center pb-4">
-        Apply this swap to just this rotation, or to all remaining rotations?
+        {t('swap.instruction')}
       </p>
       <div className="flex flex-col gap-2">
         <Button onClick={onAllRemaining} className="w-full">
-          All Remaining
+          {t('swap.all_remaining')}
         </Button>
         <Button variant="secondary" onClick={onThisRotation} className="w-full">
-          Just This Rotation
+          {t('swap.just_this')}
         </Button>
         <Button variant="outline" onClick={onCancel} className="w-full">
-          Cancel
+          {t('swap.cancel')}
         </Button>
       </div>
     </BottomSheet>

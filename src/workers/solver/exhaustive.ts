@@ -30,7 +30,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   const forcedBench = new Map<string, Set<number>>();
 
   if (config.useGoalie) {
-    ctx.onProgress(5, 'Calculating goalie assignments...');
+    ctx.onProgress(5, 'game:solver.calculating_goalie');
 
     // Resolve goalie assignments per period
     const goaliePerPeriod = resolveGoalieAssignments(players, config.periods, goalieAssignments);
@@ -70,7 +70,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     forcedAssignments.get(override.playerId)!.set(override.rotationIndex, override.assignment);
   }
 
-  ctx.onProgress(10, 'Generating valid bench patterns...');
+  ctx.onProgress(10, 'game:solver.generating_patterns');
 
   // For each player, determine how many rotations they should bench
   const benchCounts = calculateBenchCounts(players, totalRotations, benchSlotsPerRotation, config);
@@ -231,7 +231,13 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   }
 
   const totalCombinations = playerPatterns.reduce((p, c) => p * c.patterns.length, 1);
-  ctx.onProgress(20, `Searching ${totalCombinations.toLocaleString()} combinations...`);
+  ctx.onProgress(
+    20,
+    JSON.stringify({
+      key: 'game:solver.searching',
+      combinations: totalCombinations.toLocaleString(),
+    }),
+  );
 
   // Sort players by number of patterns (ascending) for better pruning
   playerPatterns.sort((a, b) => a.patterns.length - b.patterns.length);
@@ -263,7 +269,13 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
 
       if (combinations % 10000 === 0) {
         const progress = Math.min(90, 20 + (combinations / 100000) * 70);
-        ctx.onProgress(progress, `Evaluated ${combinations.toLocaleString()} solutions...`);
+        ctx.onProgress(
+          progress,
+          JSON.stringify({
+            key: 'game:solver.searching',
+            combinations: combinations.toLocaleString(),
+          }),
+        );
       }
 
       if (score < bestScore) {
@@ -309,7 +321,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     );
   }
 
-  ctx.onProgress(95, 'Building schedule...');
+  ctx.onProgress(95, 'game:solver.building_schedule');
 
   return buildSchedule(playerPatterns, bestBenchSets, goalieMap, players, config, totalRotations);
 }

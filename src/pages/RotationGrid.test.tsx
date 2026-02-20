@@ -432,7 +432,7 @@ describe('RotationGrid', () => {
       const { dispatch } = renderGrid(state, game.id);
 
       // Switch from focus view (default in live mode) to grid view so cells are interactive
-      await userEvent.click(screen.getByRole('button', { name: 'Grid' }));
+      await userEvent.click(screen.getByRole('tab', { name: 'Grid' }));
 
       // R1 (current rotation, index 0): Alice=Field, Bob=Field, Carol=Field, Dave=Field, Eve=Bench
       // In live mode, period 1 is collapsed (future), so only R1 and R2 are visible.
@@ -513,8 +513,8 @@ describe('RotationGrid', () => {
       await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       await userEvent.click(screen.getByRole('button', { name: /end game/i }));
 
-      expect(screen.getByText('End this game?')).toBeInTheDocument();
-      expect(screen.getByText(/won't be able to resume/)).toBeInTheDocument();
+      expect(screen.getByText('End Game?')).toBeInTheDocument();
+      expect(screen.getByText(/mark the game as completed/)).toBeInTheDocument();
     });
 
     it('does not dispatch when dialog is cancelled', async () => {
@@ -564,7 +564,7 @@ describe('RotationGrid', () => {
       // On the last rotation, LiveBottomBar shows "End Game" on the advance button
       await userEvent.click(screen.getByRole('button', { name: /end game/i }));
 
-      expect(screen.getByText('End this game?')).toBeInTheDocument();
+      expect(screen.getByText('End Game?')).toBeInTheDocument();
     });
   });
 });

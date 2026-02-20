@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Label } from '@/components/ui/label.tsx';
 import {
   Select,
@@ -21,11 +22,13 @@ export function GoalieAssignmentSelector({
   eligiblePlayers,
   onChange,
 }: GoalieAssignmentSelectorProps) {
+  const { t } = useTranslation('game');
+
   return (
     <div className="space-y-2">
       {Array.from({ length: periods }, (_, i) => (
         <div key={i} className="flex min-h-11 items-center gap-3">
-          <Label className="w-20 text-ios-body">Period {i + 1}</Label>
+          <Label className="w-20 text-ios-body">{t('setup.period_label', { number: i + 1 })}</Label>
           <Select
             value={goalieAssignments.find((a) => a.periodIndex === i)?.playerId ?? 'auto'}
             onValueChange={(v) => onChange(i, v)}
@@ -34,7 +37,7 @@ export function GoalieAssignmentSelector({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="auto">Auto-assign</SelectItem>
+              <SelectItem value="auto">{t('setup.auto_assign')}</SelectItem>
               {eligiblePlayers.map((player) => (
                 <SelectItem key={player.id} value={player.id}>
                   {player.name}

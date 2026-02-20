@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import type { AppAction } from '@/context/AppContext.tsx';
 import { UNDOABLE_ACTIONS } from '@/hooks/useUndoReducer.ts';
@@ -10,15 +11,16 @@ import { UNDOABLE_ACTIONS } from '@/hooks/useUndoReducer.ts';
  */
 export function useUndoToast() {
   const { dispatch, undo } = useAppContext();
+  const { t } = useTranslation();
 
   const dispatchWithUndo = useCallback(
     (action: AppAction) => {
       dispatch(action);
 
       if (UNDOABLE_ACTIONS.has(action.type)) {
-        toast('Action completed', {
+        toast(t('toast.action_completed'), {
           action: {
-            label: 'Undo',
+            label: t('actions.undo'),
             onClick: () => {
               undo();
             },
@@ -27,7 +29,7 @@ export function useUndoToast() {
         });
       }
     },
-    [dispatch, undo],
+    [dispatch, undo, t],
   );
 
   return dispatchWithUndo;

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -22,6 +23,8 @@ export function GameSetup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const solver = useSolver();
+  const { t } = useTranslation('game');
+  const { t: tCommon } = useTranslation('common');
 
   const preselectedTeamId = searchParams.get('teamId') ?? '';
   const pendingGameIdRef = useRef<string | null>(null);
@@ -57,13 +60,14 @@ export function GameSetup() {
     selectedConfig &&
     validationErrors.filter((e) => !e.includes('no substitutions')).length === 0;
 
-  const summaryText = useMemo(() => {
+  const summaryValues = useMemo(() => {
     if (!selectedRoster || !selectedConfig) return null;
-    const playerCount = activePlayers.length;
-    const totalRotations = selectedConfig.periods * selectedConfig.rotationsPerPeriod;
-    const fieldSlots = selectedConfig.fieldSize;
-    const benchPerRotation = Math.max(0, playerCount - fieldSlots);
-    return `${playerCount} players \u00b7 ${selectedConfig.fieldSize}v${selectedConfig.fieldSize} \u00b7 ${totalRotations} rotations \u00b7 ~${benchPerRotation} benched per rotation`;
+    return {
+      players: activePlayers.length,
+      fieldSize: selectedConfig.fieldSize,
+      rotations: selectedConfig.periods * selectedConfig.rotationsPerPeriod,
+      bench: Math.max(0, activePlayers.length - selectedConfig.fieldSize),
+    };
   }, [selectedRoster, selectedConfig, activePlayers]);
 
   function handleToggleAbsent(playerId: PlayerId) {
@@ -163,16 +167,16 @@ export function GameSetup() {
 
   return (
     <div>
-      <NavBar title="New Game" backTo="/games" backLabel="Games" />
+      <NavBar title={t('setup.title')} backTo="/games" backLabel={tCommon('nav.games')} />
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {/* Step 1: Team & Configuration */}
-        <GroupedList header="Team & Configuration">
+        <GroupedList header={t('setup.team_and_config')}>
           <GroupedListRow onClick={() => setIsTeamPickerOpen(true)} chevron>
             <div className="flex w-full items-center justify-between gap-3 pr-2">
-              <span className="text-ios-body">Team</span>
+              <span className="text-ios-body">{t('setup.team')}</span>
               <span className="text-ios-subheadline text-muted-foreground truncate">
-                {selectedTeam?.name ?? 'Select'}
+                {selectedTeam?.name ?? t('setup.select')}
               </span>
             </div>
           </GroupedListRow>
@@ -182,12 +186,14 @@ export function GameSetup() {
             chevron={!!selectedTeam}
           >
             <div className="flex w-full items-center justify-between gap-3 pr-2">
-              <span className="text-ios-body">Roster</span>
+              <span className="text-ios-body">{t('setup.roster')}</span>
               <span className="text-ios-subheadline text-muted-foreground truncate">
                 {!selectedTeam
-                  ? 'Choose team first'
+                  ? t('setup.choose_team_first')
                   : (selectedRoster?.name ??
-                    (selectedTeam.rosters.length === 0 ? 'No rosters yet' : 'Select'))}
+                    (selectedTeam.rosters.length === 0
+                      ? t('setup.no_rosters')
+                      : t('setup.select')))}
               </span>
             </div>
           </GroupedListRow>
@@ -197,12 +203,14 @@ export function GameSetup() {
             chevron={!!selectedTeam}
           >
             <div className="flex w-full items-center justify-between gap-3 pr-2">
-              <span className="text-ios-body">Game Configuration</span>
+              <span className="text-ios-body">{t('setup.game_config')}</span>
               <span className="text-ios-subheadline text-muted-foreground truncate">
                 {!selectedTeam
-                  ? 'Choose team first'
+                  ? t('setup.choose_team_first')
                   : (selectedConfig?.name ??
-                    (selectedTeam.gameConfigs.length === 0 ? 'No configurations yet' : 'Select'))}
+                    (selectedTeam.gameConfigs.length === 0
+                      ? t('setup.no_configs')
+                      : t('setup.select')))}
               </span>
             </div>
           </GroupedListRow>
@@ -210,21 +218,21 @@ export function GameSetup() {
           <GroupedListRow last>
             <div className="flex w-full items-center justify-between gap-3 py-1">
               <label htmlFor="game-name" className="text-ios-body">
-                Game Name
+                {t('setup.game_name')}
               </label>
               <Input
                 id="game-name"
                 value={gameName}
                 onChange={(e) => setGameName(e.target.value)}
-                placeholder="Optional"
+                placeholder={t('setup.game_name_placeholder')}
                 className="w-44 border-none bg-transparent px-0 py-0 text-right shadow-none focus-visible:ring-0"
               />
             </div>
           </GroupedListRow>
 
-          {summaryText && (
+          {summaryValues && (
             <div className="px-4 py-2 text-ios-footnote text-muted-foreground border-t border-border/50">
-              {summaryText}
+              {t('setup.summary', summaryValues)}
             </div>
           )}
         </GroupedList>
@@ -232,7 +240,10 @@ export function GameSetup() {
         {/* Step 2: Attendance */}
         {selectedRoster && (
           <GroupedList
-            header={`Attendance (${activePlayers.length} / ${selectedRoster.players.length})`}
+            header={t('setup.attendance', {
+              present: activePlayers.length,
+              total: selectedRoster.players.length,
+            })}
           >
             <GroupedListRow last>
               <AttendanceList
@@ -246,7 +257,7 @@ export function GameSetup() {
 
         {/* Step 3: Goalie Assignment */}
         {selectedConfig?.useGoalie !== false && selectedConfig && activePlayers.length > 0 && (
-          <GroupedList header="Goalie Assignment">
+          <GroupedList header={t('setup.goalie_assignment')}>
             <GroupedListRow last>
               <GoalieAssignmentSelector
                 periods={selectedConfig.periods}
@@ -279,18 +290,20 @@ export function GameSetup() {
 
         {/* CTA */}
         <Button size="lg" disabled={!canGenerate || solver.isRunning} onClick={handleGenerate}>
-          {solver.isRunning ? 'Generating...' : 'Generate Rotations'}
+          {solver.isRunning ? t('setup.generating') : t('setup.generate_rotations')}
         </Button>
       </div>
 
-      <BottomSheet open={isTeamPickerOpen} onOpenChange={setIsTeamPickerOpen} title="Team">
+      <BottomSheet
+        open={isTeamPickerOpen}
+        onOpenChange={setIsTeamPickerOpen}
+        title={t('setup.team')}
+      >
         {teams.length === 0 ? (
           <div className="space-y-4 pt-2">
-            <p className="text-ios-footnote text-muted-foreground">
-              Create a team before starting a game.
-            </p>
+            <p className="text-ios-footnote text-muted-foreground">{t('setup.no_team')}</p>
             <Button asChild size="lg">
-              <Link to="/">Go to Teams</Link>
+              <Link to="/">{t('setup.go_to_teams')}</Link>
             </Button>
           </div>
         ) : (
@@ -309,8 +322,8 @@ export function GameSetup() {
                 <div className="min-w-0">
                   <div className="text-ios-body truncate">{team.name}</div>
                   <div className="text-ios-caption1 text-muted-foreground">
-                    {team.rosters.length} roster{team.rosters.length !== 1 ? 's' : ''} &middot;{' '}
-                    {team.gameConfigs.length} config{team.gameConfigs.length !== 1 ? 's' : ''}
+                    {t('setup.roster_count', { count: team.rosters.length })} &middot;{' '}
+                    {t('setup.config_count', { count: team.gameConfigs.length })}
                   </div>
                 </div>
               </GroupedListRow>
@@ -319,16 +332,22 @@ export function GameSetup() {
         )}
       </BottomSheet>
 
-      <BottomSheet open={isRosterPickerOpen} onOpenChange={setIsRosterPickerOpen} title="Roster">
+      <BottomSheet
+        open={isRosterPickerOpen}
+        onOpenChange={setIsRosterPickerOpen}
+        title={t('setup.roster')}
+      >
         {!selectedTeam ? (
-          <p className="pt-2 text-ios-footnote text-muted-foreground">Select a team first.</p>
+          <p className="pt-2 text-ios-footnote text-muted-foreground">
+            {t('setup.choose_team_first')}
+          </p>
         ) : selectedTeam.rosters.length === 0 ? (
           <div className="space-y-4 pt-2">
             <p className="text-ios-footnote text-muted-foreground">
-              No rosters yet. Add players to a roster first.
+              {t('setup.no_roster_players')}
             </p>
             <Button asChild size="lg">
-              <Link to={`/teams/${teamId}`}>Manage Team</Link>
+              <Link to={`/teams/${teamId}`}>{t('setup.manage_team')}</Link>
             </Button>
           </div>
         ) : (
@@ -347,7 +366,7 @@ export function GameSetup() {
                 <div className="min-w-0">
                   <div className="text-ios-body truncate">{roster.name}</div>
                   <div className="text-ios-caption1 text-muted-foreground">
-                    {roster.players.length} player{roster.players.length !== 1 ? 's' : ''}
+                    {tCommon('player_count', { count: roster.players.length })}
                   </div>
                 </div>
               </GroupedListRow>
@@ -359,14 +378,16 @@ export function GameSetup() {
       <BottomSheet
         open={isConfigPickerOpen}
         onOpenChange={setIsConfigPickerOpen}
-        title="Game Configuration"
+        title={t('setup.game_config')}
       >
         {!selectedTeam ? (
-          <p className="pt-2 text-ios-footnote text-muted-foreground">Select a team first.</p>
+          <p className="pt-2 text-ios-footnote text-muted-foreground">
+            {t('setup.choose_team_first')}
+          </p>
         ) : (
           <div className="space-y-4">
             {selectedTeam.gameConfigs.length > 0 && (
-              <GroupedList header="Saved Configurations">
+              <GroupedList header={t('setup.saved_configs')}>
                 {selectedTeam.gameConfigs.map((config, index) => (
                   <GroupedListRow
                     key={config.id}
@@ -381,8 +402,11 @@ export function GameSetup() {
                     <div className="min-w-0">
                       <div className="text-ios-body truncate">{config.name}</div>
                       <div className="text-ios-caption1 text-muted-foreground">
-                        {config.fieldSize}v{config.fieldSize} &middot; {config.periods} periods
-                        &middot; {config.rotationsPerPeriod} rot/period
+                        {tCommon('team.config_summary', {
+                          size: config.fieldSize,
+                          periods: config.periods,
+                          rpp: config.rotationsPerPeriod,
+                        })}
                       </div>
                     </div>
                   </GroupedListRow>
@@ -390,7 +414,7 @@ export function GameSetup() {
               </GroupedList>
             )}
 
-            <GroupedList header="Quick Create">
+            <GroupedList header={t('setup.quick_create')}>
               {GAME_CONFIG_TEMPLATES.map((template, index) => (
                 <GroupedListRow
                   key={template.name}
@@ -416,10 +440,10 @@ export function GameSetup() {
             </GroupedList>
 
             <p className="px-4 text-ios-footnote text-muted-foreground">
-              Need a custom setup? Create one from Team settings.
+              {t('setup.need_custom_setup')}
             </p>
             <Button asChild size="lg" variant="secondary">
-              <Link to={`/teams/${teamId}`}>Manage Team Configurations</Link>
+              <Link to={`/teams/${teamId}`}>{t('setup.manage_configs')}</Link>
             </Button>
           </div>
         )}

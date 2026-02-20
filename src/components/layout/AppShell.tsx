@@ -3,16 +3,20 @@ import { ArrowDown, Loader2 } from 'lucide-react';
 import { TabBar } from '@/components/layout/TabBar.tsx';
 import { Sidebar } from '@/components/layout/Sidebar.tsx';
 import { LiveGameBar } from '@/components/layout/LiveGameBar.tsx';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme.ts';
+import { useLocale } from '@/hooks/useLocale.ts';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { usePwaUpdate } from '@/hooks/usePwaUpdate.ts';
 import { usePullToCheckUpdate } from '@/hooks/usePullToCheckUpdate.ts';
 import { cn } from '@/lib/utils.ts';
 
 export function AppShell() {
-  // Initialize theme from localStorage on app load
+  // Initialize theme and locale from localStorage on app load
   useTheme();
+  useLocale();
 
+  const { t } = useTranslation('settings');
   const { state } = useAppContext();
   const { checkForUpdate, isUpdateAvailable } = usePwaUpdate();
   const location = useLocation();
@@ -27,10 +31,10 @@ export function AppShell() {
 
   const pullLabel =
     pullState === 'checking'
-      ? 'Checking for updates...'
+      ? t('checking_updates')
       : pullState === 'release'
-        ? 'Release to check for updates'
-        : 'Pull to check for updates';
+        ? t('release_to_check')
+        : t('pull_to_check');
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -60,7 +64,7 @@ export function AppShell() {
           </span>
           <div className="absolute inset-0 flex items-center justify-center px-10">
             <span className="text-ios-footnote text-muted-foreground whitespace-nowrap text-center">
-              {isUpdateAvailable && pullState === 'checking' ? 'Update found' : pullLabel}
+              {isUpdateAvailable && pullState === 'checking' ? t('update_found') : pullLabel}
             </span>
           </div>
         </div>

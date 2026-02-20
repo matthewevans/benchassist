@@ -2,6 +2,19 @@ import type { DrillAgeGroup } from '@/utils/age.ts';
 
 export type DrillId = string;
 
+/** A string that may have per-locale translations. Falls back to `en` if the current locale is missing. */
+export interface LocalizedString {
+  en: string;
+  'es-MX'?: string;
+}
+
+/** Returns the localized value for the given locale, falling back to English. */
+export function getLocalized(field: LocalizedString, locale: string): string {
+  const val = (field as unknown as Record<string, string>)[locale];
+  if (val !== undefined) return val;
+  return field.en;
+}
+
 export type DrillCategory =
   | 'passing'
   | 'dribbling'
@@ -55,11 +68,11 @@ export const DRILL_PHASE_LABELS: Record<DrillPhase, string> = {
 
 export interface Drill {
   id: DrillId;
-  name: string;
-  description: string;
-  setup: string;
-  coachingTips: string[];
-  variations?: string[];
+  name: LocalizedString;
+  description: LocalizedString;
+  setup: LocalizedString;
+  coachingTips: LocalizedString[];
+  variations?: LocalizedString[];
   category: DrillCategory;
   phase: DrillPhase;
   ageGroups: DrillAgeGroup[];
@@ -78,8 +91,8 @@ export interface DrillProgression {
 
 export interface TrainingFocusTemplate {
   id: string;
-  name: string;
-  description: string;
+  name: LocalizedString;
+  description: LocalizedString;
   ageGroups: DrillAgeGroup[];
   slots: {
     phase: DrillPhase;

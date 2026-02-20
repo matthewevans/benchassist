@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { TeamSelectionTree } from '@/components/TeamSelectionTree.tsx';
@@ -16,6 +17,7 @@ interface ExportDialogProps {
 }
 
 export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogProps) {
+  const { t } = useTranslation('settings');
   const teamList = Object.values(teams).sort((a, b) => b.updatedAt - a.updatedAt);
   const selectionState = useSelectionState(teamList);
   const { selections, hasAnySelected } = selectionState;
@@ -66,14 +68,14 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
   }
 
   return (
-    <BottomSheet open={open} onOpenChange={handleOpenChange} title="Export Backup">
+    <BottomSheet open={open} onOpenChange={handleOpenChange} title={t('data.export_title')}>
       {copiedText === null ? (
         <>
           <TeamSelectionTree teams={teamList} games={games} selectionState={selectionState} />
 
           <div className="flex flex-col gap-2 pt-4">
             <Button onClick={handleShare} disabled={!hasAnySelected} className="w-full">
-              Share
+              {t('data.share')}
             </Button>
             <Button
               variant="plain"
@@ -81,7 +83,7 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
               disabled={!hasAnySelected}
               className="w-full"
             >
-              Copy as Text
+              {t('data.copy_as_text')}
             </Button>
           </div>
         </>
@@ -90,7 +92,7 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
           <div className="flex flex-col items-center gap-1 py-2">
             {didCopy && <Check className="size-6 text-primary" />}
             <p className="text-ios-body font-medium">
-              {didCopy ? 'Copied to Clipboard' : 'Copy the text below'}
+              {didCopy ? t('data.copied') : t('data.copy_text')}
             </p>
           </div>
 
@@ -103,10 +105,10 @@ export function ExportDialog({ open, onOpenChange, teams, games }: ExportDialogP
 
           <div className="flex flex-col gap-2">
             <Button variant="outline" onClick={handleCopyAgain} className="w-full">
-              Copy Again
+              {t('data.copy_again')}
             </Button>
             <Button variant="plain" onClick={() => handleOpenChange(false)} className="w-full">
-              Done
+              {t('data.done')}
             </Button>
           </div>
         </div>

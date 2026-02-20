@@ -70,7 +70,7 @@ describe('RosterEditor', () => {
       await userEvent.click(screen.getByRole('button', { name: /delete player/i }));
 
       expect(screen.getByText(/Remove Alice\?/)).toBeInTheDocument();
-      expect(screen.getByText(/permanently removed/)).toBeInTheDocument();
+      expect(screen.getByText(/permanently remove/)).toBeInTheDocument();
     });
 
     it('does not dispatch when cancelled', async () => {

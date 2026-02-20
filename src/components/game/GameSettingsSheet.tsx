@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { AttendanceList } from '@/components/game/AttendanceList.tsx';
@@ -26,6 +27,7 @@ export function GameSettingsSheet({
   useGoalie,
   onRegenerate,
 }: GameSettingsSheetProps) {
+  const { t } = useTranslation('game');
   const [editAbsent, setEditAbsent] = useState<Set<PlayerId>>(new Set());
   const [editGoalies, setEditGoalies] = useState<GoalieAssignment[]>([]);
 
@@ -59,18 +61,19 @@ export function GameSettingsSheet({
     onOpenChange(false);
   }
 
+  const present = players.filter((p) => !editAbsent.has(p.id)).length;
   const eligibleGoalies = players.filter((p) => p.canPlayGoalie && !editAbsent.has(p.id));
 
   return (
-    <BottomSheet open={open} onOpenChange={onOpenChange} title="Game Settings">
+    <BottomSheet open={open} onOpenChange={onOpenChange} title={t('game_settings.title')}>
       <p className="text-ios-footnote text-muted-foreground text-center pb-4">
-        Edit attendance and goalie assignments, then regenerate.
+        {t('game_settings.instruction')}
       </p>
 
       <div className="space-y-6">
         <div className="space-y-2">
           <p className="text-ios-footnote text-muted-foreground uppercase tracking-wide">
-            Attendance ({players.filter((p) => !editAbsent.has(p.id)).length} / {players.length})
+            {t('game_settings.attendance', { present, total: players.length })}
           </p>
           <AttendanceList players={players} absentIds={editAbsent} onToggle={handleToggleAbsent} />
         </div>
@@ -78,7 +81,7 @@ export function GameSettingsSheet({
         {useGoalie && (
           <div className="space-y-2">
             <p className="text-ios-footnote text-muted-foreground uppercase tracking-wide">
-              Goalie Assignment
+              {t('game_settings.goalie_assignment')}
             </p>
             <GoalieAssignmentSelector
               periods={periods}
@@ -90,7 +93,7 @@ export function GameSettingsSheet({
         )}
 
         <Button className="w-full" onClick={handleRegenerate}>
-          Regenerate with Changes
+          {t('game_settings.regenerate')}
         </Button>
       </div>
     </BottomSheet>

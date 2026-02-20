@@ -62,7 +62,7 @@ export function useSolver(): UseSolverReturn {
         case 'SUCCESS':
           if (response.payload.requestId === requestIdRef.current) {
             setProgress(100);
-            setMessage('Complete');
+            setMessage('game:solver.complete');
             setResult(response.payload.schedule);
             setIsRunning(false);
             requestIdRef.current = null;
@@ -89,7 +89,7 @@ export function useSolver(): UseSolverReturn {
     const requestId = generateId();
     requestIdRef.current = requestId;
     setProgress(0);
-    setMessage('Initializing...');
+    setMessage('game:solver.initializing');
     setIsRunning(true);
     setResult(null);
     setError(null);

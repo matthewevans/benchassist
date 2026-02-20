@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Users, ClipboardList, Clock, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 
-const SIDEBAR_ITEMS = [
-  { path: '/', label: 'Teams', icon: Users },
-  { path: '/games', label: 'Games', icon: Clock },
-  { path: '/practice', label: 'Practice', icon: ClipboardList },
-  { path: '/settings', label: 'Settings', icon: Settings },
+const SIDEBAR_PATHS = [
+  { path: '/', key: 'teams' as const, icon: Users },
+  { path: '/games', key: 'games' as const, icon: Clock },
+  { path: '/practice', key: 'practice' as const, icon: ClipboardList },
+  { path: '/settings', key: 'settings' as const, icon: Settings },
 ] as const;
 
 function isActive(pathname: string, itemPath: string): boolean {
@@ -21,6 +22,7 @@ function isActive(pathname: string, itemPath: string): boolean {
 
 export function Sidebar() {
   const location = useLocation();
+  const { t } = useTranslation('common');
 
   return (
     <aside
@@ -38,7 +40,7 @@ export function Sidebar() {
         <span className="text-ios-headline">BenchAssist</span>
       </div>
       <nav className="flex-1 px-2 py-2 space-y-0.5">
-        {SIDEBAR_ITEMS.map(({ path, label, icon: Icon }) => {
+        {SIDEBAR_PATHS.map(({ path, key, icon: Icon }) => {
           const active = isActive(location.pathname, path);
           return (
             <Link
@@ -53,7 +55,7 @@ export function Sidebar() {
               )}
             >
               <Icon className="size-[22px] stroke-[1.5]" />
-              <span>{label}</span>
+              <span>{t(`nav.${key}`)}</span>
             </Link>
           );
         })}

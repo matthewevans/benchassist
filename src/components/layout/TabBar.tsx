@@ -1,12 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Users, ClipboardList, Clock, Settings } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 
 const TAB_ITEMS = [
-  { path: '/', label: 'Teams', icon: Users },
-  { path: '/games', label: 'Games', icon: Clock },
-  { path: '/practice', label: 'Practice', icon: ClipboardList },
-  { path: '/settings', label: 'Settings', icon: Settings },
+  { path: '/', labelKey: 'nav.teams' as const, icon: Users },
+  { path: '/games', labelKey: 'nav.games' as const, icon: Clock },
+  { path: '/practice', labelKey: 'nav.practice' as const, icon: ClipboardList },
+  { path: '/settings', labelKey: 'nav.settings' as const, icon: Settings },
 ] as const;
 
 function isTabActive(pathname: string, tabPath: string): boolean {
@@ -21,6 +22,7 @@ function isTabActive(pathname: string, tabPath: string): boolean {
 
 export function TabBar() {
   const location = useLocation();
+  const { t } = useTranslation();
 
   return (
     <nav
@@ -33,7 +35,7 @@ export function TabBar() {
       )}
     >
       <div className="flex items-center justify-around h-[49px]">
-        {TAB_ITEMS.map(({ path, label, icon: Icon }) => {
+        {TAB_ITEMS.map(({ path, labelKey, icon: Icon }) => {
           const active = isTabActive(location.pathname, path);
           return (
             <Link
@@ -47,7 +49,7 @@ export function TabBar() {
               )}
             >
               <Icon className="size-[22px] stroke-[1.5]" />
-              <span>{label}</span>
+              <span>{t(labelKey)}</span>
             </Link>
           );
         })}

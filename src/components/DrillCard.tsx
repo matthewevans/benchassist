@@ -1,9 +1,10 @@
 import { Clock, RefreshCw, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { DrillDiagram } from '@/components/DrillDiagram.tsx';
-import { getIntensityDisplay } from '@/utils/drillDisplay.ts';
-import { DRILL_CATEGORY_LABELS, DRILL_PHASE_LABELS } from '@/types/drill.ts';
+import { getIntensityDisplay, getPhaseDotColor } from '@/utils/drillDisplay.ts';
+import { getLocalized } from '@/types/drill.ts';
 import type { Drill } from '@/types/drill.ts';
 
 const CATEGORY_ACCENT_CLASSES: Record<Drill['category'], string> = {
@@ -17,15 +18,6 @@ const CATEGORY_ACCENT_CLASSES: Record<Drill['category'], string> = {
   possession: 'bg-cyan-500/12 text-cyan-700 dark:text-cyan-300',
   transition: 'bg-fuchsia-500/12 text-fuchsia-700 dark:text-fuchsia-300',
   'set-pieces': 'bg-indigo-500/12 text-indigo-700 dark:text-indigo-300',
-};
-
-const EQUIPMENT_LABELS: Record<string, string> = {
-  balls: 'Balls',
-  cones: 'Cones',
-  pinnies: 'Pinnies',
-  goals: 'Goals',
-  gloves: 'Gloves',
-  'agility ladder': 'Ladder',
 };
 
 interface DrillCardProps {
@@ -49,6 +41,9 @@ export function DrillCard({
   onSwap,
   showSwap,
 }: DrillCardProps) {
+  const { t, i18n } = useTranslation('practice');
+  const locale = i18n.language;
+
   const hasExpandContent =
     drill.diagram ||
     (drill.coachingTips && drill.coachingTips.length > 0) ||
@@ -62,6 +57,9 @@ export function DrillCard({
     colorClass: intensityColor,
   } = getIntensityDisplay(drill.intensity);
 
+  const drillName = getLocalized(drill.name, locale);
+  const drillDescription = getLocalized(drill.description, locale);
+
   return (
     <div className="bg-card rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
       <div className="px-4 py-3 space-y-2.5">
@@ -73,7 +71,7 @@ export function DrillCard({
                 {index}
               </span>
             )}
-            <span className="text-ios-body font-semibold truncate">{drill.name}</span>
+            <span className="text-ios-body font-semibold truncate">{drillName}</span>
           </div>
           <button
             onClick={onToggleFavorite}
@@ -86,16 +84,21 @@ export function DrillCard({
 
         {/* Compact summary line */}
         <div className="flex flex-wrap items-center gap-1.5 text-ios-caption1 text-muted-foreground">
-          <span>{DRILL_PHASE_LABELS[drill.phase]}</span>
+          <span
+            className={cn(
+              'inline-block w-2 h-2 rounded-full shrink-0',
+              getPhaseDotColor(drill.phase),
+            )}
+          />
+          <span>{t(`phase.${drill.phase}`)}</span>
           <span aria-hidden>&middot;</span>
-          <span className="text-muted-foreground/80">Category</span>
           <span
             className={cn(
               'inline-flex items-center rounded-full px-2 py-0.5 font-medium',
               CATEGORY_ACCENT_CLASSES[drill.category],
             )}
           >
-            {DRILL_CATEGORY_LABELS[drill.category]}
+            {t(`category.${drill.category}`)}
           </span>
           <span aria-hidden>&middot;</span>
           <span className="inline-flex items-center gap-1">
@@ -109,7 +112,7 @@ export function DrillCard({
           </span>
           <span aria-hidden>&middot;</span>
           <span className="inline-flex items-center gap-1">
-            <span>Pace:</span>
+            <span>{t('drill.pace')}</span>
             <span className="inline-flex items-center gap-0.5" aria-hidden>
               {[0, 1, 2].map((i) => (
                 <span
@@ -129,7 +132,7 @@ export function DrillCard({
 
         {/* Description + diagram */}
         <div className={drill.diagram ? 'flex gap-3 items-start' : ''}>
-          <p className="text-ios-subheadline text-muted-foreground flex-1">{drill.description}</p>
+          <p className="text-ios-subheadline text-muted-foreground flex-1">{drillDescription}</p>
           {drill.diagram && (
             <DrillDiagram
               diagram={drill.diagram}
@@ -147,24 +150,26 @@ export function DrillCard({
 
             {drill.setup && (
               <div className="text-ios-subheadline">
-                <span className="font-medium">Setup: </span>
-                <span className="text-muted-foreground">{drill.setup}</span>
+                <span className="font-medium">{t('drill.setup')} </span>
+                <span className="text-muted-foreground">{getLocalized(drill.setup, locale)}</span>
               </div>
             )}
 
             {drill.coachingTips.length > 0 && (
               <div className="text-ios-subheadline">
-                <span className="font-medium">Tip: </span>
-                <span className="text-muted-foreground">{drill.coachingTips[0]}</span>
+                <span className="font-medium">{t('drill.tip')} </span>
+                <span className="text-muted-foreground">
+                  {getLocalized(drill.coachingTips[0], locale)}
+                </span>
               </div>
             )}
 
             {drill.coachingTips.length > 1 && (
               <div className="text-ios-subheadline space-y-1">
-                <span className="font-medium">More tips:</span>
+                <span className="font-medium">{t('drill.more_tips')}</span>
                 <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                   {drill.coachingTips.slice(1).map((tip, i) => (
-                    <li key={i}>{tip}</li>
+                    <li key={i}>{getLocalized(tip, locale)}</li>
                   ))}
                 </ul>
               </div>
@@ -172,19 +177,23 @@ export function DrillCard({
 
             {drill.equipment.length > 0 && (
               <div className="text-ios-subheadline">
-                <span className="font-medium">Equipment: </span>
+                <span className="font-medium">{t('drill.equipment')} </span>
                 <span className="text-muted-foreground">
-                  {drill.equipment.map((eq) => EQUIPMENT_LABELS[eq] ?? eq).join(', ')}
+                  {drill.equipment
+                    .map((eq) =>
+                      t(`equipment.${eq}` as `equipment.${string}`, { defaultValue: eq }),
+                    )
+                    .join(', ')}
                 </span>
               </div>
             )}
 
             {drill.variations && drill.variations.length > 0 && (
               <div className="text-ios-subheadline space-y-1">
-                <span className="font-medium">Variations:</span>
+                <span className="font-medium">{t('drill.variations')}</span>
                 <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                   {drill.variations.map((v, i) => (
-                    <li key={i}>{v}</li>
+                    <li key={i}>{getLocalized(v, locale)}</li>
                   ))}
                 </ul>
               </div>
@@ -205,7 +214,7 @@ export function DrillCard({
               aria-label="Swap drill"
             >
               <RefreshCw className="size-3.5" />
-              Swap
+              {t('shuffle_drill')}
             </Button>
           )}
           <div className="flex-1" />
@@ -216,7 +225,7 @@ export function DrillCard({
               className="text-ios-footnote"
               onClick={onToggleExpand}
             >
-              {isExpanded ? 'Show Less' : 'Show More'}
+              {isExpanded ? t('drill.show_less') : t('drill.show_more')}
             </Button>
           )}
         </div>

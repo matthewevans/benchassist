@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { NavBar } from '@/components/layout/NavBar.tsx';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
@@ -10,13 +11,7 @@ import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { generateId } from '@/utils/id.ts';
 import { getUAge } from '@/utils/age.ts';
-import {
-  TEAM_GENDER_LABELS,
-  TEAM_GENDER_DOT_COLORS,
-  type Player,
-  type Team,
-  type TeamGender,
-} from '@/types/domain.ts';
+import { TEAM_GENDER_DOT_COLORS, type Player, type Team, type TeamGender } from '@/types/domain.ts';
 import {
   Select,
   SelectContent,
@@ -41,6 +36,7 @@ function getAllPlayers(team: Team): Player[] {
 
 export function Dashboard() {
   const { state, dispatch } = useAppContext();
+  const { t } = useTranslation('common');
   const [isCreating, setIsCreating] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamGender, setNewTeamGender] = useState<TeamGender>('coed');
@@ -70,7 +66,7 @@ export function Dashboard() {
   return (
     <div>
       <NavBar
-        title="Teams"
+        title={t('nav.teams')}
         largeTitle
         trailing={
           <Button variant="plain" size="icon" onClick={() => setIsCreating(true)}>
@@ -82,22 +78,22 @@ export function Dashboard() {
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {teams.length === 0 ? (
           <>
-            <GroupedList header="Get Started">
+            <GroupedList header={t('dashboard.get_started')}>
               <GroupedListRow>
-                <span className="text-ios-body">1. Create a team</span>
+                <span className="text-ios-body">{t('dashboard.step_1')}</span>
               </GroupedListRow>
               <GroupedListRow>
-                <span className="text-ios-body">2. Add players to a roster</span>
+                <span className="text-ios-body">{t('dashboard.step_2')}</span>
               </GroupedListRow>
               <GroupedListRow>
-                <span className="text-ios-body">3. Set up a game format (5v5, 7v7, etc.)</span>
+                <span className="text-ios-body">{t('dashboard.step_3')}</span>
               </GroupedListRow>
               <GroupedListRow last>
-                <span className="text-ios-body">4. Generate fair rotations</span>
+                <span className="text-ios-body">{t('dashboard.step_4')}</span>
               </GroupedListRow>
             </GroupedList>
             <Button size="lg" onClick={() => setIsCreating(true)}>
-              Create Your First Team
+              {t('dashboard.create_first_team')}
             </Button>
           </>
         ) : (
@@ -114,9 +110,9 @@ export function Dashboard() {
                       <div className="min-w-0">
                         <div className="text-ios-body font-medium truncate">{team.name}</div>
                         <div className="text-ios-caption1 text-muted-foreground">
-                          {TEAM_GENDER_LABELS[team.gender]}
+                          {t(`gender.${team.gender}`)}
                           {team.birthYear && ` · U${getUAge(team.birthYear)}`}
-                          {` · ${players.length} player${players.length !== 1 ? 's' : ''}`}
+                          {` · ${t('player_count', { count: players.length })}`}
                         </div>
                       </div>
                     </div>
@@ -128,15 +124,15 @@ export function Dashboard() {
         )}
       </div>
 
-      <BottomSheet open={isCreating} onOpenChange={setIsCreating} title="New Team">
+      <BottomSheet open={isCreating} onOpenChange={setIsCreating} title={t('team.new_team')}>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="team-name">Team Name</Label>
+            <Label htmlFor="team-name">{t('team.name_label')}</Label>
             <Input
               id="team-name"
               value={newTeamName}
               onChange={(e) => setNewTeamName(e.target.value)}
-              placeholder="e.g., Thunder FC U12"
+              placeholder={t('team.name_placeholder')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreateTeam();
               }}
@@ -144,19 +140,17 @@ export function Dashboard() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Gender</Label>
+            <Label>{t('team.gender_label')}</Label>
             <Select value={newTeamGender} onValueChange={(v) => setNewTeamGender(v as TeamGender)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(TEAM_GENDER_LABELS).map(([value, label]) => (
+                {(['coed', 'boys', 'girls'] as const).map((value) => (
                   <SelectItem key={value} value={value}>
                     <span className="flex items-center gap-2">
-                      <span
-                        className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value as TeamGender]}`}
-                      />
-                      {label}
+                      <span className={`size-2 rounded-full ${TEAM_GENDER_DOT_COLORS[value]}`} />
+                      {t(`gender.${value}`)}
                     </span>
                   </SelectItem>
                 ))}
@@ -164,7 +158,7 @@ export function Dashboard() {
             </Select>
           </div>
           <Button size="lg" onClick={handleCreateTeam} disabled={!newTeamName.trim()}>
-            Create Team
+            {t('team.create')}
           </Button>
         </div>
       </BottomSheet>

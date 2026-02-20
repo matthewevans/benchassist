@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 import { EllipsisIcon } from 'lucide-react';
@@ -11,6 +12,7 @@ import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
+import { PlayerStatsCard } from '@/components/game/PlayerStatsCard.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
@@ -24,6 +26,7 @@ function RotationPips({
   periodGroups: { periodIndex: number; rotations: { index: number }[] }[];
   currentRotationIndex: number;
 }) {
+  const { t } = useTranslation('game');
   const totalRotations = periodGroups.reduce((sum, g) => sum + g.rotations.length, 0);
   const currentPeriodIndex =
     periodGroups.find((g) => g.rotations.some((r) => r.index === currentRotationIndex))
@@ -33,8 +36,16 @@ function RotationPips({
     <div
       className="flex items-center gap-1.5"
       role="status"
-      aria-label={`Rotation ${currentRotationIndex + 1} of ${totalRotations}, Period ${currentPeriodIndex + 1}`}
-      title={`Rotation ${currentRotationIndex + 1} of ${totalRotations} — Period ${currentPeriodIndex + 1}`}
+      aria-label={t('live.rotation_progress', {
+        current: currentRotationIndex + 1,
+        total: totalRotations,
+        period: currentPeriodIndex + 1,
+      })}
+      title={t('live.rotation_progress_title', {
+        current: currentRotationIndex + 1,
+        total: totalRotations,
+        period: currentPeriodIndex + 1,
+      })}
     >
       {periodGroups.map((group) => (
         <div key={group.periodIndex} className="flex items-center gap-0.5">
@@ -61,6 +72,8 @@ function RotationPips({
 
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
+  const { t } = useTranslation('game');
+  const { t: tCommon } = useTranslation('common');
   const g = useRotationGame(gameId);
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -94,9 +107,9 @@ export function RotationGrid() {
   if (!g.game || !g.schedule || !g.roster) {
     return (
       <div className="text-center py-12">
-        <p className="text-sm text-muted-foreground">Game or schedule not found</p>
+        <p className="text-sm text-muted-foreground">{t('error.not_found')}</p>
         <Link to="/" className="text-primary underline mt-2 inline-block">
-          Back to teams
+          {t('error.back_to_teams')}
         </Link>
       </div>
     );
@@ -106,7 +119,7 @@ export function RotationGrid() {
     <div>
       {/* NavBar — adapts to game state */}
       {g.isCompleted ? (
-        <NavBar title={g.game.name} backTo="/games" backLabel="Games" />
+        <NavBar title={g.game.name} backTo="/games" backLabel={tCommon('nav.games')} />
       ) : g.isLive ? (
         <NavBar
           compact
@@ -114,7 +127,7 @@ export function RotationGrid() {
           trailing={
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="plain" size="icon-sm" aria-label="Game actions">
+                <Button variant="plain" size="icon-sm" aria-label={t('live.game_actions_aria')}>
                   <EllipsisIcon className="size-5" />
                 </Button>
               </PopoverTrigger>
@@ -124,13 +137,13 @@ export function RotationGrid() {
                   onClick={g.handleRegenerate}
                   disabled={g.solver.isRunning}
                 >
-                  {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
+                  {g.solver.isRunning ? t('live.solving') : t('live.regenerate')}
                 </button>
                 <button
                   className="flex items-center w-full h-11 px-3 text-ios-body text-destructive rounded-lg active:bg-accent/80 transition-colors"
                   onClick={() => g.setConfirmEndGame(true)}
                 >
-                  End Game
+                  {t('live.end_game')}
                 </button>
               </PopoverContent>
             </Popover>
@@ -140,12 +153,12 @@ export function RotationGrid() {
         <NavBar
           title={g.game.name}
           backTo="/games"
-          backLabel="Games"
+          backLabel={tCommon('nav.games')}
           trailing={
             <div className="flex items-center gap-1.5">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="plain" size="icon-sm" aria-label="Game actions">
+                  <Button variant="plain" size="icon-sm" aria-label={t('live.game_actions_aria')}>
                     <EllipsisIcon className="size-5" />
                   </Button>
                 </PopoverTrigger>
@@ -156,19 +169,19 @@ export function RotationGrid() {
                       g.setSettingsOpen(true);
                     }}
                   >
-                    Settings
+                    {t('live.settings')}
                   </button>
                   <button
                     className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
                     onClick={g.handleRegenerate}
                     disabled={g.solver.isRunning}
                   >
-                    {g.solver.isRunning ? 'Solving...' : 'Regenerate'}
+                    {g.solver.isRunning ? t('live.solving') : t('live.regenerate')}
                   </button>
                 </PopoverContent>
               </Popover>
               <Button size="sm" className="my-0.5" onClick={g.handleStartGame}>
-                Start Game
+                {t('live.start_game')}
               </Button>
             </div>
           }
@@ -179,7 +192,7 @@ export function RotationGrid() {
         {/* Completed indicator */}
         {g.isCompleted && (
           <p className="max-w-4xl mx-auto text-ios-footnote text-muted-foreground px-4">
-            Completed
+            {t('live.completed')}
           </p>
         )}
 
@@ -205,8 +218,11 @@ export function RotationGrid() {
           <div className="max-w-4xl mx-auto px-4">
             <p className="min-h-[56px] flex items-center text-ios-footnote text-muted-foreground bg-card rounded-[10px] py-3 px-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
               {g.swapSource
-                ? `Selected ${g.playerMap.get(g.swapSource.playerId)?.name} in R${g.swapSource.rotationIndex + 1}. Tap another player in the same rotation to swap, or tap again to deselect.`
-                : 'Tap any player cell to swap their position with another player in the same rotation.'}
+                ? t('live.swap_hint_selected', {
+                    name: g.playerMap.get(g.swapSource.playerId)?.name,
+                    rotation: g.swapSource.rotationIndex + 1,
+                  })
+                : t('live.swap_hint_default')}
             </p>
           </div>
         )}
@@ -221,7 +237,7 @@ export function RotationGrid() {
             <div
               className="inline-flex rounded-lg bg-secondary/80 p-0.5"
               role="tablist"
-              aria-label="View mode"
+              aria-label={t('live.view_mode_aria')}
             >
               <button
                 type="button"
@@ -235,7 +251,7 @@ export function RotationGrid() {
                 )}
                 onClick={() => g.setViewMode('focus')}
               >
-                Focus
+                {t('live.focus_view')}
               </button>
               <button
                 type="button"
@@ -249,7 +265,7 @@ export function RotationGrid() {
                 )}
                 onClick={() => g.setViewMode('grid')}
               >
-                Grid
+                {t('live.grid_view')}
               </button>
             </div>
           </div>
@@ -291,6 +307,17 @@ export function RotationGrid() {
           />
         )}
 
+        {/* Player statistics — setup mode only */}
+        {!g.isLive && !g.isCompleted && g.config && (
+          <div className="max-w-4xl mx-auto px-4">
+            <PlayerStatsCard
+              players={g.allDisplayPlayers}
+              playerStats={g.schedule.playerStats}
+              minPlayPercentage={g.config.minPlayPercentage}
+            />
+          </div>
+        )}
+
         {/* Live bottom bar */}
         {g.isLive && <div className="h-20" />}
         {g.isLive && (
@@ -328,10 +355,10 @@ export function RotationGrid() {
           onOpenChange={(open) => {
             if (!open) g.setConfirmEndGame(false);
           }}
-          title="End this game?"
-          message="The game will be marked as completed. You won't be able to resume live tracking."
-          confirmLabel="End Game"
-          cancelLabel="Cancel"
+          title={t('live.end_game_confirm_title')}
+          message={t('live.end_game_confirm_message')}
+          confirmLabel={t('live.end_game_confirm')}
+          cancelLabel={tCommon('actions.cancel')}
           onConfirm={() => {
             g.setConfirmEndGame(false);
             g.handleEndGame();
@@ -346,10 +373,10 @@ export function RotationGrid() {
           onOpenChange={(open) => {
             if (!open) g.setRemovingPlayerId(null);
           }}
-          title={`Remove ${g.removingPlayer?.name ?? 'player'}?`}
-          message="They will be removed from remaining rotations. The schedule will be recalculated."
-          confirmLabel="Remove"
-          cancelLabel="Cancel"
+          title={t('player.remove_confirm_title', { name: g.removingPlayer?.name ?? '' })}
+          message={t('player.remove_confirm_message')}
+          confirmLabel={t('player.remove_confirm')}
+          cancelLabel={tCommon('actions.cancel')}
           onConfirm={g.handleConfirmRemovePlayer}
           onCancel={() => g.setRemovingPlayerId(null)}
           destructive

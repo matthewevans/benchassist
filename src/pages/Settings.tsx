@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NavBar } from '@/components/layout/NavBar.tsx';
 import { useTheme } from '@/hooks/useTheme.ts';
 import type { ThemePreference } from '@/hooks/useTheme.ts';
+import { useLocale } from '@/hooks/useLocale.ts';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useUndoToast } from '@/hooks/useUndoToast.ts';
 import { usePwaUpdate } from '@/hooks/usePwaUpdate.ts';
@@ -12,14 +14,12 @@ import { Check, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import type { StorageData } from '@/storage/localStorage.ts';
 
-const APPEARANCE_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
-];
+const APPEARANCE_OPTION_VALUES: ThemePreference[] = ['light', 'dark', 'system'];
 
 export function Settings() {
+  const { t } = useTranslation('settings');
   const { preference, setPreference } = useTheme();
+  const { locale, setLocale, supportedLocales } = useLocale();
   const { state } = useAppContext();
   const { isUpdateAvailable, applyUpdate } = usePwaUpdate();
   const dispatchWithUndo = useUndoToast();
@@ -27,24 +27,31 @@ export function Settings() {
   const [isImporting, setIsImporting] = useState(false);
   const [importData, setImportData] = useState<StorageData | null>(null);
 
+  const { t: tCommon } = useTranslation();
+
+  const appearanceOptions = APPEARANCE_OPTION_VALUES.map((value) => ({
+    value,
+    label: tCommon(`theme.${value}`),
+  }));
+
   return (
     <div>
-      <NavBar title="Settings" largeTitle />
+      <NavBar title={t('title')} largeTitle />
 
       <div className="max-w-4xl mx-auto px-4 md:px-5 space-y-9 pt-4">
         {/* Appearance Section */}
         <section>
           <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
-            Appearance
+            {t('sections.appearance')}
           </h2>
           <div className="bg-card rounded-[10px] overflow-hidden">
-            {APPEARANCE_OPTIONS.map((option, i) => (
+            {appearanceOptions.map((option, i) => (
               <button
                 key={option.value}
                 onClick={() => setPreference(option.value)}
                 className={cn(
                   'flex items-center justify-between w-full h-11 px-4 text-ios-body text-left',
-                  i < APPEARANCE_OPTIONS.length - 1 && 'border-b border-border/50',
+                  i < appearanceOptions.length - 1 && 'border-b border-border/50',
                 )}
               >
                 <span>{option.label}</span>
@@ -54,24 +61,46 @@ export function Settings() {
           </div>
         </section>
 
+        {/* Language Section */}
+        <section>
+          <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
+            {t('sections.language')}
+          </h2>
+          <div className="bg-card rounded-[10px] overflow-hidden">
+            {supportedLocales.map((loc, i) => (
+              <button
+                key={loc.code}
+                onClick={() => setLocale(loc.code)}
+                className={cn(
+                  'flex items-center justify-between w-full h-11 px-4 text-ios-body text-left',
+                  i < supportedLocales.length - 1 && 'border-b border-border/50',
+                )}
+              >
+                <span>{loc.label}</span>
+                {locale === loc.code && <Check className="size-5 text-primary" />}
+              </button>
+            ))}
+          </div>
+        </section>
+
         {/* Data Section */}
         <section>
           <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
-            Data
+            {t('sections.data')}
           </h2>
           <div className="bg-card rounded-[10px] overflow-hidden">
             <button
               onClick={() => setIsExporting(true)}
               className="flex items-center justify-between w-full h-11 px-4 text-ios-body border-b border-border/50 text-left"
             >
-              <span>Export Backup</span>
+              <span>{t('data.export_backup')}</span>
               <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
             </button>
             <button
               onClick={() => setIsImporting(true)}
               className="flex items-center justify-between w-full h-11 px-4 text-ios-body text-left"
             >
-              <span>Import Backup</span>
+              <span>{t('data.import_backup')}</span>
               <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
             </button>
           </div>
@@ -80,15 +109,15 @@ export function Settings() {
         {/* About Section */}
         <section>
           <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
-            About
+            {t('sections.about')}
           </h2>
           <div className="bg-card rounded-[10px] overflow-hidden">
             <div className="flex items-center justify-between h-11 px-4 text-ios-body border-b border-border/50">
-              <span>Version</span>
+              <span>{t('about.version')}</span>
               <span className="text-muted-foreground">1.0</span>
             </div>
             <div className="flex items-center justify-between h-11 px-4 text-ios-body border-b border-border/50">
-              <span>Build</span>
+              <span>{t('about.build')}</span>
               <span className="text-muted-foreground">{__BUILD_HASH__}</span>
             </div>
             {isUpdateAvailable ? (
@@ -98,13 +127,13 @@ export function Settings() {
                 }}
                 className="flex items-center justify-between w-full h-11 px-4 text-ios-body text-left active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
               >
-                <span>Update Available</span>
-                <span className="text-primary font-medium">Refresh</span>
+                <span>{t('about.update_available')}</span>
+                <span className="text-primary font-medium">{t('about.refresh')}</span>
               </button>
             ) : (
               <div className="flex items-center justify-between h-11 px-4 text-ios-body">
-                <span>App Update</span>
-                <span className="text-muted-foreground">Up to date</span>
+                <span>{t('about.app_update')}</span>
+                <span className="text-muted-foreground">{t('about.up_to_date')}</span>
               </div>
             )}
           </div>
