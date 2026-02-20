@@ -1,5 +1,12 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { loadData, saveData } from './localStorage.ts';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import {
+  loadData,
+  saveData,
+  migrateV1toV2,
+  migrateV2toV3,
+  migrateV3toV4,
+  CURRENT_VERSION,
+} from './localStorage.ts';
 
 beforeEach(() => {
   localStorage.clear();
@@ -214,6 +221,136 @@ describe('localStorage migration v2→v3', () => {
     const result = loadData();
     expect(result!.version).toBe(4);
     expect(result!.teams['t1'].birthYear).toBe(2017);
+  });
+});
+
+describe('CURRENT_VERSION', () => {
+  it('equals migration steps count + 1', () => {
+    expect(CURRENT_VERSION).toBe(4);
+  });
+});
+
+describe('migrateV1toV2', () => {
+  it('adds gender: coed to teams without gender', () => {
+    const result = migrateV1toV2({
+      version: 1,
+      teams: { t1: { id: 't1', name: 'A' } },
+      games: {},
+    });
+    expect(result.version).toBe(2);
+    expect(result.teams.t1.gender).toBe('coed');
+  });
+
+  it('preserves existing gender value', () => {
+    const result = migrateV1toV2({
+      version: 1,
+      teams: { t1: { id: 't1', name: 'A', gender: 'boys' } },
+      games: {},
+    });
+    expect(result.teams.t1.gender).toBe('boys');
+  });
+
+  it('passes through games unchanged', () => {
+    const games = { g1: { id: 'g1', status: 'setup' } };
+    const result = migrateV1toV2({ version: 1, teams: {}, games });
+    expect(result.games).toEqual(games);
+  });
+});
+
+describe('migrateV2toV3', () => {
+  it('adds birthYear: null to teams', () => {
+    const result = migrateV2toV3({
+      version: 2,
+      teams: { t1: { id: 't1', gender: 'coed' } },
+      games: {},
+    });
+    expect(result.version).toBe(3);
+    expect(result.teams.t1.birthYear).toBeNull();
+  });
+
+  it('preserves existing birthYear', () => {
+    const result = migrateV2toV3({
+      version: 2,
+      teams: { t1: { id: 't1', gender: 'coed', birthYear: 2017 } },
+      games: {},
+    });
+    expect(result.teams.t1.birthYear).toBe(2017);
+  });
+
+  it('defaults gender to coed if still missing', () => {
+    const result = migrateV2toV3({
+      version: 2,
+      teams: { t1: { id: 't1' } },
+      games: {},
+    });
+    expect(result.teams.t1.gender).toBe('coed');
+  });
+});
+
+describe('migrateV3toV4', () => {
+  it('converts balancePriority "balanced" to skillBalance true', () => {
+    const result = migrateV3toV4({
+      version: 3,
+      teams: {
+        t1: {
+          id: 't1',
+          gameConfigs: [{ id: 'c1', balancePriority: 'balanced' }],
+        },
+      },
+      games: {},
+    });
+    expect(result.version).toBe(4);
+    expect(result.teams.t1.gameConfigs[0].skillBalance).toBe(true);
+    expect(result.teams.t1.gameConfigs[0].balancePriority).toBeUndefined();
+  });
+
+  it('converts balancePriority "strict" to skillBalance true', () => {
+    const result = migrateV3toV4({
+      version: 3,
+      teams: {
+        t1: { id: 't1', gameConfigs: [{ id: 'c1', balancePriority: 'strict' }] },
+      },
+      games: {},
+    });
+    expect(result.teams.t1.gameConfigs[0].skillBalance).toBe(true);
+  });
+
+  it('converts balancePriority "off" to skillBalance false', () => {
+    const result = migrateV3toV4({
+      version: 3,
+      teams: {
+        t1: { id: 't1', gameConfigs: [{ id: 'c1', balancePriority: 'off' }] },
+      },
+      games: {},
+    });
+    expect(result.teams.t1.gameConfigs[0].skillBalance).toBe(false);
+  });
+
+  it('handles teams with no gameConfigs', () => {
+    const result = migrateV3toV4({
+      version: 3,
+      teams: { t1: { id: 't1' } },
+      games: {},
+    });
+    expect(result.teams.t1.gameConfigs).toEqual([]);
+  });
+});
+
+describe('migrateData error logging', () => {
+  it('logs and gracefully handles a broken migration step via loadData', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Store v3 data with a gameConfigs value that will cause .map to fail
+    const broken = {
+      version: 3,
+      teams: { t1: { id: 't1', name: 'A', rosters: [], gameConfigs: 'not-an-array' } },
+      games: {},
+    };
+    localStorage.setItem('benchassist_data', JSON.stringify(broken));
+
+    const result = loadData();
+    expect(result).toBeNull();
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('v3'), expect.anything());
+    consoleSpy.mockRestore();
   });
 });
 

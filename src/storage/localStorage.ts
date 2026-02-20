@@ -1,7 +1,6 @@
 import type { Team, Game } from '@/types/domain.ts';
 
 const STORAGE_KEY = 'benchassist_data';
-export const CURRENT_VERSION = 4;
 
 export interface StorageData {
   version: number;
@@ -10,56 +9,65 @@ export interface StorageData {
   favoriteDrillIds?: string[];
 }
 
-type PreMigrationTeam = Omit<Team, 'gender' | 'birthYear'> & {
-  gender?: Team['gender'];
-  birthYear?: Team['birthYear'];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RawStorageData = {
+  version: number;
+  teams: Record<string, any>;
+  games: Record<string, any>;
+  [key: string]: unknown;
 };
 
-type PreV4GameConfig = Omit<import('@/types/domain.ts').GameConfig, 'skillBalance'> & {
-  balancePriority?: 'strict' | 'balanced' | 'off';
-  skillBalance?: boolean;
-};
+/** v1→v2: Add gender field to all teams (default: 'coed') */
+export function migrateV1toV2(data: RawStorageData): RawStorageData {
+  const teams: Record<string, unknown> = {};
+  for (const [id, team] of Object.entries(data.teams)) {
+    teams[id] = { ...team, gender: team.gender ?? 'coed' };
+  }
+  return { ...data, version: 2, teams };
+}
 
-function migrateData(data: StorageData): StorageData {
+/** v2→v3: Add birthYear field to all teams (default: null) */
+export function migrateV2toV3(data: RawStorageData): RawStorageData {
+  const teams: Record<string, unknown> = {};
+  for (const [id, team] of Object.entries(data.teams)) {
+    teams[id] = { ...team, gender: team.gender ?? 'coed', birthYear: team.birthYear ?? null };
+  }
+  return { ...data, version: 3, teams };
+}
+
+/** v3→v4: Convert balancePriority to skillBalance boolean */
+export function migrateV3toV4(data: RawStorageData): RawStorageData {
+  const teams: Record<string, unknown> = {};
+  for (const [id, team] of Object.entries(data.teams)) {
+    teams[id] = {
+      ...team,
+      gameConfigs: (team.gameConfigs ?? []).map(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (cfg: any) => {
+          const { balancePriority, ...rest } = cfg;
+          return { ...rest, skillBalance: balancePriority !== 'off' };
+        },
+      ),
+    };
+  }
+  return { ...data, version: 4, teams };
+}
+
+const migrationSteps = [migrateV1toV2, migrateV2toV3, migrateV3toV4];
+export const CURRENT_VERSION = migrationSteps.length + 1;
+
+function migrateData(data: RawStorageData): StorageData {
   let migrated = data;
-  if (migrated.version === 1) {
-    // v1→v2: Add gender field to all teams (default: 'coed')
-    const teams: Record<string, Team> = {};
-    for (const [id, team] of Object.entries(migrated.teams as Record<string, PreMigrationTeam>)) {
-      teams[id] = { ...team, gender: team.gender ?? 'coed' } as Team;
+  for (const step of migrationSteps) {
+    if (migrated.version >= CURRENT_VERSION) break;
+    try {
+      migrated = step(migrated);
+    } catch (error) {
+      console.error(`Migration from v${migrated.version} failed:`, error);
+      throw error;
     }
-    migrated = { ...migrated, version: 2, teams };
   }
-  if (migrated.version === 2) {
-    const teams: Record<string, Team> = {};
-    for (const [id, team] of Object.entries(migrated.teams as Record<string, PreMigrationTeam>)) {
-      teams[id] = {
-        ...team,
-        gender: team.gender ?? 'coed',
-        birthYear: team.birthYear ?? null,
-      } as Team;
-    }
-    migrated = { ...migrated, version: 3, teams };
-  }
-  if (migrated.version === 3) {
-    // v3→v4: Convert balancePriority ('strict'|'balanced'|'off') to skillBalance (boolean)
-    const teams: Record<string, Team> = {};
-    for (const [id, team] of Object.entries(migrated.teams)) {
-      teams[id] = {
-        ...team,
-        gameConfigs: team.gameConfigs.map((cfg) => {
-          const old = cfg as unknown as PreV4GameConfig;
-          const { balancePriority, ...rest } = old;
-          return {
-            ...rest,
-            skillBalance: balancePriority !== 'off',
-          } as import('@/types/domain.ts').GameConfig;
-        }),
-      };
-    }
-    migrated = { ...migrated, version: 4, teams };
-  }
-  return migrated;
+  return migrated as StorageData;
 }
 
 function isValidStorageData(data: unknown): data is StorageData {
@@ -93,7 +101,7 @@ export function loadData(): StorageData | null {
     if (!isValidStorageData(parsed)) return null;
 
     if (parsed.version < CURRENT_VERSION) {
-      return migrateData(parsed);
+      return migrateData(parsed as RawStorageData);
     }
 
     return parsed;
@@ -104,7 +112,7 @@ export function loadData(): StorageData | null {
 
 export function normalizeImportedData(data: StorageData): StorageData {
   if (data.version < CURRENT_VERSION) {
-    return migrateData(data);
+    return migrateData(data as RawStorageData);
   }
   return data;
 }
