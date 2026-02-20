@@ -129,10 +129,7 @@ export function GameSetup() {
     });
   }
 
-  function handleSelectTeam(nextTeamId: string) {
-    setTeamId(nextTeamId);
-    setIsTeamPickerOpen(false);
-
+  function autoSelectForTeam(nextTeamId: string) {
     const team = state.teams[nextTeamId];
     if (!team) {
       setRosterId('');
@@ -140,16 +137,23 @@ export function GameSetup() {
       return;
     }
 
-    // Find most recent game for this team
+    // Try to reuse roster/config from the most recent game for this team
     const lastGame = Object.values(state.games)
       .filter((g) => g.teamId === nextTeamId)
       .sort((a, b) => b.createdAt - a.createdAt)[0];
 
-    const rosterExists = lastGame && team.rosters.some((r) => r.id === lastGame.rosterId);
-    const configExists = lastGame && team.gameConfigs.some((c) => c.id === lastGame.gameConfigId);
+    const lastRosterExists = lastGame && team.rosters.some((r) => r.id === lastGame.rosterId);
+    const lastConfigExists =
+      lastGame && team.gameConfigs.some((c) => c.id === lastGame.gameConfigId);
 
-    setRosterId(rosterExists ? lastGame.rosterId : '');
-    setConfigId(configExists ? lastGame.gameConfigId : '');
+    setRosterId(lastRosterExists ? lastGame.rosterId : (team.rosters[0]?.id ?? ''));
+    setConfigId(lastConfigExists ? lastGame.gameConfigId : (team.gameConfigs[0]?.id ?? ''));
+  }
+
+  function handleSelectTeam(nextTeamId: string) {
+    setTeamId(nextTeamId);
+    setIsTeamPickerOpen(false);
+    autoSelectForTeam(nextTeamId);
   }
 
   function handleSelectRoster(nextRosterId: string) {
@@ -161,6 +165,14 @@ export function GameSetup() {
     setConfigId(nextConfigId);
     setIsConfigPickerOpen(false);
   }
+
+  // Auto-select roster/config when team is preselected via URL params
+  useEffect(() => {
+    if (preselectedTeamId) {
+      autoSelectForTeam(preselectedTeamId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Navigate when solver completes
   useEffect(() => {
