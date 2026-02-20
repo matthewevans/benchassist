@@ -34,10 +34,17 @@ export function Sidebar() {
         'pt-[env(safe-area-inset-top)]',
       )}
     >
-      <div className="flex items-center gap-2.5 px-4 pt-4 pb-2">
-        <img src="/small_logo_light_square.png" alt="" className="size-7 dark:hidden" />
-        <img src="/small_logo.png" alt="" className="size-7 hidden dark:block" />
-        <span className="text-ios-headline">BenchAssist</span>
+      <div className="flex items-center px-2 pt-5 pb-2">
+        <img
+          src="/benchassist-logo-wordmark-light.png"
+          alt="BenchAssist"
+          className="w-44 dark:hidden"
+        />
+        <img
+          src="/benchassist-logo-wordmark-dark.png"
+          alt="BenchAssist"
+          className="w-44 hidden dark:block"
+        />
       </div>
       <nav className="flex-1 px-2 py-2 space-y-0.5">
         {SIDEBAR_PATHS.map(({ path, key, icon: Icon }) => {
@@ -61,7 +68,7 @@ export function Sidebar() {
         })}
       </nav>
       <div className="px-4 py-3 text-ios-caption2 text-muted-foreground">
-        build {__BUILD_HASH__}
+        {__APP_VERSION__} ({__BUILD_HASH__})
       </div>
     </aside>
   );

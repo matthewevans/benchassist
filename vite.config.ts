@@ -7,11 +7,15 @@ import { execSync } from 'child_process';
 import path from 'path';
 
 const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
+const commitCount = execSync('git rev-list --count HEAD').toString().trim();
+const now = new Date();
+const appVersion = `${now.getFullYear()}.${now.getMonth() + 1}.${commitCount}`;
 
 export default defineConfig({
   base: '/',
   define: {
     __BUILD_HASH__: JSON.stringify(commitHash),
+    __APP_VERSION__: JSON.stringify(appVersion),
   },
   plugins: [
     react(),
@@ -19,12 +23,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
-        'favicon.ico',
+        'favicon.svg',
         'apple-touch-icon.png',
-        'full_logo_light.png',
-        'full_logo_dark.png',
-        'small_logo.png',
-        'small_logo_light.png',
+        'benchassist-logo-wordmark-light.png',
+        'benchassist-logo-wordmark-dark.png',
       ],
       manifest: {
         name: 'BenchAssist',

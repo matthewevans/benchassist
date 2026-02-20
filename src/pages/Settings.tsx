@@ -114,7 +114,7 @@ export function Settings() {
           <div className="bg-card rounded-[10px] overflow-hidden">
             <div className="flex items-center justify-between h-11 px-4 text-ios-body border-b border-border/50">
               <span>{t('about.version')}</span>
-              <span className="text-muted-foreground">1.0</span>
+              <span className="text-muted-foreground">{__APP_VERSION__}</span>
             </div>
             <div className="flex items-center justify-between h-11 px-4 text-ios-body border-b border-border/50">
               <span>{t('about.build')}</span>
