@@ -68,6 +68,25 @@ describe('usePeriodCollapse', () => {
     expect(result.current.collapsedPeriods.has(1)).toBe(true);
   });
 
+  it('resets user toggles on period advance so the new current period is never stuck collapsed', () => {
+    const { result, rerender } = renderHook(
+      ({ currentPeriodIndex }) =>
+        usePeriodCollapse({ currentPeriodIndex, isLive: true, totalPeriods: 3 }),
+      { initialProps: { currentPeriodIndex: 0 } },
+    );
+
+    // User peeks at period 1 (manually expands a non-current period)
+    act(() => result.current.togglePeriod(1));
+    expect(result.current.collapsedPeriods.has(1)).toBe(false);
+
+    // User clicks Next — advances to period 1
+    rerender({ currentPeriodIndex: 1 });
+
+    // Period 1 must be expanded (it's now current), not stuck collapsed due to stale toggle
+    expect(result.current.collapsedPeriods.has(1)).toBe(false);
+    expect(result.current.collapsedPeriods.has(0)).toBe(true);
+  });
+
   it('does not auto-collapse when not live', () => {
     const { result } = renderHook(() =>
       usePeriodCollapse({ currentPeriodIndex: 3, isLive: false, totalPeriods: 4 }),
