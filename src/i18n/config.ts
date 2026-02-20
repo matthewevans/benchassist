@@ -7,12 +7,14 @@ import enGame from '@/i18n/locales/en/game.json';
 import enRoster from '@/i18n/locales/en/roster.json';
 import enPractice from '@/i18n/locales/en/practice.json';
 import enSettings from '@/i18n/locales/en/settings.json';
+import enFaq from '@/i18n/locales/en/faq.json';
 
 import esMxCommon from '@/i18n/locales/es-MX/common.json';
 import esMxGame from '@/i18n/locales/es-MX/game.json';
 import esMxRoster from '@/i18n/locales/es-MX/roster.json';
 import esMxPractice from '@/i18n/locales/es-MX/practice.json';
 import esMxSettings from '@/i18n/locales/es-MX/settings.json';
+import esMxFaq from '@/i18n/locales/es-MX/faq.json';
 
 const STORAGE_KEY = 'benchassist_locale';
 
@@ -27,7 +29,7 @@ const initialLocale: LocaleCode = readStoredLocale() ?? detectLocale();
 void i18n.use(initReactI18next).init({
   lng: initialLocale,
   fallbackLng: DEFAULT_LOCALE,
-  ns: ['common', 'game', 'roster', 'practice', 'settings'],
+  ns: ['common', 'game', 'roster', 'practice', 'settings', 'faq'],
   defaultNS: 'common',
   interpolation: {
     escapeValue: false, // React already handles XSS
@@ -39,6 +41,7 @@ void i18n.use(initReactI18next).init({
       roster: enRoster,
       practice: enPractice,
       settings: enSettings,
+      faq: enFaq,
     },
     'es-MX': {
       common: esMxCommon,
@@ -46,6 +49,7 @@ void i18n.use(initReactI18next).init({
       roster: esMxRoster,
       practice: esMxPractice,
       settings: esMxSettings,
+      faq: esMxFaq,
     },
   },
 });

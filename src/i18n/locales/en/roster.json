@@ -9,7 +9,7 @@
   "delete_confirm_title": "Remove {{name}}?",
   "delete_confirm_message": "This will permanently remove the player from this roster.",
   "delete_confirm_action": "Remove",
-  "no_players": "No players yet. Add players to this roster.",
+  "no_players": "No players yet. Tap + to add one, or use Import to paste a list.",
   "name_placeholder": "Name",
   "skill_ranking": "Skill Ranking",
   "skill_value": "Skill {{rank}}",

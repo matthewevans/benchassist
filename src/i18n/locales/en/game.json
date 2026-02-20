@@ -77,7 +77,7 @@
   "history": {
     "title": "Games",
     "empty": "No games yet",
-    "empty_sub": "Start a new game from the Teams page.",
+    "empty_sub": "Tap + to set up your first game.",
     "new_game": "New Game",
     "rotations": "{{count}} rotations",
     "players": "{{count}} players",

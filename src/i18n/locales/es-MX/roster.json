@@ -9,7 +9,7 @@
   "delete_confirm_title": "¿Eliminar a {{name}}?",
   "delete_confirm_message": "Esto eliminará permanentemente al jugador de esta plantilla.",
   "delete_confirm_action": "Eliminar",
-  "no_players": "Sin jugadores aún. Agrega jugadores a esta plantilla.",
+  "no_players": "Sin jugadores aún. Toca + para agregar uno, o usa Importar para pegar una lista.",
   "name_placeholder": "Nombre",
   "skill_ranking": "Nivel de habilidad",
   "skill_value": "Habilidad {{rank}}",

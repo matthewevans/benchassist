@@ -10,6 +10,7 @@ import { usePwaUpdate } from '@/hooks/usePwaUpdate.ts';
 import { ExportDialog } from '@/components/ExportDialog.tsx';
 import { ImportDialog } from '@/components/ImportDialog.tsx';
 import { ImportMethodDialog } from '@/components/ImportMethodDialog.tsx';
+import { Link } from 'react-router-dom';
 import { Check, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils.ts';
 import type { StorageData } from '@/storage/localStorage.ts';
@@ -103,6 +104,22 @@ export function Settings() {
               <span>{t('data.import_backup')}</span>
               <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
             </button>
+          </div>
+        </section>
+
+        {/* Help Section */}
+        <section>
+          <h2 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
+            {t('sections.help')}
+          </h2>
+          <div className="bg-card rounded-[10px] overflow-hidden">
+            <Link
+              to="/help"
+              className="flex items-center justify-between w-full h-11 px-4 text-ios-body active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
+            >
+              <span>{t('help.help_and_faq')}</span>
+              <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
+            </Link>
           </div>
         </section>
 

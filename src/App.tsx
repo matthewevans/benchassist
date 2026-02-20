@@ -10,6 +10,7 @@ import { RotationGrid } from '@/pages/RotationGrid.tsx';
 import { GameHistory } from '@/pages/GameHistory.tsx';
 import { Practice } from '@/pages/Practice.tsx';
 import { Settings } from '@/pages/Settings.tsx';
+import { FAQ } from '@/pages/FAQ.tsx';
 import { Welcome } from '@/pages/Welcome.tsx';
 import { hasBeenWelcomed } from '@/storage/welcomed.ts';
 import { Toaster } from '@/components/ui/sonner.tsx';
@@ -37,6 +38,7 @@ function AppGate() {
         <Route path="games/:gameId/live" element={<Navigate to="../rotations" replace />} />
         <Route path="games" element={<GameHistory />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="help" element={<FAQ />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

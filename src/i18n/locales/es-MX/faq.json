@@ -1,0 +1,72 @@
+{
+  "title": "Ayuda y Soporte",
+  "sections": {
+    "contact": "Contacto",
+    "getting_started": "Primeros Pasos",
+    "rotations": "Rotaciones y Equidad",
+    "install": "Instalar en tu Teléfono",
+    "during_games": "Durante Partidos",
+    "practice": "Planificador de Práctica",
+    "data_privacy": "Datos y Privacidad"
+  },
+  "contact": {
+    "email": "Preguntas o Sugerencias",
+    "email_description": "matt@benchassist.app",
+    "github": "Reportar un Problema",
+    "github_description": "GitHub"
+  },
+  "getting_started": {
+    "what_is_q": "¿Qué es BenchAssist?",
+    "what_is_a": "BenchAssist es una herramienta gratuita para entrenadores de fútbol juvenil que crea horarios de rotación justos. Equilibra automáticamente el tiempo de juego entre los jugadores respetando restricciones como asignaciones de portero y balance de habilidades.",
+    "how_start_q": "¿Cómo empiezo?",
+    "how_start_a": "Ve a Equipos y crea un equipo. Agrega una plantilla e ingresa tus jugadores — puedes escribirlos uno por uno o importar una lista. Luego crea una configuración de juego (o elige un preset como GYSA U8 o 7v7). El día del partido, ve a Partidos, toca + , selecciona tu equipo y genera las rotaciones.",
+    "bulk_import_q": "¿Puedo agregar jugadores rápidamente?",
+    "bulk_import_a": "Sí. Al agregar jugadores a una plantilla, toca \"Importar Jugadores\" para pegar una lista. Usa el formato \"Nombre: Habilidad\" (uno por línea), como \"Alex: 3\". Los jugadores se crean con el nombre y ranking de habilidad indicados.",
+    "gysa_q": "¿Qué son los presets GYSA?",
+    "gysa_a": "Si estás en la Gilbert Youth Soccer Association (Arizona), BenchAssist incluye configuraciones preestablecidas para cada grupo de edad GYSA (U5 hasta U16) con el tamaño de cancha, número de períodos y duración correctos. Ingresa un año de nacimiento al crear un equipo y la configuración correspondiente se agrega automáticamente."
+  },
+  "rotations": {
+    "how_fair_q": "¿Cómo garantiza la app un tiempo de juego justo?",
+    "how_fair_a": "El algoritmo prueba todas las combinaciones posibles de turnos en banca y elige la que distribuye el tiempo de juego más equitativamente. Pondera el tiempo en banca por ranking de habilidad para que los jugadores de menor ranking no se queden fuera desproporcionadamente.",
+    "constraints_q": "¿Qué reglas puedo configurar para las rotaciones?",
+    "constraints_a": "Las configuraciones de juego incluyen varias restricciones: \"Sin banca consecutiva\" evita que un jugador se quede fuera dos rotaciones seguidas. \"Descanso de portero\" asegura que el portero descanse después de su período. \"Balance de habilidades\" mantiene un nivel promedio similar en cada rotación.",
+    "skill_ranking_q": "¿Qué significan los rankings de habilidad (1\u20135)?",
+    "skill_ranking_a": "Los rankings de habilidad ayudan a equilibrar la fuerza del equipo entre rotaciones. Un ranking de 5 es el nivel más alto. Cuando el balance de habilidades está activado, el sistema intenta mantener un nivel promedio similar en cada rotación para que ninguna tenga a todos los jugadores más fuertes (o más débiles).",
+    "positions_q": "¿Cómo funcionan las posiciones y formaciones?",
+    "positions_a": "Cuando activas posiciones en la configuración del partido, eliges una formación (como 2-3-1 para 7v7). Los jugadores se asignan a las posiciones según sus preferencias. El sistema respeta estas preferencias al generar rotaciones."
+  },
+  "install": {
+    "install_iphone_q": "¿Cómo instalo en iPhone?",
+    "install_iphone_a": "Abre benchassist.app en Safari, toca el botón Compartir (cuadrado con flecha), luego toca \"Agregar a pantalla de inicio\". La app aparecerá en tu pantalla de inicio y funcionará sin conexión como una app nativa.",
+    "install_android_q": "¿Cómo instalo en Android?",
+    "install_android_a": "Abre benchassist.app en Chrome, toca el menú de tres puntos, luego toca \"Agregar a pantalla de inicio\" o \"Instalar app\". La app aparecerá en tu cajón de apps y funcionará sin conexión.",
+    "why_install_q": "¿Por qué debería instalarla?",
+    "why_install_a": "Instalarla hace que BenchAssist funcione como una app nativa — se abre a pantalla completa sin la barra del navegador, funciona sin conexión en el campo y se inicia instantáneamente desde tu pantalla de inicio. Tus datos se guardan localmente en tu dispositivo de cualquier manera.",
+    "offline_q": "¿Funciona sin conexión?",
+    "offline_a": "Sí. Una vez que hayas visitado la app, se guarda en tu dispositivo y funciona sin conexión a internet. Esto es especialmente útil en campos de fútbol con mala señal."
+  },
+  "during_games": {
+    "live_game_q": "¿Cómo funciona el modo de partido en vivo?",
+    "live_game_a": "Después de generar rotaciones, toca \"Iniciar partido\" para entrar en modo en vivo. Verás la rotación actual y la siguiente. Un temporizador de período rastrea el tiempo y te avisa cuando es hora de sustituir.",
+    "mid_game_q": "¿Qué pasa si un jugador se lesiona o llega tarde?",
+    "mid_game_a": "Puedes quitar o agregar jugadores durante el partido. El sistema recalculará automáticamente las rotaciones restantes para mantener el tiempo de juego equilibrado desde ese punto.",
+    "swap_q": "¿Puedo ajustar las rotaciones manualmente?",
+    "swap_a": "Sí. En la cuadrícula de rotaciones, puedes intercambiar dos jugadores tocándolos. La app te muestra cómo cada intercambio afecta el balance del equipo para que tomes decisiones informadas."
+  },
+  "practice": {
+    "what_is_q": "¿Qué es el Planificador de Práctica?",
+    "what_is_a": "El Planificador de Práctica genera sesiones apropiadas para la edad desde una biblioteca de ejercicios integrada. Selecciona categorías (regate, pases, tiros, etc.), establece tu número de jugadores y duración objetivo, y crea un plan estructurado con calentamiento, ejercicios y enfriamiento.",
+    "age_bracket_q": "¿Cómo funciona la selección por edad?",
+    "age_bracket_a": "Los ejercicios están etiquetados por grupo de edad (U6 hasta U18). Cuando vinculas un equipo, el planificador usa el año de nacimiento del equipo para filtrar automáticamente los ejercicios apropiados para ese grupo de edad.",
+    "favorites_q": "¿Puedo guardar ejercicios que me gusten?",
+    "favorites_a": "Sí. Toca el ícono de estrella en cualquier ejercicio para agregarlo a favoritos. Tus favoritos se guardan y pueden usarse para construir futuros planes de práctica."
+  },
+  "data_privacy": {
+    "where_data_q": "¿Dónde se guardan mis datos?",
+    "where_data_a": "Todos los datos se guardan localmente en tu dispositivo en el localStorage del navegador. Nada se envía a ningún servidor. Tus equipos, plantillas e historial de partidos se quedan en tu dispositivo.",
+    "transfer_q": "¿Puedo transferir datos entre dispositivos?",
+    "transfer_a": "Sí. Ve a Ajustes → Exportar copia de seguridad para guardar tus datos como archivo, luego impórtalos en otro dispositivo desde Ajustes → Importar copia de seguridad. También puedes copiar/pegar la copia como texto.",
+    "lose_data_q": "¿Puedo perder mis datos?",
+    "lose_data_a": "Borrar los datos del navegador o desinstalar la app puede eliminar tus datos. Recomendamos exportar una copia de seguridad periódicamente desde Ajustes, especialmente antes de borrar datos del navegador."
+  }
+}

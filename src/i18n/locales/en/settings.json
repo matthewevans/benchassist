@@ -4,7 +4,11 @@
     "appearance": "Appearance",
     "language": "Language",
     "data": "Data",
+    "help": "Support",
     "about": "About"
+  },
+  "help": {
+    "help_and_faq": "Help & Support"
   },
   "data": {
     "export_backup": "Export Backup",

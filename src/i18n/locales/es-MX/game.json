@@ -77,7 +77,7 @@
   "history": {
     "title": "Partidos",
     "empty": "Sin partidos aún",
-    "empty_sub": "Inicia un nuevo partido desde la página de equipos.",
+    "empty_sub": "Toca + para configurar tu primer partido.",
     "new_game": "Nuevo partido",
     "rotations": "{{count}} rotaciones",
     "players": "{{count}} jugadores",

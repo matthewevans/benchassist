@@ -1,0 +1,72 @@
+{
+  "title": "Help & Support",
+  "sections": {
+    "contact": "Contact",
+    "getting_started": "Getting Started",
+    "rotations": "Rotations & Fairness",
+    "install": "Install on Your Phone",
+    "during_games": "During Games",
+    "practice": "Practice Planner",
+    "data_privacy": "Data & Privacy"
+  },
+  "contact": {
+    "email": "Questions or Suggestions",
+    "email_description": "matt@benchassist.app",
+    "github": "Report an Issue",
+    "github_description": "GitHub"
+  },
+  "getting_started": {
+    "what_is_q": "What is BenchAssist?",
+    "what_is_a": "BenchAssist is a free tool for youth soccer coaches to create fair player rotation schedules. It automatically balances playing time across your roster while respecting constraints like goalie assignments and skill balance.",
+    "how_start_q": "How do I get started?",
+    "how_start_a": "Go to Teams and create a team. Add a roster and enter your players — you can type them one by one or bulk import a list. Then create a game config (or pick a preset like GYSA U8 or 7v7). When it's game day, go to Games, tap +, select your team, and generate rotations.",
+    "bulk_import_q": "Can I add players quickly?",
+    "bulk_import_a": "Yes. When adding players to a roster, tap \"Import Players\" to paste a list. Use the format \"Name: Skill\" (one per line), like \"Alex: 3\". Players are created with the given name and skill ranking.",
+    "gysa_q": "What are the GYSA presets?",
+    "gysa_a": "If you're in the Gilbert Youth Soccer Association (Arizona), BenchAssist includes preset game configs for each GYSA age bracket (U5 through U16) with the correct field size, period count, and duration. Enter a birth year when creating a team and the matching config is added automatically."
+  },
+  "rotations": {
+    "how_fair_q": "How does the app ensure fair playing time?",
+    "how_fair_a": "The algorithm tries every possible combination of bench assignments and picks the one where playing time is most equal across all players. It weights bench time by skill ranking so lower-ranked players don't disproportionately sit out.",
+    "constraints_q": "What rules can I set for rotations?",
+    "constraints_a": "Game configs include several constraints: \"No consecutive bench\" prevents a player from sitting out two rotations in a row. \"Goalie rest\" ensures the goalie gets a break after their period. \"Skill balance\" keeps each rotation's average skill level similar so no single rotation is stacked.",
+    "skill_ranking_q": "What do the skill rankings (1\u20135) mean?",
+    "skill_ranking_a": "Skill rankings help balance team strength across rotations. A ranking of 5 is the highest skill level. When skill balance is enabled, the solver tries to keep each rotation's average skill level similar so no single rotation is stacked with all your strongest (or weakest) players.",
+    "positions_q": "How do positions and formations work?",
+    "positions_a": "When you enable positions in a game config, you choose a formation (like 2-3-1 for 7v7). Players are assigned to formation slots based on their preferred positions. The solver respects these preferences when generating rotations."
+  },
+  "install": {
+    "install_iphone_q": "How do I install on iPhone?",
+    "install_iphone_a": "Open benchassist.app in Safari, tap the Share button (square with arrow), then tap \"Add to Home Screen\". The app will appear on your home screen and work offline like a native app.",
+    "install_android_q": "How do I install on Android?",
+    "install_android_a": "Open benchassist.app in Chrome, tap the three-dot menu, then tap \"Add to Home Screen\" or \"Install App\". The app will appear in your app drawer and work offline.",
+    "why_install_q": "Why should I install it?",
+    "why_install_a": "Installing makes BenchAssist work like a native app — it opens full-screen without browser chrome, works offline at the field, and launches instantly from your home screen. Your data is saved locally on your device either way.",
+    "offline_q": "Does it work offline?",
+    "offline_a": "Yes. Once you've visited the app, it's cached on your device and works without an internet connection. This is especially useful at soccer fields with poor cell coverage."
+  },
+  "during_games": {
+    "live_game_q": "How does the live game feature work?",
+    "live_game_a": "After generating rotations, tap \"Start Game\" to enter live mode. You'll see the current rotation and what's coming next. A period timer tracks time and alerts you when it's time to substitute.",
+    "mid_game_q": "What if a player gets hurt or arrives late?",
+    "mid_game_a": "You can remove or add players mid-game. The solver will automatically recalculate the remaining rotations to keep playing time balanced from that point forward.",
+    "swap_q": "Can I manually adjust rotations?",
+    "swap_a": "Yes. On the rotation grid, you can swap any two players by tapping them. The app shows you how each swap affects team balance so you can make informed decisions."
+  },
+  "practice": {
+    "what_is_q": "What is the Practice Planner?",
+    "what_is_a": "The Practice Planner generates age-appropriate practice sessions from a built-in drill library. Select categories (dribbling, passing, shooting, etc.), set your player count and target duration, and it creates a structured plan with warm-up, drills, and cool-down.",
+    "age_bracket_q": "How does age matching work?",
+    "age_bracket_a": "Drills are tagged by age bracket (U6 through U18). When you link a team, the planner uses the team's birth year to automatically filter drills appropriate for that age group.",
+    "favorites_q": "Can I save drills I like?",
+    "favorites_a": "Yes. Tap the star icon on any drill to favorite it. Your favorites are saved and can be used to build future practice plans."
+  },
+  "data_privacy": {
+    "where_data_q": "Where is my data stored?",
+    "where_data_a": "All data is stored locally on your device in the browser's localStorage. Nothing is sent to any server. Your teams, rosters, and game history stay on your device.",
+    "transfer_q": "Can I transfer data between devices?",
+    "transfer_a": "Yes. Go to Settings → Export Backup to save your data as a file, then import it on another device via Settings → Import Backup. You can also copy/paste the backup as text.",
+    "lose_data_q": "Can I lose my data?",
+    "lose_data_a": "Clearing your browser data or uninstalling the app can delete your data. We recommend exporting a backup periodically from Settings, especially before clearing browser data."
+  }
+}
