@@ -13,6 +13,9 @@ import { Switch } from '@/components/ui/switch.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { generateId } from '@/utils/id.ts';
+import { useAppContext } from '@/hooks/useAppContext.ts';
+import { getUAge } from '@/utils/age.ts';
+import { getDefaultFormation } from '@/utils/gameConfig.ts';
 import type { GameConfig, FormationSlot, Position } from '@/types/domain.ts';
 import { deriveSubPositions } from '@/utils/positions.ts';
 
@@ -25,6 +28,15 @@ interface GameConfigFormProps {
 export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigFormProps) {
   const { t } = useTranslation('game');
   const { t: tCommon } = useTranslation('common');
+  const { state } = useAppContext();
+  const team = state.teams[teamId];
+
+  const isU8OrAbove = !initialConfig && !!team?.birthYear && getUAge(team.birthYear) >= 8;
+  const defaultFieldSize = 7;
+  const defaultUsePositions = initialConfig?.usePositions ?? isU8OrAbove;
+  const defaultFormation =
+    initialConfig?.formation ?? (isU8OrAbove ? getDefaultFormation(defaultFieldSize - 1) : []);
+
   const [name, setName] = useState(initialConfig?.name ?? '');
   const [fieldSize, setFieldSize] = useState(initialConfig?.fieldSize ?? 7);
   const [periods, setPeriods] = useState(initialConfig?.periods ?? 2);
@@ -54,8 +66,8 @@ export function GameConfigForm({ teamId, initialConfig, onSave }: GameConfigForm
   const [balancePriority, setBalancePriority] = useState<GameConfig['balancePriority']>(
     initialConfig?.balancePriority ?? 'balanced',
   );
-  const [usePositions, setUsePositions] = useState(initialConfig?.usePositions ?? false);
-  const [formation, setFormation] = useState<FormationSlot[]>(initialConfig?.formation ?? []);
+  const [usePositions, setUsePositions] = useState(defaultUsePositions);
+  const [formation, setFormation] = useState<FormationSlot[]>(defaultFormation);
 
   const fieldPlayerSlots = fieldSize - (useGoalie ? 1 : 0);
   const formationTotal = formation.reduce((sum, s) => sum + s.count, 0);
