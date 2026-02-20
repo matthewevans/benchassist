@@ -340,7 +340,9 @@ export function TeamManagement() {
             <div className="pt-6">
               <GroupedList>
                 <GroupedListRow last onClick={() => setDeletingConfigId(editingConfig.id)}>
-                  <span className="text-destructive">{t('team.delete_config')}</span>
+                  <span className="text-destructive block text-center">
+                    {t('team.delete_config')}
+                  </span>
                 </GroupedListRow>
               </GroupedList>
             </div>
