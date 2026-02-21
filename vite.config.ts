@@ -25,6 +25,8 @@ export default defineConfig({
       includeAssets: [
         'favicon.svg',
         'apple-touch-icon.png',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
         'benchassist-logo-wordmark-light.png',
         'benchassist-logo-wordmark-dark.png',
       ],
@@ -40,11 +42,13 @@ export default defineConfig({
             src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any maskable',
           },
           {
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any maskable',
           },
         ],
       },
