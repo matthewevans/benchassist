@@ -6,8 +6,6 @@
   </picture>
 </p>
 
-<h1 align="center">BenchAssist</h1>
-
 <p align="center">
   <strong>The sideline rotation manager for youth soccer coaches.</strong><br />
   A free, open-source PWA — no backend, no accounts, all data on your device.
