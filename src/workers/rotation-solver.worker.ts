@@ -9,7 +9,11 @@ import type {
   GameConfig,
 } from '@/types/domain.ts';
 import { exhaustiveSearch } from './solver/exhaustive.ts';
-import { calculatePlayerStats, computeStrengthStats } from '@/utils/stats.ts';
+import {
+  calculatePlayerStats,
+  computeStrengthStats,
+  calculateRotationStrength,
+} from '@/utils/stats.ts';
 import { validateGoalieAssignments } from '@/utils/validation.ts';
 import {
   normalizePeriodDivisions,
@@ -302,6 +306,30 @@ function isInfeasibleScheduleError(message: string): boolean {
   );
 }
 
+function buildScheduleFromRotations(rotations: Rotation[], players: Player[]): RotationSchedule {
+  const recalculatedRotations = rotations.map((rotation) => ({
+    ...rotation,
+    teamStrength: calculateRotationStrength(rotation, players),
+  }));
+  const playerStats = calculatePlayerStats(recalculatedRotations, players);
+  const strengths = recalculatedRotations.map((rotation) => rotation.teamStrength);
+  const { avg, variance, min, max } = computeStrengthStats(strengths);
+
+  return {
+    rotations: recalculatedRotations,
+    playerStats,
+    overallStats: {
+      strengthVariance: variance,
+      minStrength: min,
+      maxStrength: max,
+      avgStrength: Math.round(avg * 10) / 10,
+      violations: [],
+      isValid: true,
+    },
+    generatedAt: Date.now(),
+  };
+}
+
 self.onmessage = (e: MessageEvent<SolverRequest>) => {
   const request = e.data;
 
@@ -434,13 +462,6 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
               noConsecutiveBench: false,
             });
           }
-          if (config.enforceMinPlayTime) {
-            relaxationCandidates.push({
-              ...config,
-              noConsecutiveBench: false,
-              enforceMinPlayTime: false,
-            });
-          }
         }
 
         let schedule: RotationSchedule | null = null;
@@ -461,7 +482,13 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
         }
 
         if (!schedule) {
-          throw lastError ?? new Error('No valid rotation schedule found.');
+          const canKeepExistingAsFallback =
+            allowConstraintRelaxation === true && existingMidGameRotations.length > 0;
+          if (canKeepExistingAsFallback) {
+            schedule = buildScheduleFromRotations(existingMidGameRotations, activePlayers);
+          } else {
+            throw lastError ?? new Error('No valid rotation schedule found.');
+          }
         }
 
         const response: SolverResponse = {

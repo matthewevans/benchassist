@@ -503,22 +503,39 @@ describe('buildMidGameMinPlayInputs', () => {
 });
 
 describe('worker solver fallback', () => {
-  it('retries with min-play relaxed when live regenerate allows constraint relaxation', () => {
+  it('retries with no-consecutive-bench relaxed when live regenerate allows relaxation', () => {
     const players = [
       playerFactory.build({ name: 'A', canPlayGoalie: false }),
       playerFactory.build({ name: 'B', canPlayGoalie: false }),
       playerFactory.build({ name: 'C', canPlayGoalie: false }),
+      playerFactory.build({ name: 'D', canPlayGoalie: false }),
     ];
     const config = gameConfigFactory.build({
-      periods: 1,
-      rotationsPerPeriod: 2,
+      periods: 2,
+      rotationsPerPeriod: 1,
       fieldSize: 2,
       useGoalie: false,
-      noConsecutiveBench: false,
-      enforceMinPlayTime: true,
-      minPlayPercentage: 80,
+      noConsecutiveBench: true,
+      maxConsecutiveBench: 1,
+      enforceMinPlayTime: false,
       skillBalance: false,
     });
+    const existingRotations = [
+      buildRotation(0, {
+        [players[0].id]: RotationAssignment.Field,
+        [players[1].id]: RotationAssignment.Field,
+        [players[2].id]: RotationAssignment.Bench,
+        [players[3].id]: RotationAssignment.Bench,
+      }),
+      buildRotation(1, {
+        [players[0].id]: RotationAssignment.Field,
+        [players[1].id]: RotationAssignment.Field,
+        [players[2].id]: RotationAssignment.Bench,
+        [players[3].id]: RotationAssignment.Bench,
+      }),
+    ];
+    existingRotations[0].periodIndex = 0;
+    existingRotations[1].periodIndex = 1;
 
     const posted: SolverResponse[] = [];
     const originalPostMessage = self.postMessage;
@@ -537,8 +554,16 @@ describe('worker solver fallback', () => {
             config,
             absentPlayerIds: [],
             goalieAssignments: [],
-            manualOverrides: [],
-            periodDivisions: [2],
+            manualOverrides: [
+              {
+                playerId: players[0].id,
+                rotationIndex: 1,
+                assignment: RotationAssignment.Field,
+              },
+            ],
+            periodDivisions: [1, 1],
+            startFromRotation: 1,
+            existingRotations,
             allowConstraintRelaxation: true,
           },
         },
@@ -596,6 +621,76 @@ describe('worker solver fallback', () => {
     }
 
     expect(posted.some((message) => message.type === 'ERROR')).toBe(true);
+  });
+
+  it('keeps existing schedule when all relaxed attempts are still infeasible', () => {
+    const players = [
+      playerFactory.build({ name: 'A', canPlayGoalie: false }),
+      playerFactory.build({ name: 'B', canPlayGoalie: false }),
+      playerFactory.build({ name: 'C', canPlayGoalie: false }),
+    ];
+    const config = gameConfigFactory.build({
+      periods: 1,
+      rotationsPerPeriod: 2,
+      fieldSize: 2,
+      useGoalie: false,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: true,
+      minPlayPercentage: 80,
+      skillBalance: false,
+    });
+    const existingRotations = [
+      buildRotation(0, {
+        [players[0].id]: RotationAssignment.Field,
+        [players[1].id]: RotationAssignment.Field,
+        [players[2].id]: RotationAssignment.Bench,
+      }),
+      buildRotation(1, {
+        [players[0].id]: RotationAssignment.Field,
+        [players[1].id]: RotationAssignment.Bench,
+        [players[2].id]: RotationAssignment.Field,
+      }),
+    ];
+    existingRotations[0].periodIndex = 0;
+    existingRotations[1].periodIndex = 0;
+
+    const posted: SolverResponse[] = [];
+    const originalPostMessage = self.postMessage;
+    const mockPostMessage = vi.fn((message: SolverResponse) => {
+      posted.push(message);
+    });
+    self.postMessage = mockPostMessage as typeof self.postMessage;
+
+    try {
+      (self.onmessage as ((event: MessageEvent) => void) | null)?.({
+        data: {
+          type: 'SOLVE',
+          payload: {
+            requestId: 'req-keep-existing',
+            players,
+            config,
+            absentPlayerIds: [],
+            goalieAssignments: [],
+            manualOverrides: [],
+            periodDivisions: [2],
+            startFromRotation: 0,
+            existingRotations,
+            allowConstraintRelaxation: true,
+          },
+        },
+      } as MessageEvent);
+    } finally {
+      self.postMessage = originalPostMessage;
+    }
+
+    const success = posted.find((message) => message.type === 'SUCCESS');
+    expect(success).toBeDefined();
+    expect(posted.some((message) => message.type === 'ERROR')).toBe(false);
+    const solvedSchedule = (success as Extract<SolverResponse, { type: 'SUCCESS' }>).payload
+      .schedule;
+    expect(solvedSchedule.rotations).toHaveLength(existingRotations.length);
+    expect(solvedSchedule.rotations[0].assignments).toEqual(existingRotations[0].assignments);
+    expect(solvedSchedule.rotations[1].assignments).toEqual(existingRotations[1].assignments);
   });
 
   it('keeps all players at or above 50% in the P4 split regenerate backup scenario', () => {
