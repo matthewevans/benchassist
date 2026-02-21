@@ -259,8 +259,18 @@ describe('buildMidGameSolveWindow', () => {
         { periodIndex: 3, playerId: p1.id },
       ],
       manualOverrides: [
-        { playerId: p3.id, rotationIndex: 1, assignment: RotationAssignment.Field },
-        { playerId: p3.id, rotationIndex: 4, assignment: RotationAssignment.Bench },
+        {
+          playerId: p3.id,
+          rotationIndex: 1,
+          assignment: RotationAssignment.Field,
+          lockMode: 'hard',
+        },
+        {
+          playerId: p3.id,
+          rotationIndex: 4,
+          assignment: RotationAssignment.Bench,
+          lockMode: 'hard',
+        },
       ],
       startFromRotation: 3,
       existingRotations,
@@ -274,9 +284,24 @@ describe('buildMidGameSolveWindow', () => {
     expect(window?.goalieAssignments).toEqual([{ periodIndex: 0, playerId: p1.id }]);
     expect(window?.manualOverrides).toEqual(
       expect.arrayContaining([
-        { playerId: p3.id, rotationIndex: 1, assignment: RotationAssignment.Bench },
-        { playerId: p1.id, rotationIndex: 0, assignment: RotationAssignment.Field },
-        { playerId: p2.id, rotationIndex: 0, assignment: RotationAssignment.Bench },
+        {
+          playerId: p3.id,
+          rotationIndex: 1,
+          assignment: RotationAssignment.Bench,
+          lockMode: 'hard',
+        },
+        {
+          playerId: p1.id,
+          rotationIndex: 0,
+          assignment: RotationAssignment.Field,
+          lockMode: 'hard',
+        },
+        {
+          playerId: p2.id,
+          rotationIndex: 0,
+          assignment: RotationAssignment.Bench,
+          lockMode: 'hard',
+        },
       ]),
     );
   });
@@ -559,6 +584,7 @@ describe('worker solver fallback', () => {
                 playerId: players[0].id,
                 rotationIndex: 1,
                 assignment: RotationAssignment.Field,
+                lockMode: 'hard',
               },
             ],
             periodDivisions: [1, 1],

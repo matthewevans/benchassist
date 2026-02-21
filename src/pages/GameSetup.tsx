@@ -100,10 +100,30 @@ export function GameSetup() {
   function handleGenerate() {
     if (!selectedRoster || !selectedConfig || !teamId) return;
 
+    const game = createDraftGame();
+    if (!game) return;
+
+    dispatch({ type: 'CREATE_GAME', payload: game });
+
+    pendingGameIdRef.current = game.id;
+
+    solver.solve({
+      players: selectedRoster.players,
+      config: selectedConfig,
+      absentPlayerIds: [...absentPlayerIds],
+      goalieAssignments: game.goalieAssignments,
+      manualOverrides: game.manualOverrides,
+      periodDivisions: game.periodDivisions,
+    });
+  }
+
+  function createDraftGame(): Game | null {
+    if (!selectedRoster || !selectedConfig || !teamId) return null;
+
     const gameId = generateId();
     const effectiveGoalieAssignments = selectedConfig.useGoalie ? goalieAssignments : [];
 
-    const game: Game = {
+    return {
       id: gameId,
       teamId,
       rosterId,
@@ -127,19 +147,14 @@ export function GameSetup() {
       startedAt: null,
       completedAt: null,
     };
+  }
+
+  function handleEnterCoachPlan() {
+    const game = createDraftGame();
+    if (!game) return;
 
     dispatch({ type: 'CREATE_GAME', payload: game });
-
-    pendingGameIdRef.current = gameId;
-
-    solver.solve({
-      players: selectedRoster.players,
-      config: selectedConfig,
-      absentPlayerIds: [...absentPlayerIds],
-      goalieAssignments: effectiveGoalieAssignments,
-      manualOverrides: [],
-      periodDivisions: game.periodDivisions,
-    });
+    navigate(`/games/${game.id}/direct-entry`);
   }
 
   function autoSelectForTeam(nextTeamId: string) {
@@ -327,12 +342,23 @@ export function GameSetup() {
           progress={solver.progress}
           message={solver.message}
           error={solver.error}
+          onCancel={solver.cancel}
         />
 
         {/* CTA */}
-        <Button size="lg" disabled={!canGenerate || solver.isRunning} onClick={handleGenerate}>
-          {solver.isRunning ? t('setup.generating') : t('setup.generate_rotations')}
-        </Button>
+        <div className="space-y-2">
+          <Button size="lg" disabled={!canGenerate || solver.isRunning} onClick={handleGenerate}>
+            {solver.isRunning ? t('setup.generating') : t('setup.generate_rotations')}
+          </Button>
+          <Button
+            size="lg"
+            variant="secondary"
+            disabled={!canGenerate || solver.isRunning}
+            onClick={handleEnterCoachPlan}
+          >
+            {t('setup.enter_coach_plan')}
+          </Button>
+        </div>
       </div>
 
       <BottomSheet

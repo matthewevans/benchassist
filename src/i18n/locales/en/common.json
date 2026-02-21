@@ -19,6 +19,7 @@
     "copy": "Copy",
     "share": "Share",
     "refresh": "Refresh",
+    "stop": "Stop",
     "manage": "Manage",
     "select_all": "Select All",
     "clear_all": "Clear All"

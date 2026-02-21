@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { RotationGrid } from './RotationGrid.tsx';
@@ -202,6 +202,7 @@ describe('RotationGrid', () => {
       // Regenerate is behind the overflow menu
       await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       expect(screen.getByRole('button', { name: /regenerate/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /enter coach plan/i })).toBeInTheDocument();
     });
 
     it('renders all players in the grid', () => {
@@ -269,6 +270,7 @@ describe('RotationGrid', () => {
       renderGrid(draftState, game.id);
 
       expect(screen.getByText(/saved without rotations/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /enter coach plan/i })).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: /generate rotations/i }));
       expect(mockSolver.solve).toHaveBeenCalled();
     });
@@ -430,6 +432,10 @@ describe('RotationGrid', () => {
       renderGrid(state, game.id);
       await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
 
       expect(mockSolver.solve).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -555,6 +561,10 @@ describe('RotationGrid', () => {
       renderGrid(state, game.id);
       await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
 
       expect(mockSolver.solve).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -572,11 +582,16 @@ describe('RotationGrid', () => {
     it('shows a live regenerate preview instead of auto-applying solver output', async () => {
       const { state, game } = buildLiveState();
       const { dispatch } = renderGrid(state, game.id);
+      mockSolver.solve = vi.fn(() => {
+        mockSolver.result = game.schedule;
+      });
 
       await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
-      mockSolver.result = game.schedule;
-      await userEvent.click(screen.getByRole('tab', { name: 'Grid' }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
 
       expect(await screen.findByText('Review Regenerated Rotations')).toBeInTheDocument();
       expect(dispatch).not.toHaveBeenCalledWith(
@@ -589,11 +604,16 @@ describe('RotationGrid', () => {
     it('applies the live regenerate preview when confirmed', async () => {
       const { state, game } = buildLiveState();
       const { dispatch } = renderGrid(state, game.id);
+      mockSolver.solve = vi.fn(() => {
+        mockSolver.result = game.schedule;
+      });
 
       await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
-      mockSolver.result = game.schedule;
-      await userEvent.click(screen.getByRole('tab', { name: 'Grid' }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
 
       expect(await screen.findByText('Review Regenerated Rotations')).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: /apply regenerate/i }));

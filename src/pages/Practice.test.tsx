@@ -21,6 +21,11 @@ function getFocusAreasSection() {
 }
 
 describe('Practice page', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+  });
+
   it('renders the page heading', () => {
     renderPractice();
     expect(screen.getByText('Practice')).toBeInTheDocument();

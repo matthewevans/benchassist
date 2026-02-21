@@ -6,6 +6,7 @@ import { Dashboard } from '@/pages/Dashboard.tsx';
 import { TeamManagement } from '@/pages/TeamManagement.tsx';
 import { RosterEditor } from '@/pages/RosterEditor.tsx';
 import { GameSetup } from '@/pages/GameSetup.tsx';
+import { DirectEntry } from '@/pages/DirectEntry.tsx';
 import { RotationGrid } from '@/pages/RotationGrid.tsx';
 import { GameHistory } from '@/pages/GameHistory.tsx';
 import { Practice } from '@/pages/Practice.tsx';
@@ -34,6 +35,7 @@ function AppGate() {
         <Route path="teams/:teamId/rosters/:rosterId" element={<RosterEditor />} />
         <Route path="practice" element={<Practice />} />
         <Route path="games/new" element={<GameSetup />} />
+        <Route path="games/:gameId/direct-entry" element={<DirectEntry />} />
         <Route path="games/:gameId/rotations" element={<RotationGrid />} />
         <Route path="games/:gameId/live" element={<Navigate to="../rotations" replace />} />
         <Route path="games" element={<GameHistory />} />

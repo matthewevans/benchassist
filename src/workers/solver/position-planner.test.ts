@@ -128,4 +128,37 @@ describe('optimizePositionAssignments', () => {
 
     expect(rotations[0].fieldPositions).toBeUndefined();
   });
+
+  it('preserves hard-locked positions during optimization swaps', () => {
+    const players = playerFactory
+      .buildList(3)
+      .map((player) => ({ ...player, primaryPosition: null, secondaryPositions: [] }));
+    const playerMap = new Map(players.map((player) => [player.id, player]));
+
+    const rotations: Rotation[] = [
+      buildFieldRotation(
+        0,
+        { [players[0].id]: 'CB', [players[1].id]: 'CM', [players[2].id]: 'ST' },
+        players,
+      ),
+      buildFieldRotation(
+        1,
+        { [players[0].id]: 'CB', [players[1].id]: 'CM', [players[2].id]: 'ST' },
+        players,
+      ),
+    ];
+
+    const locks = new Map<number, Map<string, SubPosition>>([
+      [0, new Map([[players[0].id, 'CB']])],
+      [1, new Map([[players[0].id, 'CB']])],
+    ]);
+
+    optimizePositionAssignments(rotations, playerMap, {
+      timeoutMs: 50,
+      lockedPositionsByRotation: locks,
+    });
+
+    expect(rotations[0].fieldPositions?.[players[0].id]).toBe('CB');
+    expect(rotations[1].fieldPositions?.[players[0].id]).toBe('CB');
+  });
 });

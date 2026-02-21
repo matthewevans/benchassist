@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
@@ -11,6 +11,7 @@ import { LiveBottomBar } from '@/components/game/LiveBottomBar.tsx';
 import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
+import { LiveRegenerateLockPolicySheet } from '@/components/game/LiveRegenerateLockPolicySheet.tsx';
 import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { PeriodDivisionSheet } from '@/components/game/PeriodDivisionSheet.tsx';
@@ -77,6 +78,7 @@ function RotationPips({
 
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
+  const navigate = useNavigate();
   const { t } = useTranslation('game');
   const { t: tCommon } = useTranslation('common');
   const g = useRotationGame(gameId);
@@ -172,6 +174,11 @@ export function RotationGrid() {
     }).ok;
   }
 
+  function handleOpenDirectEntry() {
+    if (!g.game) return;
+    navigate(`/games/${g.game.id}/direct-entry`);
+  }
+
   return (
     <div>
       {/* NavBar — adapts to game state */}
@@ -191,7 +198,7 @@ export function RotationGrid() {
               <PopoverContent align="end" className="w-48 p-1.5">
                 <button
                   className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                  onClick={g.handleRegenerate}
+                  onClick={g.handleOpenRegenerate}
                   disabled={g.solver.isRunning}
                 >
                   {g.solver.isRunning
@@ -234,7 +241,7 @@ export function RotationGrid() {
                   </button>
                   <button
                     className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                    onClick={g.handleRegenerate}
+                    onClick={g.handleOpenRegenerate}
                     disabled={g.solver.isRunning}
                   >
                     {g.solver.isRunning
@@ -242,6 +249,12 @@ export function RotationGrid() {
                       : g.schedule
                         ? t('live.regenerate')
                         : t('setup.generate_rotations')}
+                  </button>
+                  <button
+                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                    onClick={handleOpenDirectEntry}
+                  >
+                    {t('setup.enter_coach_plan')}
                   </button>
                 </PopoverContent>
               </Popover>
@@ -268,6 +281,7 @@ export function RotationGrid() {
             progress={g.solver.progress}
             message={g.solver.message}
             error={g.solver.error}
+            onCancel={g.solver.cancel}
           />
         </div>
 
@@ -297,8 +311,11 @@ export function RotationGrid() {
           <div className="max-w-4xl mx-auto px-4">
             <div className="space-y-3 rounded-[10px] bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
               <p className="text-ios-footnote text-muted-foreground">{t('error.no_schedule')}</p>
-              <Button size="sm" onClick={g.handleRegenerate} disabled={g.solver.isRunning}>
+              <Button size="sm" onClick={g.handleOpenRegenerate} disabled={g.solver.isRunning}>
                 {g.solver.isRunning ? t('setup.generating') : t('setup.generate_rotations')}
+              </Button>
+              <Button size="sm" variant="secondary" onClick={handleOpenDirectEntry}>
+                {t('setup.enter_coach_plan')}
               </Button>
             </div>
           </div>
@@ -479,6 +496,14 @@ export function RotationGrid() {
           periods={g.config?.periods ?? 2}
           useGoalie={g.config?.useGoalie ?? false}
           onRegenerate={g.handleRegenerateWithSettings}
+        />
+
+        <LiveRegenerateLockPolicySheet
+          open={g.liveRegeneratePolicySheetOpen}
+          onOpenChange={g.setLiveRegeneratePolicySheetOpen}
+          policy={g.liveRegeneratePolicySelection}
+          onPolicyChange={g.setLiveRegeneratePolicySelection}
+          onConfirm={g.handleConfirmLiveRegenerate}
         />
 
         <RegeneratePreviewSheet

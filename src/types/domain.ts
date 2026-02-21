@@ -164,10 +164,14 @@ export enum RotationAssignment {
   Goalie = 'GOALIE',
 }
 
+export type OverrideLockMode = 'hard' | 'soft';
+
 export interface ManualOverride {
   playerId: PlayerId;
   rotationIndex: number;
   assignment: RotationAssignment;
+  lockMode: OverrideLockMode;
+  fieldPosition?: SubPosition;
 }
 
 export interface GoalieAssignment {

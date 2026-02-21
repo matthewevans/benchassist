@@ -112,6 +112,7 @@ function clonePlan(rotations: Rotation[]): PositionPlan {
 
 interface OptimizeOptions {
   timeoutMs?: number;
+  lockedPositionsByRotation?: Map<number, Map<PlayerId, SubPosition>>;
 }
 
 /**
@@ -143,6 +144,7 @@ export function optimizePositionAssignments(
     for (let r = 0; r < plan.length; r++) {
       const positions = plan[r];
       if (!positions) continue;
+      const lockedForRotation = options?.lockedPositionsByRotation?.get(r);
 
       const playerIds = Object.keys(positions) as PlayerId[];
       if (playerIds.length < 2) continue;
@@ -157,6 +159,11 @@ export function optimizePositionAssignments(
           const posA = positions[a];
           const posB = positions[b];
           if (!posA || !posB || posA === posB) continue;
+          const lockedA = lockedForRotation?.get(a);
+          const lockedB = lockedForRotation?.get(b);
+          if ((lockedA && lockedA !== posB) || (lockedB && lockedB !== posA)) {
+            continue;
+          }
 
           positions[a] = posB;
           positions[b] = posA;

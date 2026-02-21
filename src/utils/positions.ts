@@ -29,6 +29,7 @@ const SUB_POSITION_GROUP: Record<SubPosition, Position> = {
 
 const SUB_POSITION_REPEAT_WEIGHT = 2;
 const NO_PREFERENCE_GROUP_REPEAT_WEIGHT = 1;
+const SOFT_SUB_POSITION_PREFERENCE_WEIGHT = 4;
 
 function getPreferredGroups(player: Player | undefined): Set<Position> {
   const preferred = new Set<Position>();
@@ -123,10 +124,40 @@ export function autoAssignPositions(
   formation: FormationSlot[],
   playerMap: Map<PlayerId, Player>,
   positionHistory?: Map<PlayerId, Map<SubPosition, number>>,
+  options?: {
+    lockedSubPositions?: Partial<Record<PlayerId, SubPosition>>;
+    preferredSubPositions?: Partial<Record<PlayerId, SubPosition>>;
+  },
 ): Record<PlayerId, SubPosition> {
   const slots = deriveSubPositions(formation);
-  const count = Math.min(fieldPlayerIds.length, slots.length);
-  if (count === 0) return {};
+  const lockedSubPositions = options?.lockedSubPositions ?? {};
+  const preferredSubPositions = options?.preferredSubPositions ?? {};
+
+  if (fieldPlayerIds.length === 0 || slots.length === 0) return {};
+
+  const pickedLocked = new Set<number>();
+  const lockedAssignments: Record<PlayerId, SubPosition> = {};
+
+  for (const playerId of fieldPlayerIds) {
+    const lockedSubPos = lockedSubPositions[playerId];
+    if (!lockedSubPos) continue;
+
+    const slotIndex = slots.findIndex(
+      (slot, idx) => slot === lockedSubPos && !pickedLocked.has(idx),
+    );
+    if (slotIndex < 0) {
+      throw new Error(`Locked position ${lockedSubPos} is unavailable for player ${playerId}.`);
+    }
+    pickedLocked.add(slotIndex);
+    lockedAssignments[playerId] = lockedSubPos;
+  }
+
+  const unlockedPlayerIds = fieldPlayerIds.filter((playerId) => !lockedAssignments[playerId]);
+  const availableSlotIndices = Array.from({ length: slots.length }, (_, idx) => idx).filter(
+    (idx) => !pickedLocked.has(idx),
+  );
+  const count = Math.min(unlockedPlayerIds.length, availableSlotIndices.length);
+  if (count === 0) return lockedAssignments;
 
   // Pre-compute cost matrix and per-player slot order (cheapest first)
   const costs: number[][] = [];
@@ -134,14 +165,16 @@ export function autoAssignPositions(
   let lowerBound = 0;
 
   for (let p = 0; p < count; p++) {
-    const id = fieldPlayerIds[p];
+    const id = unlockedPlayerIds[p];
     const player = playerMap.get(id);
     const playerHist = positionHistory?.get(id);
     const preferredGroups = getPreferredGroups(player);
     const hasPreferences = preferredGroups.size > 0;
     const groupCounts = getGroupCounts(playerHist);
+    const preferredSubPos = preferredSubPositions[id];
 
-    const playerCosts = slots.map((subPos) => {
+    const playerCosts = availableSlotIndices.map((slotIndex) => {
+      const subPos = slots[slotIndex];
       const group = SUB_POSITION_GROUP[subPos];
       const timesPlayedSubPosition = playerHist?.get(subPos) ?? 0;
       const timesPlayedGroup = groupCounts[group];
@@ -149,22 +182,27 @@ export function autoAssignPositions(
         ? 0
         : timesPlayedGroup * NO_PREFERENCE_GROUP_REPEAT_WEIGHT;
       const preferencePenalty = hasPreferences && !preferredGroups.has(group) ? 1 : 0;
+      const softSubPosPenalty =
+        preferredSubPos && preferredSubPos !== subPos ? SOFT_SUB_POSITION_PREFERENCE_WEIGHT : 0;
 
       return (
-        timesPlayedSubPosition * SUB_POSITION_REPEAT_WEIGHT + groupRepeatPenalty + preferencePenalty
+        timesPlayedSubPosition * SUB_POSITION_REPEAT_WEIGHT +
+        groupRepeatPenalty +
+        preferencePenalty +
+        softSubPosPenalty
       );
     });
 
     costs.push(playerCosts);
     slotOrder.push(
-      Array.from({ length: slots.length }, (_, s) => s).sort(
+      Array.from({ length: availableSlotIndices.length }, (_, s) => s).sort(
         (a, b) => playerCosts[a] - playerCosts[b],
       ),
     );
     lowerBound += Math.min(...playerCosts);
   }
 
-  let best: Record<PlayerId, SubPosition> = {};
+  let best: Record<PlayerId, SubPosition> = { ...lockedAssignments };
   let bestCost = Infinity;
   const picked = new Array<number>(count);
 
@@ -172,8 +210,12 @@ export function autoAssignPositions(
     if (cost >= bestCost) return;
     if (depth === count) {
       bestCost = cost;
-      best = {};
-      for (let i = 0; i < count; i++) best[fieldPlayerIds[i]] = slots[picked[i]];
+      best = { ...lockedAssignments };
+      for (let i = 0; i < count; i++) {
+        const slotOffset = picked[i];
+        const slotIndex = availableSlotIndices[slotOffset];
+        best[unlockedPlayerIds[i]] = slots[slotIndex];
+      }
       return;
     }
     for (const s of slotOrder[depth]) {

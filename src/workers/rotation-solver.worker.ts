@@ -244,6 +244,7 @@ export function buildMidGameSolveWindow(params: {
           playerId: player.id,
           rotationIndex: 0,
           assignment: RotationAssignment.Field,
+          lockMode: 'hard',
         });
       }
     }
@@ -259,6 +260,7 @@ export function buildMidGameSolveWindow(params: {
         playerId: previousPeriodGoalie,
         rotationIndex: 0,
         assignment: RotationAssignment.Bench,
+        lockMode: 'hard',
       });
     }
   }

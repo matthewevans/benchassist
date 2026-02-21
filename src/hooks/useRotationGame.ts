@@ -7,6 +7,8 @@ import { normalizePeriodDivisions, getPeriodRange } from '@/utils/rotationLayout
 import { RotationAssignment } from '@/types/domain.ts';
 import type { PlayerId, Game, GoalieAssignment, RotationSchedule } from '@/types/domain.ts';
 
+export type LiveRegenerateLockPolicy = 'off' | 'hard-only' | 'hard+soft';
+
 export function useRotationGame(gameId: string | undefined) {
   const { state, dispatch } = useAppContext();
   const solver = useSolver();
@@ -54,6 +56,10 @@ export function useRotationGame(gameId: string | undefined) {
   const [solverResultBehavior, setSolverResultBehavior] = useState<'apply' | 'preview-regenerate'>(
     'apply',
   );
+  const [liveRegeneratePolicy, setLiveRegeneratePolicy] = useState<LiveRegenerateLockPolicy>('off');
+  const [liveRegeneratePolicySelection, setLiveRegeneratePolicySelection] =
+    useState<LiveRegenerateLockPolicy>('off');
+  const [liveRegeneratePolicySheetOpen, setLiveRegeneratePolicySheetOpen] = useState(false);
 
   // --- Derived data ---
   const periodGroups = useMemo(() => {
@@ -151,6 +157,15 @@ export function useRotationGame(gameId: string | undefined) {
   }
 
   const regeneratePreview = solverResultBehavior === 'preview-regenerate' ? solver.result : null;
+
+  function getManualOverridesForPolicy(policy: LiveRegenerateLockPolicy) {
+    if (!game) return [];
+    if (policy === 'off') return [];
+    if (policy === 'hard-only') {
+      return game.manualOverrides.filter((override) => override.lockMode !== 'soft');
+    }
+    return game.manualOverrides;
+  }
 
   // --- Handlers ---
   function handleCellClick(rotationIndex: number, playerId: PlayerId) {
@@ -307,17 +322,18 @@ export function useRotationGame(gameId: string | undefined) {
     });
   }
 
-  function handleRegenerate() {
+  function handleRegenerate(policy: LiveRegenerateLockPolicy = liveRegeneratePolicy) {
     if (!roster || !config || !game) return;
     if (isLive && schedule) {
       setRegeneratePreviewBase(schedule);
+      const manualOverrides = getManualOverridesForPolicy(policy);
       runSolve(
         {
           players: activePlayers,
           config,
           absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
           goalieAssignments: game.goalieAssignments,
-          manualOverrides: [],
+          manualOverrides,
           periodDivisions,
           startFromRotation: game.currentRotationIndex,
           existingRotations: schedule.rotations,
@@ -336,6 +352,21 @@ export function useRotationGame(gameId: string | undefined) {
         periodDivisions,
       });
     }
+  }
+
+  function handleOpenRegenerate() {
+    if (isLive) {
+      setLiveRegeneratePolicySelection(liveRegeneratePolicy);
+      setLiveRegeneratePolicySheetOpen(true);
+      return;
+    }
+    handleRegenerate();
+  }
+
+  function handleConfirmLiveRegenerate(policy: LiveRegenerateLockPolicy) {
+    setLiveRegeneratePolicy(policy);
+    setLiveRegeneratePolicySheetOpen(false);
+    handleRegenerate(policy);
   }
 
   function handleApplyRegeneratePreview() {
@@ -452,6 +483,12 @@ export function useRotationGame(gameId: string | undefined) {
     setRemovingPlayerId,
     viewMode,
     setViewMode,
+    liveRegeneratePolicy,
+    setLiveRegeneratePolicy,
+    liveRegeneratePolicySelection,
+    setLiveRegeneratePolicySelection,
+    liveRegeneratePolicySheetOpen,
+    setLiveRegeneratePolicySheetOpen,
     // Context
     dispatch,
     // Handlers
@@ -465,6 +502,8 @@ export function useRotationGame(gameId: string | undefined) {
     handleSetPeriodDivision,
     handleConfirmRemovePlayer,
     handleAddPlayerBack,
+    handleOpenRegenerate,
+    handleConfirmLiveRegenerate,
     handleRegenerate,
     handleRegenerateWithSettings,
     handleApplyRegeneratePreview,

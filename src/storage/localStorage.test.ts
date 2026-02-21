@@ -6,6 +6,7 @@ import {
   migrateV2toV3,
   migrateV3toV4,
   migrateV4toV5,
+  migrateV5toV6,
   CURRENT_VERSION,
 } from './localStorage.ts';
 
@@ -227,7 +228,7 @@ describe('localStorage migration v2→v3', () => {
 
 describe('CURRENT_VERSION', () => {
   it('equals migration steps count + 1', () => {
-    expect(CURRENT_VERSION).toBe(5);
+    expect(CURRENT_VERSION).toBe(6);
   });
 });
 
@@ -375,6 +376,66 @@ describe('migrateV4toV5', () => {
     });
 
     expect(result.games.g1.periodDivisions).toEqual([1, 3, 2]);
+  });
+});
+
+describe('migrateV5toV6', () => {
+  it('adds lockMode to legacy manual overrides', () => {
+    const result = migrateV5toV6({
+      version: 5,
+      teams: {},
+      games: {
+        g1: {
+          id: 'g1',
+          manualOverrides: [
+            {
+              playerId: 'p1',
+              rotationIndex: 0,
+              assignment: 'FIELD',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.version).toBe(6);
+    expect(result.games.g1.manualOverrides).toEqual([
+      {
+        playerId: 'p1',
+        rotationIndex: 0,
+        assignment: 'FIELD',
+        lockMode: 'hard',
+      },
+    ]);
+  });
+
+  it('preserves existing soft lock mode', () => {
+    const result = migrateV5toV6({
+      version: 5,
+      teams: {},
+      games: {
+        g1: {
+          id: 'g1',
+          manualOverrides: [
+            {
+              playerId: 'p2',
+              rotationIndex: 1,
+              assignment: 'BENCH',
+              lockMode: 'soft',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.games.g1.manualOverrides).toEqual([
+      {
+        playerId: 'p2',
+        rotationIndex: 1,
+        assignment: 'BENCH',
+        lockMode: 'soft',
+      },
+    ]);
   });
 });
 

@@ -1,7 +1,9 @@
 import { RotationAssignment } from '@/types/domain.ts';
 import type {
   Player,
+  PlayerId,
   GoalieAssignment,
+  ManualOverride,
   RotationSchedule,
   Rotation,
   FormationSlot,
@@ -25,6 +27,19 @@ interface PlayerConstraints {
   player: Player;
   cannotBench: Set<number>;
   mustBench: Set<number>;
+}
+
+interface SolutionScore {
+  softMissCount: number;
+  strengthVariance: number;
+}
+
+const PRIMARY_SEARCH_TIMEOUT_MS = 12_000;
+const PRIMARY_SEARCH_NODE_LIMIT = 8_000_000;
+const FALLBACK_SEARCH_TIMEOUT_MS = 3_000;
+
+function overrideKey(playerId: PlayerId, rotationIndex: number): string {
+  return `${playerId}:${rotationIndex}`;
 }
 
 function searchingMessage(combinations: string): string {
@@ -196,25 +211,40 @@ function findFallbackFeasibleBenchSets(params: {
 
   const benchCountPerRotation = new Array<number>(totalRotations).fill(0);
   const chosen: BenchPattern[] = new Array<BenchPattern>(playerPools.length);
+  const deadStates = new Set<string>();
   let found = false;
+  let timedOut = false;
   let explored = 0;
-  let lastProgressAt = Date.now();
+  const searchStartTime = Date.now();
+  let lastProgressAt = searchStartTime;
   let lastReportedProgress = 30;
 
   onProgress(lastReportedProgress, searchingMessage('0'));
 
+  function stateKey(depth: number): string {
+    return `${depth}:${benchCountPerRotation.join(',')}`;
+  }
+
   function search(depth: number) {
-    if (found) return;
+    if (found || timedOut) return;
     if (cancellation.cancelled) throw new Error('Cancelled');
+    if (Date.now() - searchStartTime > FALLBACK_SEARCH_TIMEOUT_MS) {
+      timedOut = true;
+      return;
+    }
     explored++;
 
     const now = Date.now();
     if (now - lastProgressAt >= 300) {
-      const elapsedMs = now - lastProgressAt;
-      const bump = Math.max(1, Math.floor(elapsedMs / 300));
+      const elapsedMs = now - searchStartTime;
+      const bump = Math.max(1, Math.floor((now - lastProgressAt) / 300));
       lastReportedProgress = Math.min(88, lastReportedProgress + bump);
       onProgress(lastReportedProgress, searchingMessage(explored.toLocaleString()));
       lastProgressAt = now;
+      if (elapsedMs > FALLBACK_SEARCH_TIMEOUT_MS) {
+        timedOut = true;
+        return;
+      }
     }
 
     const remainingPlayers = playerPools.length - depth;
@@ -222,6 +252,9 @@ function findFallbackFeasibleBenchSets(params: {
       if (benchCountPerRotation[r] > benchSlotsPerRotation) return;
       if (benchCountPerRotation[r] + remainingPlayers < benchSlotsPerRotation) return;
     }
+
+    const key = stateKey(depth);
+    if (deadStates.has(key)) return;
 
     if (depth === playerPools.length) {
       for (let r = 0; r < totalRotations; r++) {
@@ -247,17 +280,21 @@ function findFallbackFeasibleBenchSets(params: {
       }
 
       search(depth + 1);
-      if (found) return;
+      if (found || timedOut) return;
 
       for (const rotIndex of pattern) {
         benchCountPerRotation[rotIndex]--;
       }
     }
+
+    if (!found && !timedOut) {
+      deadStates.add(key);
+    }
   }
 
   search(0);
 
-  if (!found) return null;
+  if (!found || timedOut) return null;
   return {
     orderedPlayers: playerPools.map((p) => p.player),
     benchSets: chosen.map((set) => [...set]),
@@ -295,6 +332,87 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   const getPlayerMaxBenchWeight = (playerId: string): number =>
     ctx.maxBenchWeightByPlayer?.[playerId] ?? defaultMaxBenchWeight;
 
+  const playerNameById = new Map(players.map((p) => [p.id, p.name]));
+  const playerById = new Map(players.map((p) => [p.id, p]));
+  const activePlayerIds = new Set(players.map((p) => p.id));
+
+  const overrideByKey = new Map<string, ManualOverride>();
+  for (const manualOverride of manualOverrides) {
+    if (!activePlayerIds.has(manualOverride.playerId)) continue;
+    if (manualOverride.rotationIndex < 0 || manualOverride.rotationIndex >= totalRotations)
+      continue;
+
+    const normalizedOverride: ManualOverride = {
+      ...manualOverride,
+      lockMode: manualOverride.lockMode === 'soft' ? 'soft' : 'hard',
+    };
+    const key = overrideKey(
+      normalizedOverride.playerId as PlayerId,
+      normalizedOverride.rotationIndex,
+    );
+    const existing = overrideByKey.get(key);
+    if (!existing) {
+      overrideByKey.set(key, normalizedOverride);
+      continue;
+    }
+    if (existing.lockMode === 'hard' && normalizedOverride.lockMode === 'soft') {
+      continue;
+    }
+    if (existing.lockMode === 'soft' && normalizedOverride.lockMode === 'hard') {
+      overrideByKey.set(key, normalizedOverride);
+      continue;
+    }
+    if (
+      existing.lockMode === 'hard' &&
+      normalizedOverride.lockMode === 'hard' &&
+      existing.assignment !== normalizedOverride.assignment
+    ) {
+      const playerName = playerNameById.get(normalizedOverride.playerId) ?? 'Player';
+      throw new Error(
+        `${playerName} has conflicting hard assignments on R${normalizedOverride.rotationIndex + 1}.`,
+      );
+    }
+    overrideByKey.set(key, normalizedOverride);
+  }
+
+  const normalizedOverrides = [...overrideByKey.values()];
+  const hardOverrides = normalizedOverrides.filter((override) => override.lockMode === 'hard');
+  const softOverrides = normalizedOverrides.filter((override) => override.lockMode === 'soft');
+  const hardOverridesByRotation = new Map<number, ManualOverride[]>();
+  for (const override of hardOverrides) {
+    const overridesForRotation = hardOverridesByRotation.get(override.rotationIndex) ?? [];
+    overridesForRotation.push(override);
+    hardOverridesByRotation.set(override.rotationIndex, overridesForRotation);
+  }
+
+  const disallowedGoaliesByPeriod = new Map<number, Set<PlayerId>>();
+  if (config.useGoalie) {
+    for (let period = 0; period < config.periods; period++) {
+      const periodStart = periodOffsets[period] ?? 0;
+      const periodDivision = normalizedPeriodDivisions[period] ?? 1;
+      const goalieDutyRotations = config.goaliePlayFullPeriod
+        ? Array.from({ length: periodDivision }, (_, rot) => periodStart + rot)
+        : [periodStart];
+
+      const disallowedGoalies = new Set<PlayerId>();
+      for (const rotationIndex of goalieDutyRotations) {
+        const overridesForRotation = hardOverridesByRotation.get(rotationIndex);
+        if (!overridesForRotation) continue;
+        for (const override of overridesForRotation) {
+          const blocksGoalie =
+            override.assignment === RotationAssignment.Bench ||
+            (override.assignment === RotationAssignment.Field && !!override.fieldPosition);
+          if (blocksGoalie) {
+            disallowedGoalies.add(override.playerId);
+          }
+        }
+      }
+      if (disallowedGoalies.size > 0) {
+        disallowedGoaliesByPeriod.set(period, disallowedGoalies);
+      }
+    }
+  }
+
   const goalieMap = new Map<number, string>();
   const forcedBench = new Map<string, Set<number>>();
 
@@ -302,8 +420,12 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     ctx.onProgress(5, 'game:solver.calculating_goalie');
 
     // Resolve goalie assignments per period
-    const goaliePerPeriod = resolveGoalieAssignments(players, config.periods, goalieAssignments);
-    const playerNameById = new Map(players.map((p) => [p.id, p.name]));
+    const goaliePerPeriod = resolveGoalieAssignments(
+      players,
+      config.periods,
+      goalieAssignments,
+      disallowedGoaliesByPeriod,
+    );
 
     if (config.goalieRestAfterPeriod) {
       for (let period = 0; period < config.periods - 1; period++) {
@@ -344,13 +466,86 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     }
   }
 
-  // Build forced assignments from manual overrides
+  const hardGoalieOverrides = hardOverrides.filter(
+    (override) => override.assignment === RotationAssignment.Goalie,
+  );
+  if (!config.useGoalie && hardGoalieOverrides.length > 0) {
+    throw new Error('Hard goalie locks are not allowed when goalie usage is disabled.');
+  }
+
+  const hardGoalieByRotation = new Map<number, PlayerId>();
+  for (const override of hardGoalieOverrides) {
+    const existing = hardGoalieByRotation.get(override.rotationIndex);
+    if (existing && existing !== override.playerId) {
+      throw new Error(
+        `R${override.rotationIndex + 1} has multiple hard goalie locks. Only one goalie is allowed.`,
+      );
+    }
+    const player = playerById.get(override.playerId);
+    if (!player?.canPlayGoalie) {
+      throw new Error(`${player?.name ?? 'Player'} cannot be hard-locked as goalie.`);
+    }
+    hardGoalieByRotation.set(override.rotationIndex, override.playerId);
+  }
+
+  for (const [rotationIndex, playerId] of hardGoalieByRotation.entries()) {
+    goalieMap.set(rotationIndex, playerId);
+  }
+
+  // Build forced assignments from hard overrides
   const forcedAssignments = new Map<string, Map<number, RotationAssignment>>();
-  for (const override of manualOverrides) {
+  for (const override of hardOverrides) {
     if (!forcedAssignments.has(override.playerId)) {
       forcedAssignments.set(override.playerId, new Map());
     }
     forcedAssignments.get(override.playerId)!.set(override.rotationIndex, override.assignment);
+  }
+
+  const hardFieldPositionLocksByRotation = new Map<number, Map<PlayerId, SubPosition>>();
+  for (const override of hardOverrides) {
+    if (!override.fieldPosition) continue;
+    if (override.assignment !== RotationAssignment.Field) {
+      const playerName = playerNameById.get(override.playerId) ?? 'Player';
+      throw new Error(
+        `${playerName} has a hard position lock on R${override.rotationIndex + 1} but is not set to FIELD.`,
+      );
+    }
+    const rotationLocks =
+      hardFieldPositionLocksByRotation.get(override.rotationIndex) ??
+      new Map<PlayerId, SubPosition>();
+    const collision = [...rotationLocks.entries()].find(
+      ([playerId, fieldPosition]) =>
+        fieldPosition === override.fieldPosition && playerId !== override.playerId,
+    );
+    if (collision) {
+      const playerName = playerNameById.get(override.playerId) ?? 'Player';
+      const collisionName = playerNameById.get(collision[0]) ?? 'Player';
+      throw new Error(
+        `R${override.rotationIndex + 1}: ${playerName} and ${collisionName} are hard-locked to ${override.fieldPosition}.`,
+      );
+    }
+    rotationLocks.set(override.playerId, override.fieldPosition);
+    hardFieldPositionLocksByRotation.set(override.rotationIndex, rotationLocks);
+  }
+
+  const softFieldPositionPrefsByRotation = new Map<number, Map<PlayerId, SubPosition>>();
+  for (const override of softOverrides) {
+    if (!override.fieldPosition || override.assignment !== RotationAssignment.Field) continue;
+    const rotationPrefs =
+      softFieldPositionPrefsByRotation.get(override.rotationIndex) ??
+      new Map<PlayerId, SubPosition>();
+    rotationPrefs.set(override.playerId, override.fieldPosition);
+    softFieldPositionPrefsByRotation.set(override.rotationIndex, rotationPrefs);
+  }
+
+  for (const override of hardOverrides) {
+    const goalieId = goalieMap.get(override.rotationIndex);
+    if (goalieId === override.playerId && override.assignment === RotationAssignment.Bench) {
+      const playerName = playerNameById.get(override.playerId) ?? 'Player';
+      throw new Error(
+        `${playerName} is hard-locked as ${override.assignment.toLowerCase()} on R${override.rotationIndex + 1}, but goalie assignment requires GOALIE.`,
+      );
+    }
   }
 
   ctx.onProgress(10, 'game:solver.generating_patterns');
@@ -535,21 +730,33 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
 
   // Search for the best combination
   let bestBenchSets: BenchPattern[] | null = null;
-  let bestScore = Infinity;
+  let bestScore: SolutionScore = { softMissCount: Infinity, strengthVariance: Infinity };
   let combinations = 0;
 
   const currentBenchSets: BenchPattern[] = new Array<BenchPattern>(players.length);
   const benchCountPerRotation = new Array<number>(totalRotations).fill(0);
+  const deadEndStates = new Set<string>();
 
   const searchStartTime = Date.now();
-  const SEARCH_TIMEOUT_MS = 10_000;
   let lastProgressAt = searchStartTime;
   let lastReportedProgress = 20;
   let nodesVisited = 0;
+  let searchTimedOut = false;
 
-  function search(depth: number) {
+  function stateKey(depth: number): string {
+    return `${depth}:${benchCountPerRotation.join(',')}`;
+  }
+
+  function search(depth: number): boolean {
     if (cancellation.cancelled) throw new Error('Cancelled');
-    if (Date.now() - searchStartTime > SEARCH_TIMEOUT_MS && bestBenchSets) return;
+    if (searchTimedOut) return false;
+    if (
+      nodesVisited >= PRIMARY_SEARCH_NODE_LIMIT ||
+      Date.now() - searchStartTime > PRIMARY_SEARCH_TIMEOUT_MS
+    ) {
+      searchTimedOut = true;
+      return false;
+    }
     nodesVisited++;
 
     const now = Date.now();
@@ -570,24 +777,44 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       lastProgressAt = now;
     }
 
+    const remainingPlayers = playerPatterns.length - depth;
+    for (let r = 0; r < totalRotations; r++) {
+      if (benchCountPerRotation[r] > benchSlotsPerRotation) return false;
+      if (benchCountPerRotation[r] + remainingPlayers < benchSlotsPerRotation) return false;
+    }
+
+    const key = stateKey(depth);
+    if (deadEndStates.has(key)) return false;
+
     if (depth === playerPatterns.length) {
       // Validate: each rotation must have exactly benchSlotsPerRotation benched
       for (let r = 0; r < totalRotations; r++) {
-        if (benchCountPerRotation[r] !== benchSlotsPerRotation) return;
+        if (benchCountPerRotation[r] !== benchSlotsPerRotation) return false;
       }
 
       // Score this solution
-      const score = scoreSolution(playerPatterns, currentBenchSets, totalRotations);
+      const score = scoreSolution(
+        playerPatterns,
+        currentBenchSets,
+        goalieMap,
+        totalRotations,
+        softOverrides,
+      );
       combinations++;
 
-      if (score < bestScore) {
+      if (
+        score.softMissCount < bestScore.softMissCount ||
+        (score.softMissCount === bestScore.softMissCount &&
+          score.strengthVariance < bestScore.strengthVariance)
+      ) {
         bestScore = score;
         bestBenchSets = currentBenchSets.map((s) => [...s]);
       }
-      return;
+      return true;
     }
 
     const { patterns } = playerPatterns[depth];
+    let foundFeasibleCompletion = false;
 
     for (const pattern of patterns) {
       // Prune: check if adding this pattern would exceed bench slots for any rotation
@@ -606,13 +833,23 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
         benchCountPerRotation[rotIndex]++;
       }
 
-      search(depth + 1);
+      if (search(depth + 1)) {
+        foundFeasibleCompletion = true;
+      }
 
       // Undo
       for (const rotIndex of pattern) {
         benchCountPerRotation[rotIndex]--;
       }
+
+      if (searchTimedOut) break;
     }
+
+    if (!foundFeasibleCompletion && !searchTimedOut) {
+      deadEndStates.add(key);
+    }
+
+    return foundFeasibleCompletion;
   }
 
   search(0);
@@ -639,12 +876,20 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
         fallbackPlayerPatterns,
         fallback.benchSets,
         goalieMap,
+        hardFieldPositionLocksByRotation,
+        softFieldPositionPrefsByRotation,
         players,
         {
           ...config,
           periodDivisions: normalizedPeriodDivisions,
         },
         totalRotations,
+      );
+    }
+
+    if (searchTimedOut) {
+      throw new Error(
+        'No valid rotation schedule found within search limit. This setup creates too many combinations to evaluate. Add hard locks or relax no-consecutive-bench/min-play constraints and try again.',
       );
     }
 
@@ -669,6 +914,8 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     playerPatterns,
     bestBenchSets,
     goalieMap,
+    hardFieldPositionLocksByRotation,
+    softFieldPositionPrefsByRotation,
     players,
     {
       ...config,
@@ -682,13 +929,23 @@ function resolveGoalieAssignments(
   players: Player[],
   periods: number,
   assignments: GoalieAssignment[],
+  disallowedGoaliesByPeriod: Map<number, Set<PlayerId>>,
 ): string[] {
   const goalieEligible = players.filter((p) => p.canPlayGoalie);
+  const playerNameById = new Map(players.map((p) => [p.id, p.name]));
   const result: string[] = [];
 
   for (let period = 0; period < periods; period++) {
+    const disallowedGoalies = disallowedGoaliesByPeriod.get(period) ?? new Set<PlayerId>();
+    const periodGoalieEligible = goalieEligible.filter((p) => !disallowedGoalies.has(p.id));
     const assignment = assignments.find((a) => a.periodIndex === period);
     if (assignment && assignment.playerId !== 'auto') {
+      if (disallowedGoalies.has(assignment.playerId)) {
+        const playerName = playerNameById.get(assignment.playerId) ?? 'Player';
+        throw new Error(
+          `${playerName} cannot be goalie in period ${period + 1} because they have a hard non-goalie lock in a goalie rotation.`,
+        );
+      }
       result.push(assignment.playerId);
     } else {
       // Auto-assign: pick the eligible player who has goalied the least
@@ -697,7 +954,7 @@ function resolveGoalieAssignments(
         counts.set(id, (counts.get(id) ?? 0) + 1);
       }
 
-      const sorted = [...goalieEligible].sort(
+      const sorted = [...periodGoalieEligible].sort(
         (a, b) => (counts.get(a.id) ?? 0) - (counts.get(b.id) ?? 0),
       );
 
@@ -706,6 +963,14 @@ function resolveGoalieAssignments(
       const candidate = sorted.find((p) => p.id !== prevGoalie) ?? sorted[0];
 
       if (!candidate) {
+        if (disallowedGoalies.size > 0) {
+          const lockedNames = [...disallowedGoalies]
+            .map((id) => playerNameById.get(id) ?? 'Player')
+            .join(', ');
+          throw new Error(
+            `No goalie-eligible player available for period ${period + 1} after applying hard locks (${lockedNames}).`,
+          );
+        }
         throw new Error(`No goalie-eligible player available for period ${period + 1}`);
       }
       result.push(candidate.id);
@@ -861,9 +1126,31 @@ function generateBenchPatterns(
 function scoreSolution(
   playerPatterns: { player: Player; patterns: BenchPattern[] }[],
   benchSets: BenchPattern[],
+  goalieMap: Map<number, string>,
   totalRotations: number,
-): number {
+  softOverrides: ManualOverride[],
+): SolutionScore {
   const benchSetLookups = benchSets.map((pattern) => new Set(pattern));
+  const playerIndexById = new Map<string, number>();
+  for (let i = 0; i < playerPatterns.length; i++) {
+    playerIndexById.set(playerPatterns[i].player.id, i);
+  }
+
+  let softMissCount = 0;
+  for (const override of softOverrides) {
+    const playerIndex = playerIndexById.get(override.playerId);
+    if (playerIndex == null) continue;
+    if (override.rotationIndex < 0 || override.rotationIndex >= totalRotations) continue;
+
+    const actualAssignment =
+      goalieMap.get(override.rotationIndex) === override.playerId
+        ? RotationAssignment.Goalie
+        : benchSetLookups[playerIndex].has(override.rotationIndex)
+          ? RotationAssignment.Bench
+          : RotationAssignment.Field;
+    if (actualAssignment !== override.assignment) softMissCount++;
+  }
+
   const strengths: number[] = [];
   for (let r = 0; r < totalRotations; r++) {
     let strength = 0;
@@ -876,13 +1163,17 @@ function scoreSolution(
   }
 
   const avg = strengths.reduce((s, v) => s + v, 0) / strengths.length;
-  return strengths.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / strengths.length;
+  const strengthVariance =
+    strengths.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / strengths.length;
+  return { softMissCount, strengthVariance };
 }
 
 function buildSchedule(
   playerPatterns: { player: Player; patterns: BenchPattern[] }[],
   benchSets: BenchPattern[],
   goalieMap: Map<number, string>,
+  hardFieldPositionLocksByRotation: Map<number, Map<PlayerId, SubPosition>>,
+  softFieldPositionPrefsByRotation: Map<number, Map<PlayerId, SubPosition>>,
   allPlayers: Player[],
   config: {
     periods: number;
@@ -928,13 +1219,54 @@ function buildSchedule(
     if (config.usePositions && config.formation.length > 0 && playerMap) {
       const fieldPlayerIds = Object.entries(assignments)
         .filter(([, a]) => a === RotationAssignment.Field)
-        .map(([id]) => id);
+        .map(([id]) => id as PlayerId);
+      const hardLocksForRotation = hardFieldPositionLocksByRotation.get(r);
+      const softPrefsForRotation = softFieldPositionPrefsByRotation.get(r);
+
+      const lockedSubPositions: Partial<Record<PlayerId, SubPosition>> = {};
+      if (hardLocksForRotation) {
+        for (const [playerId, subPos] of hardLocksForRotation.entries()) {
+          if (!fieldPlayerIds.includes(playerId)) {
+            throw new Error(
+              `R${r + 1}: ${playerMap.get(playerId)?.name ?? 'Player'} has a hard position lock but is not assigned to FIELD.`,
+            );
+          }
+          lockedSubPositions[playerId] = subPos;
+        }
+      }
+
+      const preferredSubPositions: Partial<Record<PlayerId, SubPosition>> = {};
+      if (softPrefsForRotation) {
+        for (const [playerId, subPos] of softPrefsForRotation.entries()) {
+          if (!fieldPlayerIds.includes(playerId)) continue;
+          if (lockedSubPositions[playerId]) continue;
+          preferredSubPositions[playerId] = subPos;
+        }
+      }
+
       rotation.fieldPositions = autoAssignPositions(
         fieldPlayerIds,
         config.formation,
         playerMap,
         positionHistory,
+        {
+          lockedSubPositions: Object.keys(lockedSubPositions).length
+            ? lockedSubPositions
+            : undefined,
+          preferredSubPositions: Object.keys(preferredSubPositions).length
+            ? preferredSubPositions
+            : undefined,
+        },
       );
+      if (hardLocksForRotation) {
+        for (const [playerId, subPos] of hardLocksForRotation.entries()) {
+          if (rotation.fieldPositions[playerId] !== subPos) {
+            throw new Error(
+              `R${r + 1}: hard lock ${subPos} for ${playerMap.get(playerId)?.name ?? 'Player'} could not be satisfied.`,
+            );
+          }
+        }
+      }
 
       // Track position history for diversity in subsequent rotations
       for (const [playerId, subPos] of Object.entries(rotation.fieldPositions)) {
@@ -949,7 +1281,9 @@ function buildSchedule(
 
   // Improve position diversity across the full schedule after initial seeding.
   if (config.usePositions && config.formation.length > 0 && playerMap) {
-    optimizePositionAssignments(rotations, playerMap);
+    optimizePositionAssignments(rotations, playerMap, {
+      lockedPositionsByRotation: hardFieldPositionLocksByRotation,
+    });
   }
 
   const playerStats = calculatePlayerStats(rotations, allPlayers);

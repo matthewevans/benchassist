@@ -136,7 +136,32 @@ export function migrateV4toV5(data: RawStorageData): RawStorageData {
   return { ...data, version: 5, games };
 }
 
-const migrationSteps = [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5];
+/** v5→v6: Add lock mode to manual overrides */
+export function migrateV5toV6(data: RawStorageData): RawStorageData {
+  const games: Record<string, unknown> = {};
+
+  for (const [id, game] of Object.entries(data.games)) {
+    const gameRecord = asRecord(game);
+    const manualOverrides = Array.isArray(gameRecord.manualOverrides)
+      ? gameRecord.manualOverrides.map((value) => {
+          const override = asRecord(value);
+          return {
+            ...override,
+            lockMode: override.lockMode === 'soft' ? 'soft' : 'hard',
+          };
+        })
+      : [];
+
+    games[id] = {
+      ...gameRecord,
+      manualOverrides,
+    };
+  }
+
+  return { ...data, version: 6, games };
+}
+
+const migrationSteps = [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5, migrateV5toV6];
 export const CURRENT_VERSION = migrationSteps.length + 1;
 
 function migrateData(data: RawStorageData): StorageData {

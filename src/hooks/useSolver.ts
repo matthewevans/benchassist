@@ -37,22 +37,22 @@ export interface UseSolverReturn {
 export function useSolver(): UseSolverReturn {
   const workerRef = useRef<Worker | null>(null);
   const requestIdRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<RotationSchedule | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let isActive = true;
+  const setupWorker = useCallback((): Worker => {
+    if (workerRef.current) return workerRef.current;
 
-    workerRef.current = new Worker(
-      new URL('../workers/rotation-solver.worker.ts', import.meta.url),
-      { type: 'module' },
-    );
+    const worker = new Worker(new URL('../workers/rotation-solver.worker.ts', import.meta.url), {
+      type: 'module',
+    });
 
-    workerRef.current.onmessage = (e: MessageEvent<SolverResponse>) => {
-      if (!isActive) return;
+    worker.onmessage = (e: MessageEvent<SolverResponse>) => {
+      if (!isMountedRef.current) return;
       const response = e.data;
       switch (response.type) {
         case 'PROGRESS':
@@ -80,38 +80,51 @@ export function useSolver(): UseSolverReturn {
       }
     };
 
+    workerRef.current = worker;
+    return worker;
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    setupWorker();
+
     return () => {
-      isActive = false;
+      isMountedRef.current = false;
       workerRef.current?.terminate();
+      workerRef.current = null;
     };
-  }, []);
+  }, [setupWorker]);
 
-  const solve = useCallback((input: SolverInput) => {
-    if (!workerRef.current) return;
-    const requestId = generateId();
-    requestIdRef.current = requestId;
-    setProgress(0);
-    setMessage('game:solver.initializing');
-    setIsRunning(true);
-    setResult(null);
-    setError(null);
+  const solve = useCallback(
+    (input: SolverInput) => {
+      const worker = setupWorker();
+      const requestId = generateId();
+      requestIdRef.current = requestId;
+      setProgress(0);
+      setMessage('game:solver.initializing');
+      setIsRunning(true);
+      setResult(null);
+      setError(null);
 
-    const msg: SolverRequest = {
-      type: 'SOLVE',
-      payload: { requestId, ...input },
-    };
-    workerRef.current.postMessage(msg);
-  }, []);
+      const msg: SolverRequest = {
+        type: 'SOLVE',
+        payload: { requestId, ...input },
+      };
+      worker.postMessage(msg);
+    },
+    [setupWorker],
+  );
 
   const cancel = useCallback(() => {
     if (!workerRef.current || !requestIdRef.current) return;
-    const msg: SolverRequest = {
-      type: 'CANCEL',
-      payload: { requestId: requestIdRef.current },
-    };
-    workerRef.current.postMessage(msg);
-    setIsRunning(false);
+
+    // Terminate immediately so long-running synchronous worker searches stop at once.
+    workerRef.current.terminate();
+    workerRef.current = null;
     requestIdRef.current = null;
+    setIsRunning(false);
+    setMessage('');
+    setProgress(0);
   }, []);
 
   const reset = useCallback(() => {

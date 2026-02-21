@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button.tsx';
 
 interface SolverStatusCardProps {
   isRunning: boolean;
   progress: number;
   message: string;
   error: string | null;
+  onCancel?: () => void;
 }
 
 // Maps solver message keys (with 'game:' prefix) to their game namespace key paths
@@ -49,8 +51,15 @@ function useTranslatedMessage(message: string): string {
   return message;
 }
 
-export function SolverStatusCard({ isRunning, progress, message, error }: SolverStatusCardProps) {
+export function SolverStatusCard({
+  isRunning,
+  progress,
+  message,
+  error,
+  onCancel,
+}: SolverStatusCardProps) {
   const displayMessage = useTranslatedMessage(message);
+  const { t: tCommon } = useTranslation('common');
 
   return (
     <>
@@ -60,11 +69,24 @@ export function SolverStatusCard({ isRunning, progress, message, error }: Solver
             <span>{displayMessage}</span>
             <span className="text-muted-foreground tabular-nums">{progress}%</span>
           </div>
-          <div className="w-full bg-secondary rounded-full h-1">
-            <div
-              className="bg-primary h-1 rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
+          <div className="flex items-center gap-3">
+            <div className="w-full bg-secondary rounded-full h-1.5">
+              <div
+                className="bg-primary h-1.5 rounded-full transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            {onCancel && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                className="h-11 min-w-[70px]"
+                onClick={onCancel}
+              >
+                {tCommon('actions.stop')}
+              </Button>
+            )}
           </div>
         </div>
       )}
