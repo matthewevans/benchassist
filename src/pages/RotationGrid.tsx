@@ -324,7 +324,6 @@ export function RotationGrid() {
               currentRotation={g.currentRotation}
               nextRotation={g.nextRotation}
               playerMap={g.playerMap}
-              changingPlayerIds={g.changingPlayerIds}
               usePositions={g.config?.usePositions ?? false}
             />
           </div>

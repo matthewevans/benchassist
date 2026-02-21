@@ -237,13 +237,7 @@ export function applyAction(draft: AppState, action: AppAction): void {
         if (!game.schedule || game.currentRotationIndex >= game.schedule.rotations.length - 1) {
           break; // At or past last rotation — UI handles game completion
         }
-        const prevPeriod = game.schedule.rotations[game.currentRotationIndex].periodIndex;
         game.currentRotationIndex += 1;
-        const nextPeriod = game.schedule.rotations[game.currentRotationIndex].periodIndex;
-        if (prevPeriod !== nextPeriod) {
-          game.periodTimerStartedAt = null;
-          game.periodTimerPausedElapsed = 0;
-        }
       }
       break;
 
@@ -251,13 +245,7 @@ export function applyAction(draft: AppState, action: AppAction): void {
       if (draft.games[action.payload]) {
         const game = draft.games[action.payload];
         if (game.currentRotationIndex <= 0) break;
-        const prevPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
         game.currentRotationIndex -= 1;
-        const newPeriod = game.schedule?.rotations[game.currentRotationIndex]?.periodIndex;
-        if (prevPeriod !== newPeriod) {
-          game.periodTimerStartedAt = null;
-          game.periodTimerPausedElapsed = 0;
-        }
       }
       break;
 

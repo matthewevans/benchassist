@@ -50,7 +50,7 @@ describe('ADVANCE_ROTATION', () => {
     expect(next.games[gameId].completedAt).toBeNull();
   });
 
-  it('resets period timer when crossing period boundary', () => {
+  it('preserves period timer when crossing period boundary', () => {
     const p1 = playerFactory.build();
     const rotations = [
       { ...buildRotation(0, { [p1.id]: RotationAssignment.Field }), periodIndex: 0 },
@@ -67,8 +67,8 @@ describe('ADVANCE_ROTATION', () => {
     const state: AppState = { teams: {}, games: { [game.id]: game }, favoriteDrillIds: [] };
 
     const next = appReducer(state, { type: 'ADVANCE_ROTATION', payload: game.id });
-    expect(next.games[game.id].periodTimerStartedAt).toBeNull();
-    expect(next.games[game.id].periodTimerPausedElapsed).toBe(0);
+    expect(next.games[game.id].periodTimerStartedAt).toBe(game.periodTimerStartedAt);
+    expect(next.games[game.id].periodTimerPausedElapsed).toBe(game.periodTimerPausedElapsed);
   });
 });
 
@@ -78,6 +78,27 @@ describe('RETREAT_ROTATION', () => {
     const gameId = Object.keys(state.games)[0];
     const next = appReducer(state, { type: 'RETREAT_ROTATION', payload: gameId });
     expect(next.games[gameId].currentRotationIndex).toBe(0);
+  });
+
+  it('preserves period timer when moving back across a period boundary', () => {
+    const p1 = playerFactory.build();
+    const rotations = [
+      { ...buildRotation(0, { [p1.id]: RotationAssignment.Field }), periodIndex: 0 },
+      { ...buildRotation(1, { [p1.id]: RotationAssignment.Field }), periodIndex: 1 },
+    ];
+    const schedule = buildSchedule(rotations, [p1]);
+    const game = gameFactory.build({
+      status: 'in-progress',
+      schedule,
+      currentRotationIndex: 1,
+      periodTimerStartedAt: Date.now(),
+      periodTimerPausedElapsed: 5000,
+    });
+    const state: AppState = { teams: {}, games: { [game.id]: game }, favoriteDrillIds: [] };
+
+    const next = appReducer(state, { type: 'RETREAT_ROTATION', payload: game.id });
+    expect(next.games[game.id].periodTimerStartedAt).toBe(game.periodTimerStartedAt);
+    expect(next.games[game.id].periodTimerPausedElapsed).toBe(game.periodTimerPausedElapsed);
   });
 });
 

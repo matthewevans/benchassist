@@ -1,4 +1,4 @@
-import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowDownIcon, ArrowRightLeftIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 import { RotationAssignment } from '@/types/domain.ts';
@@ -96,8 +96,7 @@ interface PlayerRowProps {
   assignment: RotationAssignment;
   fieldPos: SubPosition | undefined;
   usePositions: boolean;
-  isComingIn?: boolean;
-  isGoingOut?: boolean;
+  transition?: PlayerTransition;
   isLast: boolean;
 }
 
@@ -106,13 +105,24 @@ function PlayerRow({
   assignment,
   fieldPos,
   usePositions,
-  isComingIn,
-  isGoingOut,
+  transition,
   isLast,
 }: PlayerRowProps) {
   const { t } = useTranslation('game');
   const display = getAssignmentDisplay(assignment, fieldPos, usePositions);
   const isBench = assignment === RotationAssignment.Bench;
+  const isComingIn = transition?.kind === 'in';
+  const isGoingOut = transition?.kind === 'out';
+  const isPositionChange = transition?.kind === 'position';
+  const isRoleChange = transition?.kind === 'role';
+
+  function transitionLabel(): string {
+    if (!transition) return '';
+    if (transition.kind === 'in') return t('live.sub_in');
+    if (transition.kind === 'out') return t('live.sub_out');
+    if (transition.kind === 'position') return t('live.position_change');
+    return t('live.role_change');
+  }
 
   return (
     <div
@@ -121,6 +131,8 @@ function PlayerRow({
         !isLast && 'border-b border-border/30',
         isComingIn && 'bg-green-500/10 dark:bg-green-500/8',
         isGoingOut && 'bg-orange-500/10 dark:bg-orange-500/8',
+        isPositionChange && 'bg-blue-500/10 dark:bg-blue-500/8',
+        isRoleChange && 'bg-indigo-500/10 dark:bg-indigo-500/8',
       )}
     >
       <span
@@ -137,24 +149,49 @@ function PlayerRow({
           isBench && !isGoingOut && 'text-muted-foreground',
           isComingIn && 'font-semibold text-green-600 dark:text-green-400',
           isGoingOut && 'font-semibold text-orange-600 dark:text-orange-400',
+          isPositionChange && 'font-semibold text-blue-600 dark:text-blue-400',
+          isRoleChange && 'font-semibold text-indigo-600 dark:text-indigo-400',
         )}
       >
         {player.name}
       </span>
-      {isComingIn && (
-        <span className="flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400 shrink-0">
-          <ArrowUpIcon className="size-3.5" />
-          {t('live.sub_in')}
-        </span>
-      )}
-      {isGoingOut && (
-        <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400 shrink-0">
-          <ArrowDownIcon className="size-3.5" />
-          {t('live.sub_out')}
-        </span>
+      {transition && (
+        <div className="shrink-0 text-right leading-tight">
+          <div
+            className={cn(
+              'flex items-center justify-end gap-1 text-xs font-semibold',
+              isComingIn && 'text-green-600 dark:text-green-400',
+              isGoingOut && 'text-orange-600 dark:text-orange-400',
+              isPositionChange && 'text-blue-600 dark:text-blue-400',
+              isRoleChange && 'text-indigo-600 dark:text-indigo-400',
+            )}
+          >
+            {isComingIn ? (
+              <ArrowUpIcon className="size-3.5" />
+            ) : isGoingOut ? (
+              <ArrowDownIcon className="size-3.5" />
+            ) : (
+              <ArrowRightLeftIcon className="size-3.5" />
+            )}
+            {transitionLabel()}
+          </div>
+          <div className="text-[11px] text-muted-foreground">
+            {transition.fromLabel} -&gt; {transition.toLabel}
+          </div>
+        </div>
       )}
     </div>
   );
+}
+
+type TransitionKind = 'in' | 'out' | 'position' | 'role';
+
+interface PlayerTransition {
+  playerId: PlayerId;
+  playerName: string;
+  kind: TransitionKind;
+  fromLabel: string;
+  toLabel: string;
 }
 
 interface RotationSectionProps {
@@ -163,7 +200,7 @@ interface RotationSectionProps {
   sublabel: string;
   isCurrent: boolean;
   playerMap: Map<PlayerId, Player>;
-  changingPlayerIds: Set<PlayerId>;
+  transitionByPlayerId: Map<PlayerId, PlayerTransition>;
   usePositions: boolean;
 }
 
@@ -173,7 +210,7 @@ function RotationSection({
   sublabel,
   isCurrent,
   playerMap,
-  changingPlayerIds,
+  transitionByPlayerId,
   usePositions,
 }: RotationSectionProps) {
   const { field, bench } = sortPlayers(rotation, playerMap);
@@ -196,9 +233,7 @@ function RotationSection({
         {allPlayers.map((player, i) => {
           const assignment = rotation.assignments[player.id as PlayerId];
           const fieldPos = rotation.fieldPositions?.[player.id as PlayerId];
-          const isChanging = changingPlayerIds.has(player.id as PlayerId);
-          const isComingIn = isChanging && assignment !== RotationAssignment.Bench;
-          const isGoingOut = isChanging && assignment === RotationAssignment.Bench;
+          const transition = transitionByPlayerId.get(player.id as PlayerId);
 
           return (
             <PlayerRow
@@ -207,8 +242,7 @@ function RotationSection({
               assignment={assignment}
               fieldPos={fieldPos}
               usePositions={usePositions}
-              isComingIn={isComingIn}
-              isGoingOut={isGoingOut}
+              transition={transition}
               isLast={i === allPlayers.length - 1}
             />
           );
@@ -222,33 +256,81 @@ interface Props {
   currentRotation: Rotation;
   nextRotation: Rotation | undefined;
   playerMap: Map<PlayerId, Player>;
-  changingPlayerIds: Set<PlayerId>;
   usePositions: boolean;
 }
 
-export function LiveFocusView({
-  currentRotation,
-  nextRotation,
-  playerMap,
-  changingPlayerIds,
-  usePositions,
-}: Props) {
+export function LiveFocusView({ currentRotation, nextRotation, playerMap, usePositions }: Props) {
   const { t } = useTranslation('game');
 
-  // Compute substitution summary for the transition
-  const comingIn: string[] = [];
-  const goingOut: string[] = [];
+  const transitions: PlayerTransition[] = [];
   if (nextRotation) {
-    for (const playerId of changingPlayerIds) {
-      const nextAssign = nextRotation.assignments[playerId];
+    const playerIds = new Set<PlayerId>([
+      ...(Object.keys(currentRotation.assignments) as PlayerId[]),
+      ...(Object.keys(nextRotation.assignments) as PlayerId[]),
+    ]);
+
+    function displayLabel(
+      assignment: RotationAssignment | undefined,
+      fieldPos: SubPosition | undefined,
+    ): string {
+      if (assignment === RotationAssignment.Bench) return t('live.role_bench');
+      if (assignment === RotationAssignment.Goalie) return 'GK';
+      if (assignment === RotationAssignment.Field) {
+        if (usePositions && fieldPos) return fieldPos;
+        return t('live.role_field');
+      }
+      return t('live.role_bench');
+    }
+
+    for (const playerId of playerIds) {
       const player = playerMap.get(playerId);
       if (!player) continue;
-      if (nextAssign === RotationAssignment.Bench) {
-        goingOut.push(player.name);
+      const fromAssignment = currentRotation.assignments[playerId];
+      const toAssignment = nextRotation.assignments[playerId];
+      const fromPos = currentRotation.fieldPositions?.[playerId];
+      const toPos = nextRotation.fieldPositions?.[playerId];
+      const assignmentChanged = fromAssignment !== toAssignment;
+      const positionChanged = fromPos !== toPos;
+      if (!assignmentChanged && !positionChanged) continue;
+
+      let kind: TransitionKind;
+      if (
+        fromAssignment === RotationAssignment.Bench &&
+        toAssignment !== RotationAssignment.Bench
+      ) {
+        kind = 'in';
+      } else if (
+        fromAssignment !== RotationAssignment.Bench &&
+        toAssignment === RotationAssignment.Bench
+      ) {
+        kind = 'out';
+      } else if (assignmentChanged) {
+        kind = 'role';
       } else {
-        comingIn.push(player.name);
+        kind = 'position';
       }
+
+      transitions.push({
+        playerId,
+        playerName: player.name,
+        kind,
+        fromLabel: displayLabel(fromAssignment, fromPos),
+        toLabel: displayLabel(toAssignment, toPos),
+      });
     }
+
+    transitions.sort((a, b) => a.playerName.localeCompare(b.playerName));
+  }
+
+  const nextTransitionsByPlayerId = new Map(
+    transitions.map((transition) => [transition.playerId, transition]),
+  );
+
+  function transitionTag(kind: TransitionKind): string {
+    if (kind === 'in') return t('live.sub_in');
+    if (kind === 'out') return t('live.sub_out');
+    if (kind === 'position') return t('live.position_change');
+    return t('live.role_change');
   }
 
   return (
@@ -260,32 +342,46 @@ export function LiveFocusView({
         sublabel={t('live.rotation', { index: currentRotation.index + 1 })}
         isCurrent={true}
         playerMap={playerMap}
-        changingPlayerIds={new Set()}
+        transitionByPlayerId={new Map()}
         usePositions={usePositions}
       />
 
-      {/* Substitution changes banner */}
-      {nextRotation && (comingIn.length > 0 || goingOut.length > 0) && (
+      {/* Upcoming changes banner */}
+      {nextRotation && transitions.length > 0 && (
         <div className="mx-4 rounded-[10px] bg-muted/50 px-4 py-3 space-y-1.5">
           <p className="text-ios-caption1 uppercase tracking-wide text-muted-foreground">
-            {t('live.substitutions')}
+            {t('live.upcoming_changes')}
           </p>
-          {comingIn.length > 0 && (
-            <div className="flex items-start gap-2">
-              <ArrowUpIcon className="size-3.5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
-              <p className="text-ios-footnote text-green-600 dark:text-green-400 font-medium">
-                {comingIn.join(', ')}
-              </p>
-            </div>
-          )}
-          {goingOut.length > 0 && (
-            <div className="flex items-start gap-2">
-              <ArrowDownIcon className="size-3.5 text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
-              <p className="text-ios-footnote text-orange-600 dark:text-orange-400 font-medium">
-                {goingOut.join(', ')}
-              </p>
-            </div>
-          )}
+          {transitions.map((transition) => {
+            const isIn = transition.kind === 'in';
+            const isOut = transition.kind === 'out';
+            const isPosition = transition.kind === 'position';
+            const isRole = transition.kind === 'role';
+            return (
+              <div key={transition.playerId} className="flex items-start gap-2">
+                {isIn ? (
+                  <ArrowUpIcon className="size-3.5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+                ) : isOut ? (
+                  <ArrowDownIcon className="size-3.5 text-orange-600 dark:text-orange-400 mt-0.5 shrink-0" />
+                ) : (
+                  <ArrowRightLeftIcon className="size-3.5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                )}
+                <p
+                  className={cn(
+                    'text-ios-footnote font-medium',
+                    isIn && 'text-green-600 dark:text-green-400',
+                    isOut && 'text-orange-600 dark:text-orange-400',
+                    isPosition && 'text-blue-600 dark:text-blue-400',
+                    isRole && 'text-indigo-600 dark:text-indigo-400',
+                  )}
+                >
+                  {transition.playerName}:{' '}
+                  <span className="uppercase tracking-wide">{transitionTag(transition.kind)}</span>{' '}
+                  {transition.fromLabel} -&gt; {transition.toLabel}
+                </p>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -297,7 +393,7 @@ export function LiveFocusView({
           sublabel={t('live.rotation', { index: nextRotation.index + 1 })}
           isCurrent={false}
           playerMap={playerMap}
-          changingPlayerIds={changingPlayerIds}
+          transitionByPlayerId={nextTransitionsByPlayerId}
           usePositions={usePositions}
         />
       ) : (

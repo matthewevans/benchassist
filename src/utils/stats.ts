@@ -25,11 +25,12 @@ export function calculatePlayerStats(
     let maxBenchStreak = 0;
 
     for (const rotation of rotations) {
-      const assignment = rotation.assignments[player.id];
-      if (!assignment) continue;
       const periodCount = periodRotationCounts.get(rotation.periodIndex) ?? 1;
       const rotationWeight = 1 / periodCount;
       totalWeight += rotationWeight;
+
+      const assignment = rotation.assignments[player.id];
+      if (!assignment) continue;
 
       if (assignment === RotationAssignment.Bench) {
         benched++;

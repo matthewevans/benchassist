@@ -72,6 +72,24 @@ describe('calculatePlayerStats', () => {
     expect(stats[p1.id].playPercentage).toBe(50);
     expect(stats[p2.id].playPercentage).toBe(50);
   });
+
+  it('uses the full game as the play-percentage denominator even if assignments are missing', () => {
+    const p1 = playerFactory.build({ name: 'A' });
+    const p2 = playerFactory.build({ name: 'B' });
+    const rotations: Rotation[] = [
+      buildRotation(0, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+      buildRotation(1, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+      buildRotation(2, { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Field }),
+      buildRotation(3, { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Field }),
+    ];
+
+    delete rotations[0].assignments[p2.id];
+    delete rotations[1].assignments[p2.id];
+
+    const stats = calculatePlayerStats(rotations, [p1, p2]);
+
+    expect(stats[p2.id].playPercentage).toBe(50);
+  });
 });
 
 describe('computeStrengthStats', () => {
