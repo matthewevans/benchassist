@@ -200,7 +200,7 @@ export function useRotationGame(gameId: string | undefined) {
 
     if (isLive) {
       const range = getPeriodRange(periodDivisions, periodIndex);
-      if (range?.start != null && range.start < currentRotationIndex) {
+      if (range?.start != null && range.start <= currentRotationIndex) {
         solver.setError(`Cannot change period ${periodIndex + 1}: it has already started.`);
         return;
       }

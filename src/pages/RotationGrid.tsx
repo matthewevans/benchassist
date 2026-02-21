@@ -123,7 +123,7 @@ export function RotationGrid() {
     if (!g.isLive) return true;
     const range = getPeriodRange(g.periodDivisions, periodIndex);
     if (!range) return false;
-    return range.start >= g.currentRotationIndex;
+    return range.start > g.currentRotationIndex;
   }
 
   function isDivisionEnabled(division: number): boolean {

@@ -563,6 +563,15 @@ describe('RotationGrid', () => {
       expect(screen.getByRole('button', { name: /period 1 actions/i })).toBeDisabled();
       expect(screen.getByRole('button', { name: /period 2 actions/i })).not.toBeDisabled();
     });
+
+    it('disables actions for the current period at game start', async () => {
+      const { state, game } = buildLiveState();
+      renderGrid(state, game.id);
+      await userEvent.click(screen.getByRole('tab', { name: 'Grid' }));
+
+      expect(screen.getByRole('button', { name: /period 1 actions/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /period 2 actions/i })).not.toBeDisabled();
+    });
   });
 
   describe('solver states', () => {
