@@ -426,24 +426,42 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
             : newSchedule;
         };
 
-        let schedule: RotationSchedule;
-        try {
-          schedule = solveForConfig(config);
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-          const shouldRetryWithoutMinPlay =
-            allowConstraintRelaxation === true &&
-            config.enforceMinPlayTime &&
-            isInfeasibleScheduleError(errorMessage);
-
-          if (!shouldRetryWithoutMinPlay) {
-            throw error;
+        const relaxationCandidates: GameConfig[] = [];
+        if (allowConstraintRelaxation === true) {
+          if (config.noConsecutiveBench) {
+            relaxationCandidates.push({
+              ...config,
+              noConsecutiveBench: false,
+            });
           }
+          if (config.enforceMinPlayTime) {
+            relaxationCandidates.push({
+              ...config,
+              noConsecutiveBench: false,
+              enforceMinPlayTime: false,
+            });
+          }
+        }
 
-          schedule = solveForConfig({
-            ...config,
-            enforceMinPlayTime: false,
-          });
+        let schedule: RotationSchedule | null = null;
+        let lastError: unknown = null;
+        const attempts: GameConfig[] = [config, ...relaxationCandidates];
+
+        for (const attempt of attempts) {
+          try {
+            schedule = solveForConfig(attempt);
+            break;
+          } catch (error) {
+            lastError = error;
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            if (!isInfeasibleScheduleError(errorMessage)) {
+              throw error;
+            }
+          }
+        }
+
+        if (!schedule) {
+          throw lastError ?? new Error('No valid rotation schedule found.');
         }
 
         const response: SolverResponse = {

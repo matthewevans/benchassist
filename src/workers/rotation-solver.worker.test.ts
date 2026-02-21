@@ -597,4 +597,235 @@ describe('worker solver fallback', () => {
 
     expect(posted.some((message) => message.type === 'ERROR')).toBe(true);
   });
+
+  it('keeps all players at or above 50% in the P4 split regenerate backup scenario', () => {
+    const players = [
+      playerFactory.build({
+        id: '5f1263f5-143a-425f-84bf-0e4be8cd9a7b',
+        name: 'Sloane',
+        skillRanking: 4,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: 'a8d30cb2-d986-4196-ae69-3ceb6ddfe5a2',
+        name: 'Ella',
+        skillRanking: 4,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: '04c3162c-2241-4c24-9246-0b43fecf39ba',
+        name: 'Averie',
+        skillRanking: 3,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: 'ac16468a-f3d7-49cc-903c-6789d49f757c',
+        name: 'Kendall',
+        skillRanking: 5,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: '886f7cba-9f1e-4003-9b04-cc2a47b6cc44',
+        name: 'Ava G',
+        skillRanking: 4,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: '0666d455-94a4-4375-bd90-09031d8f5427',
+        name: 'Evalyn',
+        skillRanking: 4,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: 'c5a1bdc4-891d-44d7-a227-1db8340aa115',
+        name: 'Holly',
+        skillRanking: 5,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: 'd3606e71-c6ab-4eee-810a-d612c07ca523',
+        name: 'Paige',
+        skillRanking: 5,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: '3c58da20-6ac7-4f19-9c0f-e7c80191dd01',
+        name: 'Denver',
+        skillRanking: 5,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: 'e9946de1-9d34-40c8-9c65-e7a7985509cd',
+        name: 'Avee',
+        skillRanking: 2,
+        canPlayGoalie: false,
+      }),
+      playerFactory.build({
+        id: '84381b62-dccb-44a2-9d0f-6f08c592a8d2',
+        name: 'Lu',
+        skillRanking: 4,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: '298796f4-4526-4c28-b745-5322f9ba6ffd',
+        name: 'Reagan',
+        skillRanking: 1,
+        canPlayGoalie: false,
+      }),
+      playerFactory.build({
+        id: 'e2e924e3-830e-44da-93bb-18f7f8971d4c',
+        name: 'Margot',
+        skillRanking: 4,
+        canPlayGoalie: true,
+      }),
+    ];
+
+    const config = gameConfigFactory.build({
+      periods: 4,
+      rotationsPerPeriod: 1,
+      fieldSize: 7,
+      usePositions: true,
+      formation: [
+        { position: 'DEF', count: 2 },
+        { position: 'MID', count: 3 },
+        { position: 'FWD', count: 1 },
+      ],
+      useGoalie: true,
+      noConsecutiveBench: true,
+      maxConsecutiveBench: 1,
+      enforceMinPlayTime: true,
+      minPlayPercentage: 50,
+      goaliePlayFullPeriod: true,
+      goalieRestAfterPeriod: true,
+      skillBalance: true,
+    });
+
+    const existingRotations = [
+      buildRotation(0, {
+        'a8d30cb2-d986-4196-ae69-3ceb6ddfe5a2': RotationAssignment.Goalie,
+        'd3606e71-c6ab-4eee-810a-d612c07ca523': RotationAssignment.Field,
+        '3c58da20-6ac7-4f19-9c0f-e7c80191dd01': RotationAssignment.Bench,
+        'ac16468a-f3d7-49cc-903c-6789d49f757c': RotationAssignment.Bench,
+        '5f1263f5-143a-425f-84bf-0e4be8cd9a7b': RotationAssignment.Bench,
+        '04c3162c-2241-4c24-9246-0b43fecf39ba': RotationAssignment.Bench,
+        '886f7cba-9f1e-4003-9b04-cc2a47b6cc44': RotationAssignment.Bench,
+        '0666d455-94a4-4375-bd90-09031d8f5427': RotationAssignment.Bench,
+        'c5a1bdc4-891d-44d7-a227-1db8340aa115': RotationAssignment.Field,
+        'e9946de1-9d34-40c8-9c65-e7a7985509cd': RotationAssignment.Field,
+        '84381b62-dccb-44a2-9d0f-6f08c592a8d2': RotationAssignment.Field,
+        '298796f4-4526-4c28-b745-5322f9ba6ffd': RotationAssignment.Field,
+        'e2e924e3-830e-44da-93bb-18f7f8971d4c': RotationAssignment.Field,
+      }),
+      buildRotation(1, {
+        'a8d30cb2-d986-4196-ae69-3ceb6ddfe5a2': RotationAssignment.Bench,
+        'd3606e71-c6ab-4eee-810a-d612c07ca523': RotationAssignment.Goalie,
+        '3c58da20-6ac7-4f19-9c0f-e7c80191dd01': RotationAssignment.Field,
+        'ac16468a-f3d7-49cc-903c-6789d49f757c': RotationAssignment.Field,
+        '5f1263f5-143a-425f-84bf-0e4be8cd9a7b': RotationAssignment.Field,
+        '04c3162c-2241-4c24-9246-0b43fecf39ba': RotationAssignment.Field,
+        '886f7cba-9f1e-4003-9b04-cc2a47b6cc44': RotationAssignment.Field,
+        '0666d455-94a4-4375-bd90-09031d8f5427': RotationAssignment.Field,
+        'c5a1bdc4-891d-44d7-a227-1db8340aa115': RotationAssignment.Bench,
+        'e9946de1-9d34-40c8-9c65-e7a7985509cd': RotationAssignment.Bench,
+        '84381b62-dccb-44a2-9d0f-6f08c592a8d2': RotationAssignment.Bench,
+        '298796f4-4526-4c28-b745-5322f9ba6ffd': RotationAssignment.Bench,
+        'e2e924e3-830e-44da-93bb-18f7f8971d4c': RotationAssignment.Bench,
+      }),
+      buildRotation(2, {
+        'a8d30cb2-d986-4196-ae69-3ceb6ddfe5a2': RotationAssignment.Field,
+        'd3606e71-c6ab-4eee-810a-d612c07ca523': RotationAssignment.Bench,
+        '3c58da20-6ac7-4f19-9c0f-e7c80191dd01': RotationAssignment.Goalie,
+        'ac16468a-f3d7-49cc-903c-6789d49f757c': RotationAssignment.Bench,
+        '5f1263f5-143a-425f-84bf-0e4be8cd9a7b': RotationAssignment.Bench,
+        '04c3162c-2241-4c24-9246-0b43fecf39ba': RotationAssignment.Bench,
+        '886f7cba-9f1e-4003-9b04-cc2a47b6cc44': RotationAssignment.Bench,
+        '0666d455-94a4-4375-bd90-09031d8f5427': RotationAssignment.Bench,
+        'c5a1bdc4-891d-44d7-a227-1db8340aa115': RotationAssignment.Field,
+        'e9946de1-9d34-40c8-9c65-e7a7985509cd': RotationAssignment.Field,
+        '84381b62-dccb-44a2-9d0f-6f08c592a8d2': RotationAssignment.Field,
+        '298796f4-4526-4c28-b745-5322f9ba6ffd': RotationAssignment.Field,
+        'e2e924e3-830e-44da-93bb-18f7f8971d4c': RotationAssignment.Field,
+      }),
+      buildRotation(3, {
+        'a8d30cb2-d986-4196-ae69-3ceb6ddfe5a2': RotationAssignment.Field,
+        'd3606e71-c6ab-4eee-810a-d612c07ca523': RotationAssignment.Field,
+        '3c58da20-6ac7-4f19-9c0f-e7c80191dd01': RotationAssignment.Bench,
+        'ac16468a-f3d7-49cc-903c-6789d49f757c': RotationAssignment.Goalie,
+        '5f1263f5-143a-425f-84bf-0e4be8cd9a7b': RotationAssignment.Field,
+        '04c3162c-2241-4c24-9246-0b43fecf39ba': RotationAssignment.Field,
+        '886f7cba-9f1e-4003-9b04-cc2a47b6cc44': RotationAssignment.Field,
+        '0666d455-94a4-4375-bd90-09031d8f5427': RotationAssignment.Field,
+        'c5a1bdc4-891d-44d7-a227-1db8340aa115': RotationAssignment.Bench,
+        'e9946de1-9d34-40c8-9c65-e7a7985509cd': RotationAssignment.Bench,
+        '84381b62-dccb-44a2-9d0f-6f08c592a8d2': RotationAssignment.Bench,
+        '298796f4-4526-4c28-b745-5322f9ba6ffd': RotationAssignment.Bench,
+        'e2e924e3-830e-44da-93bb-18f7f8971d4c': RotationAssignment.Bench,
+      }),
+      buildRotation(4, {
+        'a8d30cb2-d986-4196-ae69-3ceb6ddfe5a2': RotationAssignment.Field,
+        'd3606e71-c6ab-4eee-810a-d612c07ca523': RotationAssignment.Field,
+        '3c58da20-6ac7-4f19-9c0f-e7c80191dd01': RotationAssignment.Bench,
+        'ac16468a-f3d7-49cc-903c-6789d49f757c': RotationAssignment.Goalie,
+        '5f1263f5-143a-425f-84bf-0e4be8cd9a7b': RotationAssignment.Field,
+        '04c3162c-2241-4c24-9246-0b43fecf39ba': RotationAssignment.Field,
+        '886f7cba-9f1e-4003-9b04-cc2a47b6cc44': RotationAssignment.Field,
+        '0666d455-94a4-4375-bd90-09031d8f5427': RotationAssignment.Field,
+        'c5a1bdc4-891d-44d7-a227-1db8340aa115': RotationAssignment.Bench,
+        'e9946de1-9d34-40c8-9c65-e7a7985509cd': RotationAssignment.Bench,
+        '84381b62-dccb-44a2-9d0f-6f08c592a8d2': RotationAssignment.Bench,
+        '298796f4-4526-4c28-b745-5322f9ba6ffd': RotationAssignment.Bench,
+        'e2e924e3-830e-44da-93bb-18f7f8971d4c': RotationAssignment.Bench,
+      }),
+    ];
+    existingRotations[0].periodIndex = 0;
+    existingRotations[1].periodIndex = 1;
+    existingRotations[2].periodIndex = 2;
+    existingRotations[3].periodIndex = 3;
+    existingRotations[4].periodIndex = 3;
+
+    const posted: SolverResponse[] = [];
+    const originalPostMessage = self.postMessage;
+    const mockPostMessage = vi.fn((message: SolverResponse) => {
+      posted.push(message);
+    });
+    self.postMessage = mockPostMessage as typeof self.postMessage;
+
+    try {
+      (self.onmessage as ((event: MessageEvent) => void) | null)?.({
+        data: {
+          type: 'SOLVE',
+          payload: {
+            requestId: 'req-backup-p4',
+            players,
+            config,
+            absentPlayerIds: [],
+            goalieAssignments: [
+              { periodIndex: 0, playerId: 'a8d30cb2-d986-4196-ae69-3ceb6ddfe5a2' },
+              { periodIndex: 1, playerId: 'd3606e71-c6ab-4eee-810a-d612c07ca523' },
+              { periodIndex: 2, playerId: '3c58da20-6ac7-4f19-9c0f-e7c80191dd01' },
+              { periodIndex: 3, playerId: 'ac16468a-f3d7-49cc-903c-6789d49f757c' },
+            ],
+            manualOverrides: [],
+            periodDivisions: [1, 1, 1, 2],
+            startFromRotation: 3,
+            existingRotations,
+            allowConstraintRelaxation: true,
+          },
+        },
+      } as MessageEvent);
+    } finally {
+      self.postMessage = originalPostMessage;
+    }
+
+    const success = posted.find((message) => message.type === 'SUCCESS');
+    expect(success).toBeDefined();
+    expect(posted.some((message) => message.type === 'ERROR')).toBe(false);
+
+    const solvedSchedule = (success as Extract<SolverResponse, { type: 'SUCCESS' }>).payload
+      .schedule;
+    const minPlay = Math.min(
+      ...Object.values(solvedSchedule.playerStats).map((s) => s.playPercentage),
+    );
+    expect(minPlay).toBeGreaterThanOrEqual(50);
+  });
 });
