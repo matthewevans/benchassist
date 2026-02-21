@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/logo_original_solid_1024.png" alt="BenchAssist" width="96" />
+  <img src="public/apple-touch-icon.png" alt="BenchAssist" width="96" />
 </p>
 
 <h1 align="center">BenchAssist</h1>
