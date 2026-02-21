@@ -326,6 +326,19 @@ export function useRotationGame(gameId: string | undefined) {
     if (!roster || !config || !game) return;
     const updatedGame: Game = { ...game, absentPlayerIds: absentIds, goalieAssignments };
     dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
+    if (isLive && schedule) {
+      solver.solve({
+        players: roster.players,
+        config,
+        absentPlayerIds: [...absentIds, ...game.removedPlayerIds],
+        goalieAssignments,
+        manualOverrides: [],
+        periodDivisions,
+        startFromRotation: game.currentRotationIndex,
+        existingRotations: schedule.rotations,
+      });
+      return;
+    }
     solver.solve({
       players: roster.players,
       config,

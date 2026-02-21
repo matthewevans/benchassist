@@ -1,11 +1,21 @@
 import type { SolverRequest, SolverResponse } from '@/types/solver.ts';
-import type { Rotation, RotationSchedule, Player } from '@/types/domain.ts';
+import { RotationAssignment } from '@/types/domain.ts';
+import type {
+  Rotation,
+  RotationSchedule,
+  Player,
+  GoalieAssignment,
+  ManualOverride,
+  GameConfig,
+} from '@/types/domain.ts';
 import { exhaustiveSearch } from './solver/exhaustive.ts';
 import { calculatePlayerStats, computeStrengthStats } from '@/utils/stats.ts';
 import { validateGoalieAssignments } from '@/utils/validation.ts';
 import {
   normalizePeriodDivisions,
   getTotalRotationsFromDivisions,
+  getPeriodForRotation,
+  getPeriodRange,
 } from '@/utils/rotationLayout.ts';
 
 let currentRequestId: string | null = null;
@@ -18,7 +28,14 @@ export function mergeSchedules(
   players: Player[],
 ): RotationSchedule {
   const played = existingRotations.slice(0, startFromRotation);
-  const future = newSchedule.rotations.slice(startFromRotation);
+  const firstNewRotationIndex = newSchedule.rotations[0]?.index ?? 0;
+  const isFutureOnlySchedule =
+    startFromRotation > 0 &&
+    newSchedule.rotations.length > 0 &&
+    firstNewRotationIndex >= startFromRotation;
+  const future = isFutureOnlySchedule
+    ? newSchedule.rotations
+    : newSchedule.rotations.slice(startFromRotation);
   const merged = [...played, ...future];
 
   const playerStats = calculatePlayerStats(merged, players);
@@ -37,6 +54,175 @@ export function mergeSchedules(
       isValid: true,
     },
     generatedAt: Date.now(),
+  };
+}
+
+interface MidGameSolveWindow {
+  config: GameConfig;
+  periodDivisions: number[];
+  goalieAssignments: GoalieAssignment[];
+  manualOverrides: ManualOverride[];
+  startFromRotation: number;
+  startPeriodIndex: number;
+}
+
+function getTrailingBenchStreak(
+  existingRotations: Rotation[],
+  playerId: string,
+  fromIndex: number,
+): number {
+  let streak = 0;
+  for (let i = fromIndex; i >= 0; i--) {
+    const assignment = existingRotations[i]?.assignments[playerId];
+    if (assignment === RotationAssignment.Bench) {
+      streak++;
+      continue;
+    }
+    break;
+  }
+  return streak;
+}
+
+function findGoalieForPeriod(
+  existingRotations: Rotation[],
+  periodDivisions: number[],
+  periodIndex: number,
+): string | null {
+  const range = getPeriodRange(periodDivisions, periodIndex);
+  if (!range) return null;
+  for (let i = range.start; i < range.endExclusive; i++) {
+    const rotation = existingRotations[i];
+    if (!rotation) continue;
+    const goalie = Object.entries(rotation.assignments).find(
+      ([, assignment]) => assignment === RotationAssignment.Goalie,
+    );
+    if (goalie) return goalie[0];
+  }
+  return null;
+}
+
+export function buildMidGameSolveWindow(params: {
+  config: GameConfig;
+  periodDivisions: number[];
+  goalieAssignments: GoalieAssignment[];
+  manualOverrides: ManualOverride[];
+  startFromRotation: number;
+  existingRotations: Rotation[];
+  players: Player[];
+}): MidGameSolveWindow | null {
+  const {
+    config,
+    periodDivisions,
+    goalieAssignments,
+    manualOverrides,
+    startFromRotation,
+    existingRotations,
+    players,
+  } = params;
+
+  const safeStart = Math.max(0, Math.floor(startFromRotation) || 0);
+  const totalRotations = getTotalRotationsFromDivisions(periodDivisions);
+  if (safeStart <= 0 || safeStart >= totalRotations) return null;
+
+  const startPeriodIndex = getPeriodForRotation(periodDivisions, safeStart);
+  const startRange = getPeriodRange(periodDivisions, startPeriodIndex);
+  if (!startRange) return null;
+
+  const startWithinPeriod = safeStart - startRange.start;
+
+  // If goalie is only forced on the first rotation of each period, a mid-period
+  // solve window would incorrectly force a goalie for the already-started period.
+  if (config.useGoalie && !config.goaliePlayFullPeriod && startWithinPeriod > 0) {
+    return null;
+  }
+
+  const firstPeriodRemaining = startRange.endExclusive - safeStart;
+  if (firstPeriodRemaining <= 0) return null;
+  const remainingPeriodDivisions = [
+    firstPeriodRemaining,
+    ...periodDivisions.slice(startPeriodIndex + 1),
+  ];
+
+  const periodEndExclusive = startPeriodIndex + remainingPeriodDivisions.length;
+  const windowGoalieAssignments = goalieAssignments
+    .filter((assignment) => {
+      return (
+        assignment.periodIndex >= startPeriodIndex && assignment.periodIndex < periodEndExclusive
+      );
+    })
+    .map((assignment) => ({
+      ...assignment,
+      periodIndex: assignment.periodIndex - startPeriodIndex,
+    }));
+
+  const nextManualOverrides = manualOverrides
+    .filter((override) => override.rotationIndex >= safeStart)
+    .map((override) => ({
+      ...override,
+      rotationIndex: override.rotationIndex - safeStart,
+    }));
+
+  if (config.noConsecutiveBench && config.maxConsecutiveBench > 0) {
+    for (const player of players) {
+      const trailingBenchStreak = getTrailingBenchStreak(
+        existingRotations,
+        player.id,
+        safeStart - 1,
+      );
+      if (trailingBenchStreak >= config.maxConsecutiveBench) {
+        nextManualOverrides.push({
+          playerId: player.id,
+          rotationIndex: 0,
+          assignment: RotationAssignment.Field,
+        });
+      }
+    }
+  }
+
+  if (config.useGoalie && config.goalieRestAfterPeriod && safeStart === startRange.start) {
+    const previousPeriodGoalie =
+      startPeriodIndex > 0
+        ? findGoalieForPeriod(existingRotations, periodDivisions, startPeriodIndex - 1)
+        : null;
+    if (previousPeriodGoalie) {
+      nextManualOverrides.push({
+        playerId: previousPeriodGoalie,
+        rotationIndex: 0,
+        assignment: RotationAssignment.Bench,
+      });
+    }
+  }
+
+  const overrideByKey = new Map<string, ManualOverride>();
+  for (const override of nextManualOverrides) {
+    overrideByKey.set(`${override.playerId}:${override.rotationIndex}`, override);
+  }
+
+  return {
+    config: {
+      ...config,
+      periods: remainingPeriodDivisions.length,
+    },
+    periodDivisions: remainingPeriodDivisions,
+    goalieAssignments: windowGoalieAssignments,
+    manualOverrides: [...overrideByKey.values()],
+    startFromRotation: safeStart,
+    startPeriodIndex,
+  };
+}
+
+function remapWindowScheduleToGlobal(
+  schedule: RotationSchedule,
+  startFromRotation: number,
+  startPeriodIndex: number,
+): RotationSchedule {
+  return {
+    ...schedule,
+    rotations: schedule.rotations.map((rotation, localRotationIndex) => ({
+      ...rotation,
+      index: startFromRotation + localRotationIndex,
+      periodIndex: startPeriodIndex + rotation.periodIndex,
+    })),
   };
 }
 
@@ -72,12 +258,11 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
         onProgress(1, 'game:solver.initializing');
 
         const activePlayers = players.filter((p) => !absentPlayerIds.includes(p.id));
-        const normalizedPeriodDivisions = normalizePeriodDivisions(
+        const basePeriodDivisions = normalizePeriodDivisions(
           periodDivisions,
           config.periods,
           config.rotationsPerPeriod,
         );
-        const totalRotations = getTotalRotationsFromDivisions(normalizedPeriodDivisions);
         const benchSlotsPerRotation = activePlayers.length - config.fieldSize;
 
         if (benchSlotsPerRotation < 0) {
@@ -86,10 +271,32 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           );
         }
 
+        const requestedStartFromRotation = Math.max(0, Math.floor(startFromRotation ?? 0));
+        const canMergeFromMidGame =
+          requestedStartFromRotation > 0 && Array.isArray(existingRotations);
+        const midGameWindow = canMergeFromMidGame
+          ? buildMidGameSolveWindow({
+              config,
+              periodDivisions: basePeriodDivisions,
+              goalieAssignments,
+              manualOverrides,
+              startFromRotation: requestedStartFromRotation,
+              existingRotations,
+              players: activePlayers,
+            })
+          : null;
+
+        const solveConfig = midGameWindow?.config ?? config;
+        const solvePeriodDivisions = midGameWindow?.periodDivisions ?? basePeriodDivisions;
+        const solveGoalieAssignments = midGameWindow?.goalieAssignments ?? goalieAssignments;
+        const solveManualOverrides = midGameWindow?.manualOverrides ?? manualOverrides;
+        const mergeStartFrom = midGameWindow?.startFromRotation ?? requestedStartFromRotation;
+        const solveTotalRotations = getTotalRotationsFromDivisions(solvePeriodDivisions);
+
         const goalieAssignmentErrors = validateGoalieAssignments(
           activePlayers,
-          config,
-          goalieAssignments,
+          solveConfig,
+          solveGoalieAssignments,
         );
         if (goalieAssignmentErrors.length > 0) {
           throw new Error(goalieAssignmentErrors[0]);
@@ -97,20 +304,30 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
 
         const newSchedule = exhaustiveSearch({
           players: activePlayers,
-          config,
-          goalieAssignments,
-          manualOverrides,
-          periodDivisions: normalizedPeriodDivisions,
-          totalRotations,
+          config: solveConfig,
+          goalieAssignments: solveGoalieAssignments,
+          manualOverrides: solveManualOverrides,
+          periodDivisions: solvePeriodDivisions,
+          totalRotations: solveTotalRotations,
           benchSlotsPerRotation,
           onProgress,
           cancellation,
         });
 
-        const schedule =
-          startFromRotation && startFromRotation > 0 && existingRotations
-            ? mergeSchedules(existingRotations, newSchedule, startFromRotation, activePlayers)
-            : newSchedule;
+        const schedule = canMergeFromMidGame
+          ? mergeSchedules(
+              existingRotations,
+              midGameWindow
+                ? remapWindowScheduleToGlobal(
+                    newSchedule,
+                    midGameWindow.startFromRotation,
+                    midGameWindow.startPeriodIndex,
+                  )
+                : newSchedule,
+              Math.min(mergeStartFrom, existingRotations.length),
+              activePlayers,
+            )
+          : newSchedule;
 
         const response: SolverResponse = {
           type: 'SUCCESS',

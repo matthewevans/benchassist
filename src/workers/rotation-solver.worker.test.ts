@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { mergeSchedules } from './rotation-solver.worker.ts';
+import { mergeSchedules, buildMidGameSolveWindow } from './rotation-solver.worker.ts';
 import { RotationAssignment } from '@/types/domain.ts';
-import { playerFactory, buildRotation, buildSchedule } from '@/test/factories.ts';
+import {
+  playerFactory,
+  gameConfigFactory,
+  buildRotation,
+  buildSchedule,
+} from '@/test/factories.ts';
 
 describe('mergeSchedules', () => {
   it('preserves played rotations and replaces future ones', () => {
@@ -148,5 +153,158 @@ describe('mergeSchedules', () => {
     expect(result.rotations).toHaveLength(2);
     expect(result.rotations[0]).toBe(newRotations[0]);
     expect(result.rotations[1]).toBe(newRotations[1]);
+  });
+
+  it('accepts a partial future schedule when mid-game solving returns only remaining rotations', () => {
+    const p1 = playerFactory.build({ name: 'A', skillRanking: 3 });
+    const p2 = playerFactory.build({ name: 'B', skillRanking: 2 });
+
+    const existingRotations = [
+      buildRotation(0, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+      buildRotation(1, { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Field }),
+      buildRotation(2, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+      buildRotation(3, { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Field }),
+      buildRotation(4, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+    ];
+
+    const futureRotations = [
+      {
+        ...buildRotation(0, {
+          [p1.id]: RotationAssignment.Field,
+          [p2.id]: RotationAssignment.Bench,
+        }),
+        index: 3,
+        periodIndex: 3,
+      },
+      {
+        ...buildRotation(1, {
+          [p1.id]: RotationAssignment.Bench,
+          [p2.id]: RotationAssignment.Field,
+        }),
+        index: 4,
+        periodIndex: 3,
+      },
+    ];
+    const partialFutureSchedule = buildSchedule(futureRotations, [p1, p2]);
+
+    const result = mergeSchedules(existingRotations, partialFutureSchedule, 3, [p1, p2]);
+
+    expect(result.rotations).toHaveLength(5);
+    expect(result.rotations[0]).toBe(existingRotations[0]);
+    expect(result.rotations[1]).toBe(existingRotations[1]);
+    expect(result.rotations[2]).toBe(existingRotations[2]);
+    expect(result.rotations[3]).toBe(futureRotations[0]);
+    expect(result.rotations[4]).toBe(futureRotations[1]);
+  });
+});
+
+describe('buildMidGameSolveWindow', () => {
+  it('builds a remaining-window solve plan from a period boundary and remaps constraints', () => {
+    const p1 = playerFactory.build({ name: 'A', canPlayGoalie: false });
+    const p2 = playerFactory.build({ name: 'B', canPlayGoalie: true });
+    const p3 = playerFactory.build({ name: 'C', canPlayGoalie: true });
+
+    const config = gameConfigFactory.build({
+      periods: 4,
+      rotationsPerPeriod: 1,
+      fieldSize: 2,
+      noConsecutiveBench: true,
+      maxConsecutiveBench: 1,
+      goaliePlayFullPeriod: true,
+      goalieRestAfterPeriod: true,
+      useGoalie: true,
+    });
+
+    const existingRotations = [
+      buildRotation(0, {
+        [p1.id]: RotationAssignment.Field,
+        [p2.id]: RotationAssignment.Goalie,
+        [p3.id]: RotationAssignment.Bench,
+      }),
+      buildRotation(1, {
+        [p1.id]: RotationAssignment.Bench,
+        [p2.id]: RotationAssignment.Field,
+        [p3.id]: RotationAssignment.Goalie,
+      }),
+      buildRotation(2, {
+        [p1.id]: RotationAssignment.Bench,
+        [p2.id]: RotationAssignment.Goalie,
+        [p3.id]: RotationAssignment.Field,
+      }),
+      buildRotation(3, {
+        [p1.id]: RotationAssignment.Field,
+        [p2.id]: RotationAssignment.Bench,
+        [p3.id]: RotationAssignment.Goalie,
+      }),
+      buildRotation(4, {
+        [p1.id]: RotationAssignment.Goalie,
+        [p2.id]: RotationAssignment.Field,
+        [p3.id]: RotationAssignment.Bench,
+      }),
+    ];
+
+    const window = buildMidGameSolveWindow({
+      config,
+      periodDivisions: [1, 1, 1, 2],
+      goalieAssignments: [
+        { periodIndex: 0, playerId: p2.id },
+        { periodIndex: 1, playerId: p3.id },
+        { periodIndex: 2, playerId: p2.id },
+        { periodIndex: 3, playerId: p1.id },
+      ],
+      manualOverrides: [
+        { playerId: p3.id, rotationIndex: 1, assignment: RotationAssignment.Field },
+        { playerId: p3.id, rotationIndex: 4, assignment: RotationAssignment.Bench },
+      ],
+      startFromRotation: 3,
+      existingRotations,
+      players: [p1, p2, p3],
+    });
+
+    expect(window).not.toBeNull();
+    expect(window?.startPeriodIndex).toBe(3);
+    expect(window?.periodDivisions).toEqual([2]);
+    expect(window?.config.periods).toBe(1);
+    expect(window?.goalieAssignments).toEqual([{ periodIndex: 0, playerId: p1.id }]);
+    expect(window?.manualOverrides).toEqual(
+      expect.arrayContaining([
+        { playerId: p3.id, rotationIndex: 1, assignment: RotationAssignment.Bench },
+        { playerId: p1.id, rotationIndex: 0, assignment: RotationAssignment.Field },
+        { playerId: p2.id, rotationIndex: 0, assignment: RotationAssignment.Bench },
+      ]),
+    );
+  });
+
+  it('falls back to full-game solve for mid-period windows when goalie only plays first rotation', () => {
+    const p1 = playerFactory.build({ name: 'A', canPlayGoalie: true });
+    const p2 = playerFactory.build({ name: 'B', canPlayGoalie: true });
+
+    const config = gameConfigFactory.build({
+      periods: 4,
+      rotationsPerPeriod: 1,
+      fieldSize: 1,
+      useGoalie: true,
+      goaliePlayFullPeriod: false,
+    });
+
+    const existingRotations = [
+      buildRotation(0, { [p1.id]: RotationAssignment.Goalie, [p2.id]: RotationAssignment.Bench }),
+      buildRotation(1, { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Goalie }),
+      buildRotation(2, { [p1.id]: RotationAssignment.Goalie, [p2.id]: RotationAssignment.Bench }),
+      buildRotation(3, { [p1.id]: RotationAssignment.Bench, [p2.id]: RotationAssignment.Goalie }),
+      buildRotation(4, { [p1.id]: RotationAssignment.Field, [p2.id]: RotationAssignment.Bench }),
+    ];
+
+    const window = buildMidGameSolveWindow({
+      config,
+      periodDivisions: [1, 1, 1, 2],
+      goalieAssignments: [],
+      manualOverrides: [],
+      startFromRotation: 4,
+      existingRotations,
+      players: [p1, p2],
+    });
+
+    expect(window).toBeNull();
   });
 });
