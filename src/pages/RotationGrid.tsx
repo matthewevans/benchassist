@@ -14,6 +14,7 @@ import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { PeriodDivisionSheet } from '@/components/game/PeriodDivisionSheet.tsx';
+import { RegeneratePreviewSheet } from '@/components/game/RegeneratePreviewSheet.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
@@ -109,6 +110,19 @@ export function RotationGrid() {
           )
         : new Set<PlayerId>(),
     [g.allDisplayPlayers, g.game, g.schedule],
+  );
+
+  const previewHighPlayOutlierIds = useMemo(
+    () =>
+      g.regeneratePreview
+        ? getHighPlayPercentageOutlierIds(
+            g.sortedPlayers.map((player) => ({
+              playerId: player.id,
+              playPercentage: g.regeneratePreview!.playerStats[player.id]?.playPercentage ?? 0,
+            })),
+          )
+        : new Set<PlayerId>(),
+    [g.regeneratePreview, g.sortedPlayers],
   );
 
   // Auto-scroll to current rotation column in live mode
@@ -465,6 +479,19 @@ export function RotationGrid() {
           periods={g.config?.periods ?? 2}
           useGoalie={g.config?.useGoalie ?? false}
           onRegenerate={g.handleRegenerateWithSettings}
+        />
+
+        <RegeneratePreviewSheet
+          open={g.regeneratePreview != null}
+          previewSchedule={g.regeneratePreview}
+          currentSchedule={g.regeneratePreviewBase ?? g.schedule ?? null}
+          players={g.sortedPlayers}
+          config={g.config}
+          gameRemovedPlayerIds={g.game.removedPlayerIds}
+          currentRotationIndex={g.currentRotationIndex}
+          highPlayOutlierIds={previewHighPlayOutlierIds}
+          onApply={g.handleApplyRegeneratePreview}
+          onCancel={g.handleDismissRegeneratePreview}
         />
       </div>
     </div>

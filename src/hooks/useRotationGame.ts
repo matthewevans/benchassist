@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
-import { useSolver } from '@/hooks/useSolver.ts';
+import { useSolver, type SolverInput } from '@/hooks/useSolver.ts';
 import { previewSwap, previewSwapRange } from '@/utils/stats.ts';
 import { redivideSchedulePeriod } from '@/utils/rotationDivision.ts';
 import { normalizePeriodDivisions, getPeriodRange } from '@/utils/rotationLayout.ts';
 import { RotationAssignment } from '@/types/domain.ts';
-import type { PlayerId, Game, GoalieAssignment } from '@/types/domain.ts';
+import type { PlayerId, Game, GoalieAssignment, RotationSchedule } from '@/types/domain.ts';
 
 export function useRotationGame(gameId: string | undefined) {
   const { state, dispatch } = useAppContext();
@@ -50,6 +50,10 @@ export function useRotationGame(gameId: string | undefined) {
   const [confirmEndGame, setConfirmEndGame] = useState(false);
   const [removingPlayerId, setRemovingPlayerId] = useState<PlayerId | null>(null);
   const [viewMode, setViewMode] = useState<'focus' | 'grid'>('focus');
+  const [regeneratePreviewBase, setRegeneratePreviewBase] = useState<RotationSchedule | null>(null);
+  const [solverResultBehavior, setSolverResultBehavior] = useState<'apply' | 'preview-regenerate'>(
+    'apply',
+  );
 
   // --- Derived data ---
   const periodGroups = useMemo(() => {
@@ -134,10 +138,19 @@ export function useRotationGame(gameId: string | undefined) {
   const solverReset = solver.reset;
   useEffect(() => {
     if (solverResult && gameId) {
-      dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: solverResult } });
-      solverReset();
+      if (solverResultBehavior === 'apply') {
+        dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: solverResult } });
+        solverReset();
+      }
     }
-  }, [solverResult, gameId, dispatch, solverReset]);
+  }, [solverResult, gameId, dispatch, solverReset, solverResultBehavior]);
+
+  function runSolve(input: SolverInput, behavior: 'apply' | 'preview-regenerate' = 'apply') {
+    setSolverResultBehavior(behavior);
+    solver.solve(input);
+  }
+
+  const regeneratePreview = solverResultBehavior === 'preview-regenerate' ? solver.result : null;
 
   // --- Handlers ---
   function handleCellClick(rotationIndex: number, playerId: PlayerId) {
@@ -262,7 +275,7 @@ export function useRotationGame(gameId: string | undefined) {
       return;
     }
     dispatch({ type: 'REMOVE_PLAYER_FROM_GAME', payload: { gameId, playerId: removingPlayerId } });
-    solver.solve({
+    runSolve({
       players: remainingPlayers,
       config,
       absentPlayerIds: [...game.absentPlayerIds, removingPlayerId, ...game.removedPlayerIds],
@@ -282,7 +295,7 @@ export function useRotationGame(gameId: string | undefined) {
     if (!returningPlayer) return;
     const updatedPlayers = [...activePlayers, returningPlayer];
     const updatedRemoved = game.removedPlayerIds.filter((id) => id !== playerId);
-    solver.solve({
+    runSolve({
       players: updatedPlayers,
       config,
       absentPlayerIds: [...game.absentPlayerIds, ...updatedRemoved],
@@ -297,18 +310,23 @@ export function useRotationGame(gameId: string | undefined) {
   function handleRegenerate() {
     if (!roster || !config || !game) return;
     if (isLive && schedule) {
-      solver.solve({
-        players: activePlayers,
-        config,
-        absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
-        goalieAssignments: game.goalieAssignments,
-        manualOverrides: [],
-        periodDivisions,
-        startFromRotation: game.currentRotationIndex,
-        existingRotations: schedule.rotations,
-      });
+      setRegeneratePreviewBase(schedule);
+      runSolve(
+        {
+          players: activePlayers,
+          config,
+          absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
+          goalieAssignments: game.goalieAssignments,
+          manualOverrides: [],
+          periodDivisions,
+          startFromRotation: game.currentRotationIndex,
+          existingRotations: schedule.rotations,
+        },
+        'preview-regenerate',
+      );
     } else {
-      solver.solve({
+      setRegeneratePreviewBase(null);
+      runSolve({
         players: roster.players,
         config,
         absentPlayerIds: game.absentPlayerIds,
@@ -319,6 +337,20 @@ export function useRotationGame(gameId: string | undefined) {
     }
   }
 
+  function handleApplyRegeneratePreview() {
+    if (!gameId || !regeneratePreview) return;
+    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: regeneratePreview } });
+    setSolverResultBehavior('apply');
+    solverReset();
+    setRegeneratePreviewBase(null);
+  }
+
+  function handleDismissRegeneratePreview() {
+    setSolverResultBehavior('apply');
+    solverReset();
+    setRegeneratePreviewBase(null);
+  }
+
   function handleRegenerateWithSettings(
     absentIds: PlayerId[],
     goalieAssignments: GoalieAssignment[],
@@ -326,8 +358,9 @@ export function useRotationGame(gameId: string | undefined) {
     if (!roster || !config || !game) return;
     const updatedGame: Game = { ...game, absentPlayerIds: absentIds, goalieAssignments };
     dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
+    setRegeneratePreviewBase(null);
     if (isLive && schedule) {
-      solver.solve({
+      runSolve({
         players: roster.players,
         config,
         absentPlayerIds: [...absentIds, ...game.removedPlayerIds],
@@ -339,7 +372,7 @@ export function useRotationGame(gameId: string | undefined) {
       });
       return;
     }
-    solver.solve({
+    runSolve({
       players: roster.players,
       config,
       absentPlayerIds: absentIds,
@@ -402,6 +435,8 @@ export function useRotationGame(gameId: string | undefined) {
     removingPlayer,
     // Solver
     solver,
+    regeneratePreview,
+    regeneratePreviewBase,
     // Swap state
     swapSource,
     pendingSwap,
@@ -431,5 +466,7 @@ export function useRotationGame(gameId: string | undefined) {
     handleAddPlayerBack,
     handleRegenerate,
     handleRegenerateWithSettings,
+    handleApplyRegeneratePreview,
+    handleDismissRegeneratePreview,
   };
 }

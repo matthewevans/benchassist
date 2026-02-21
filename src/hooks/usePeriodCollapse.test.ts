@@ -16,24 +16,24 @@ describe('usePeriodCollapse', () => {
     expect(result.current.collapsedPeriods.has(0)).toBe(true);
     expect(result.current.collapsedPeriods.has(1)).toBe(true);
     expect(result.current.collapsedPeriods.has(2)).toBe(false);
-    expect(result.current.collapsedPeriods.has(3)).toBe(true);
+    expect(result.current.collapsedPeriods.has(3)).toBe(false);
   });
 
-  it('auto-collapses past and future periods when current period advances', () => {
+  it('auto-collapses only past periods when current period advances', () => {
     const { result, rerender } = renderHook(
       ({ currentPeriodIndex }) =>
         usePeriodCollapse({ currentPeriodIndex, isLive: true, totalPeriods: 3 }),
       { initialProps: { currentPeriodIndex: 0 } },
     );
-    // Period 0 is current, periods 1 and 2 are future — all non-current collapsed
+    // Period 0 is current, periods 1 and 2 are future — both stay expanded by default
     expect(result.current.collapsedPeriods.has(0)).toBe(false);
-    expect(result.current.collapsedPeriods.has(1)).toBe(true);
-    expect(result.current.collapsedPeriods.has(2)).toBe(true);
+    expect(result.current.collapsedPeriods.has(1)).toBe(false);
+    expect(result.current.collapsedPeriods.has(2)).toBe(false);
 
     rerender({ currentPeriodIndex: 1 });
     expect(result.current.collapsedPeriods.has(0)).toBe(true);
     expect(result.current.collapsedPeriods.has(1)).toBe(false);
-    expect(result.current.collapsedPeriods.has(2)).toBe(true);
+    expect(result.current.collapsedPeriods.has(2)).toBe(false);
   });
 
   it('toggles a period collapsed state', () => {
@@ -75,9 +75,9 @@ describe('usePeriodCollapse', () => {
       { initialProps: { currentPeriodIndex: 0 } },
     );
 
-    // User peeks at period 1 (manually expands a non-current period)
+    // User manually collapses a future period.
     act(() => result.current.togglePeriod(1));
-    expect(result.current.collapsedPeriods.has(1)).toBe(false);
+    expect(result.current.collapsedPeriods.has(1)).toBe(true);
 
     // User clicks Next — advances to period 1
     rerender({ currentPeriodIndex: 1 });

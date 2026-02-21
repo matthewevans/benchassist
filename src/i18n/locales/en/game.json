@@ -124,7 +124,14 @@
     "rotation_progress_title": "Rotation {{current}} of {{total}} — Period {{period}}",
     "game_actions_aria": "Game actions",
     "view_mode_aria": "View mode",
-    "resume": "Resume"
+    "resume": "Resume",
+    "regenerate_preview_title": "Review Regenerated Rotations",
+    "regenerate_preview_instruction": "Past rotations stay unchanged. Review updates from rotation {{rotation}} onward before applying.",
+    "regenerate_preview_players_header": "Updated player percentages",
+    "regenerate_preview_players_footer_one": "{{count}} player changed",
+    "regenerate_preview_players_footer_other": "{{count}} players changed",
+    "regenerate_preview_grid_header": "Grid Preview",
+    "regenerate_preview_apply": "Apply Regenerate"
   },
   "swap": {
     "title": "Swap {{playerA}} and {{playerB}}",

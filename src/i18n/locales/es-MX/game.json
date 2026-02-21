@@ -124,7 +124,14 @@
     "rotation_progress_title": "Rotación {{current}} de {{total}} — Tiempo {{period}}",
     "game_actions_aria": "Acciones del partido",
     "view_mode_aria": "Modo de vista",
-    "resume": "Continuar"
+    "resume": "Continuar",
+    "regenerate_preview_title": "Revisar rotaciones regeneradas",
+    "regenerate_preview_instruction": "Las rotaciones pasadas no cambian. Revisa las actualizaciones desde la rotación {{rotation}} antes de aplicar.",
+    "regenerate_preview_players_header": "Porcentajes de juego actualizados",
+    "regenerate_preview_players_footer_one": "{{count}} jugador cambió",
+    "regenerate_preview_players_footer_other": "{{count}} jugadores cambiaron",
+    "regenerate_preview_grid_header": "Vista previa de cuadrícula",
+    "regenerate_preview_apply": "Aplicar regeneración"
   },
   "swap": {
     "title": "Cambiar {{playerA}} y {{playerB}}",

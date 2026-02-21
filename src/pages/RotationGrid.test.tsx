@@ -169,6 +169,13 @@ describe('RotationGrid', () => {
     mockSolver.message = '';
     mockSolver.error = null;
     mockSolver.result = null;
+    mockSolver.reset = vi.fn(() => {
+      mockSolver.result = null;
+      mockSolver.error = null;
+      mockSolver.isRunning = false;
+      mockSolver.progress = 0;
+      mockSolver.message = '';
+    });
   });
 
   describe('missing game', () => {
@@ -437,6 +444,170 @@ describe('RotationGrid', () => {
       );
     });
 
+    it('regenerates from period 3 when period 4 is expanded to four rotations', async () => {
+      const players = [
+        playerFactory.build({ name: 'A', skillRanking: 5 }),
+        playerFactory.build({ name: 'B', skillRanking: 4 }),
+        playerFactory.build({ name: 'C', skillRanking: 3 }),
+        playerFactory.build({ name: 'D', skillRanking: 2 }),
+        playerFactory.build({ name: 'E', skillRanking: 1 }),
+        playerFactory.build({ name: 'F', skillRanking: 1 }),
+      ];
+
+      const config = gameConfigFactory.build({
+        fieldSize: 4,
+        periods: 4,
+        rotationsPerPeriod: 1,
+        useGoalie: false,
+        usePositions: false,
+        enforceMinPlayTime: true,
+        minPlayPercentage: 75,
+      });
+      const roster: Roster = rosterFactory.build({ players });
+      const team: Team = teamFactory.build({
+        rosters: [roster],
+        gameConfigs: [config],
+      });
+
+      const rotations = [
+        buildRotation(0, {
+          [players[0].id]: RotationAssignment.Field,
+          [players[1].id]: RotationAssignment.Field,
+          [players[2].id]: RotationAssignment.Field,
+          [players[3].id]: RotationAssignment.Field,
+          [players[4].id]: RotationAssignment.Bench,
+          [players[5].id]: RotationAssignment.Bench,
+        }),
+        buildRotation(1, {
+          [players[0].id]: RotationAssignment.Field,
+          [players[1].id]: RotationAssignment.Bench,
+          [players[2].id]: RotationAssignment.Field,
+          [players[3].id]: RotationAssignment.Field,
+          [players[4].id]: RotationAssignment.Field,
+          [players[5].id]: RotationAssignment.Bench,
+        }),
+        buildRotation(2, {
+          [players[0].id]: RotationAssignment.Bench,
+          [players[1].id]: RotationAssignment.Field,
+          [players[2].id]: RotationAssignment.Field,
+          [players[3].id]: RotationAssignment.Field,
+          [players[4].id]: RotationAssignment.Bench,
+          [players[5].id]: RotationAssignment.Field,
+        }),
+        buildRotation(3, {
+          [players[0].id]: RotationAssignment.Field,
+          [players[1].id]: RotationAssignment.Bench,
+          [players[2].id]: RotationAssignment.Bench,
+          [players[3].id]: RotationAssignment.Field,
+          [players[4].id]: RotationAssignment.Field,
+          [players[5].id]: RotationAssignment.Field,
+        }),
+        buildRotation(4, {
+          [players[0].id]: RotationAssignment.Field,
+          [players[1].id]: RotationAssignment.Field,
+          [players[2].id]: RotationAssignment.Bench,
+          [players[3].id]: RotationAssignment.Bench,
+          [players[4].id]: RotationAssignment.Field,
+          [players[5].id]: RotationAssignment.Field,
+        }),
+        buildRotation(5, {
+          [players[0].id]: RotationAssignment.Bench,
+          [players[1].id]: RotationAssignment.Field,
+          [players[2].id]: RotationAssignment.Field,
+          [players[3].id]: RotationAssignment.Bench,
+          [players[4].id]: RotationAssignment.Field,
+          [players[5].id]: RotationAssignment.Field,
+        }),
+        buildRotation(6, {
+          [players[0].id]: RotationAssignment.Field,
+          [players[1].id]: RotationAssignment.Field,
+          [players[2].id]: RotationAssignment.Field,
+          [players[3].id]: RotationAssignment.Bench,
+          [players[4].id]: RotationAssignment.Bench,
+          [players[5].id]: RotationAssignment.Field,
+        }),
+      ];
+      rotations[0].periodIndex = 0;
+      rotations[1].periodIndex = 1;
+      rotations[2].periodIndex = 2;
+      rotations[3].periodIndex = 3;
+      rotations[4].periodIndex = 3;
+      rotations[5].periodIndex = 3;
+      rotations[6].periodIndex = 3;
+
+      const schedule = buildSchedule(rotations, players);
+      const game: Game = gameFactory.build({
+        teamId: team.id,
+        rosterId: roster.id,
+        gameConfigId: config.id,
+        status: 'in-progress',
+        startedAt: Date.now(),
+        schedule,
+        periodDivisions: [1, 1, 1, 4],
+        currentRotationIndex: 2,
+      });
+
+      const state: AppState = {
+        teams: { [team.id]: team },
+        games: { [game.id]: game },
+      };
+
+      renderGrid(state, game.id);
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+
+      expect(mockSolver.solve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          config,
+          periodDivisions: [1, 1, 1, 4],
+          startFromRotation: 2,
+          existingRotations: schedule.rotations,
+          manualOverrides: [],
+          absentPlayerIds: [],
+          goalieAssignments: [],
+        }),
+      );
+    });
+
+    it('shows a live regenerate preview instead of auto-applying solver output', async () => {
+      const { state, game } = buildLiveState();
+      const { dispatch } = renderGrid(state, game.id);
+
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      mockSolver.result = game.schedule;
+      await userEvent.click(screen.getByRole('tab', { name: 'Grid' }));
+
+      expect(await screen.findByText('Review Regenerated Rotations')).toBeInTheDocument();
+      expect(dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'SET_GAME_SCHEDULE',
+        }),
+      );
+    });
+
+    it('applies the live regenerate preview when confirmed', async () => {
+      const { state, game } = buildLiveState();
+      const { dispatch } = renderGrid(state, game.id);
+
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      mockSolver.result = game.schedule;
+      await userEvent.click(screen.getByRole('tab', { name: 'Grid' }));
+
+      expect(await screen.findByText('Review Regenerated Rotations')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: /apply regenerate/i }));
+
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'SET_GAME_SCHEDULE',
+          payload: expect.objectContaining({
+            gameId: game.id,
+          }),
+        }),
+      );
+    });
+
     it('does not show stats cards or player statistics section', () => {
       const { state, game } = buildLiveState();
       renderGrid(state, game.id);
@@ -637,11 +808,9 @@ describe('RotationGrid', () => {
       await userEvent.click(screen.getByRole('tab', { name: 'Grid' }));
 
       // R1 (current rotation, index 0): Alice=Field, Bob=Field, Carol=Field, Dave=Field, Eve=Bench
-      // In live mode, period 1 is collapsed (future), so only R1 and R2 are visible.
-      // Field badges in DOM order (row by row): [0]=Alice/R1, [1]=Alice/R2, [2]=Bob/R1, [3]=Bob/R2
-      const fieldBadges = screen.getAllByText('●');
-      await userEvent.click(fieldBadges[0]); // Alice in R1
-      await userEvent.click(fieldBadges[2]); // Bob in R1
+      // Target specific rotation cells to avoid relying on table column collapse defaults.
+      await userEvent.click(screen.getByLabelText(/Alice: .*rotation 1/i));
+      await userEvent.click(screen.getByLabelText(/Bob: .*rotation 1/i));
 
       // Swap dialog should appear — both are field players on current rotation
       expect(screen.getByText(/Swap Alice and Bob/)).toBeInTheDocument();

@@ -80,7 +80,7 @@ function PeriodActionButton({
   return (
     <button
       type="button"
-      className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40"
+      className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40 disabled:pointer-events-none outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       aria-label={t('rotation_table.period_actions', { number: periodIndex + 1 })}
       disabled={disabled}
       onClick={onClick}
@@ -115,6 +115,8 @@ interface RotationTableProps {
   onCellClick: (rotationIndex: number, playerId: PlayerId) => void;
   onRemovePlayer: (playerId: PlayerId) => void;
   onAddPlayerBack: (playerId: PlayerId) => void;
+  showPeriodActions?: boolean;
+  interactiveCells?: boolean;
 }
 
 export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
@@ -139,6 +141,8 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
       onCellClick,
       onRemovePlayer,
       onAddPlayerBack,
+      showPeriodActions = true,
+      interactiveCells = true,
     } = props;
 
     const { t } = useTranslation('game');
@@ -156,27 +160,29 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                   return (
                     <th
                       key={`collapsed-${group.periodIndex}`}
-                      className="text-center py-2 px-1 font-medium min-w-[44px] hover:bg-accent/50 transition-colors"
+                      className="text-center py-1.5 px-0.5 font-medium min-w-12 w-12 align-top"
                     >
-                      <div className="mx-auto flex items-center justify-center gap-1">
+                      <div className="mx-auto flex flex-col items-center justify-start gap-0.5">
                         <button
                           type="button"
-                          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-0.5 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-0.5 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                           aria-label={t('rotation_table.expand_period', {
                             number: group.periodIndex + 1,
                           })}
                           onClick={() => togglePeriod(group.periodIndex)}
                         >
-                          <span className="text-ios-caption1 text-muted-foreground bg-secondary/50 rounded px-2 py-0.5">
+                          <span className="text-ios-caption1 font-semibold text-muted-foreground">
                             P{group.periodIndex + 1}
                           </span>
                           <ChevronRightIcon className="size-3 text-muted-foreground" />
                         </button>
-                        <PeriodActionButton
-                          periodIndex={group.periodIndex}
-                          disabled={!canEditPeriodDivision(group.periodIndex)}
-                          onClick={() => onPeriodActionsClick(group.periodIndex)}
-                        />
+                        {showPeriodActions && (
+                          <PeriodActionButton
+                            periodIndex={group.periodIndex}
+                            disabled={!canEditPeriodDivision(group.periodIndex)}
+                            onClick={() => onPeriodActionsClick(group.periodIndex)}
+                          />
+                        )}
                       </div>
                     </th>
                   );
@@ -190,40 +196,49 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                     <th
                       key={r.index}
                       className={cn(
-                        'text-center py-2 font-medium',
+                        'text-center py-2 font-medium align-top',
                         isLive ? 'px-2 min-w-[76px]' : 'px-1 min-w-[60px]',
                         isCurrent && 'bg-primary/10 border-x-2 border-primary/50',
                         isNext && 'bg-accent/30',
-                        isPast && 'opacity-40',
+                        isPast && 'bg-secondary/20',
                         isFirstInPeriod && !isCurrent && 'border-l-2 border-border',
                       )}
                       {...(isCurrent ? { 'data-current-rotation': '' } : {})}
                     >
-                      <div className="flex items-center justify-center gap-1">
-                        <span className={cn('text-ios-caption1', isCurrent && 'font-bold')}>
+                      <div className="flex items-center justify-center">
+                        <span
+                          className={cn(
+                            'text-ios-caption1 text-foreground',
+                            isCurrent && 'font-semibold text-primary',
+                            isPast && 'text-muted-foreground',
+                          )}
+                        >
                           R{r.index + 1}
                         </span>
                       </div>
                       {(isCurrent || isNext) && (
                         <span
                           className={cn(
-                            'text-xs font-semibold uppercase tracking-wide',
-                            isCurrent && 'text-primary font-bold',
+                            'mt-0.5 block text-ios-caption1 font-semibold uppercase tracking-wide',
+                            isCurrent && 'text-primary',
                             isNext && 'text-muted-foreground',
                           )}
                         >
                           {isCurrent ? t('live.now') : t('live.next')}
                         </span>
                       )}
-                      <div className="text-xs text-muted-foreground font-normal">
+                      <div className="mt-1 min-h-11 text-ios-caption1 text-muted-foreground font-normal flex items-center justify-center">
                         {i === 0 ? (
                           <div className="flex items-center justify-center gap-1">
                             {isLive ? (
                               <button
-                                className="flex items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] hover:text-foreground active:opacity-60 transition-colors"
+                                type="button"
+                                className="inline-flex items-center justify-center gap-0.5 min-h-11 min-w-11 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                 onClick={() => togglePeriod(group.periodIndex)}
                               >
-                                P{r.periodIndex + 1}
+                                <span className="text-ios-caption1 font-semibold text-muted-foreground">
+                                  P{r.periodIndex + 1}
+                                </span>
                                 <ChevronDownIcon className="size-3" />
                               </button>
                             ) : (
@@ -231,14 +246,24 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                                 P{r.periodIndex + 1}
                               </span>
                             )}
-                            <PeriodActionButton
-                              periodIndex={group.periodIndex}
-                              disabled={!canEditPeriodDivision(group.periodIndex)}
-                              onClick={() => onPeriodActionsClick(group.periodIndex)}
-                            />
+                            {showPeriodActions && (
+                              <PeriodActionButton
+                                periodIndex={group.periodIndex}
+                                disabled={!canEditPeriodDivision(group.periodIndex)}
+                                onClick={() => onPeriodActionsClick(group.periodIndex)}
+                              />
+                            )}
                           </div>
                         ) : (
-                          <>P{r.periodIndex + 1}</>
+                          <>
+                            {isLive ? (
+                              <span aria-hidden="true" className="opacity-0 select-none">
+                                P{r.periodIndex + 1}
+                              </span>
+                            ) : (
+                              <>P{r.periodIndex + 1}</>
+                            )}
+                          </>
                         )}
                       </div>
                     </th>
@@ -303,17 +328,8 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       return (
                         <td
                           key={`collapsed-${group.periodIndex}`}
-                          className="text-center py-1.5 px-1 hover:bg-accent/50 min-w-[44px]"
-                        >
-                          <button
-                            type="button"
-                            className="mx-auto min-h-11 min-w-11 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80"
-                            aria-label={t('rotation_table.expand_period', {
-                              number: group.periodIndex + 1,
-                            })}
-                            onClick={() => togglePeriod(group.periodIndex)}
-                          />
-                        </td>
+                          className="py-1 px-0.5 min-w-12 w-12"
+                        />
                       );
                     }
                     return group.rotations.map((rotation, rotIdx) => {
@@ -341,7 +357,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       const subTip = isChanging ? subTooltipMap.get(player.id) : undefined;
                       const cellTitle =
                         subTip ?? (fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined);
-                      const isInteractive = !isPast && !isCompleted;
+                      const isInteractive = interactiveCells && !isPast && !isCompleted;
                       const isFirstInPeriod = rotIdx === 0 && group.periodIndex > 0;
                       return (
                         <td
@@ -412,7 +428,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
               </td>
               {periodGroups.map((group) => {
                 if (collapsedPeriods.has(group.periodIndex)) {
-                  return <td key={`collapsed-${group.periodIndex}`} />;
+                  return <td key={`collapsed-${group.periodIndex}`} className="min-w-12 w-12" />;
                 }
                 return group.rotations.map((rotation, rotIdx) => {
                   const isCurrent = isLive && rotation.index === currentRotationIndex;

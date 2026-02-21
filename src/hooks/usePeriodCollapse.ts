@@ -18,13 +18,13 @@ export function usePeriodCollapse({
     toggles: new Set(),
   });
 
-  // Derive collapsed periods: auto-collapse all non-current periods in live mode, XOR with user
-  // toggles (only when those toggles were recorded for the current period).
+  // Derive collapsed periods: auto-collapse elapsed periods in live mode, XOR with user toggles
+  // (only when those toggles were recorded for the current period).
   const collapsedPeriods = useMemo(() => {
     const result = new Set<number>();
     if (isLive) {
       for (let i = 0; i < totalPeriods; i++) {
-        if (i !== currentPeriodIndex) result.add(i);
+        if (i < currentPeriodIndex) result.add(i);
       }
     }
     if (toggleState.forPeriod === currentPeriodIndex) {
