@@ -4,7 +4,7 @@ import { RotationAssignment } from '@/types/domain.ts';
 import { playerFactory, buildRotation } from '@/test/factories.ts';
 
 describe('LiveFocusView', () => {
-  it('shows explicit upcoming changes including position moves', () => {
+  it('shows transition cues in the next rotation rows', () => {
     const alice = playerFactory.build({ name: 'Alice' });
     const bob = playerFactory.build({ name: 'Bob' });
     const carol = playerFactory.build({ name: 'Carol' });
@@ -43,13 +43,11 @@ describe('LiveFocusView', () => {
       />,
     );
 
-    expect(screen.getByText('Upcoming changes')).toBeInTheDocument();
+    expect(screen.queryByText('Upcoming changes')).not.toBeInTheDocument();
+    expect(screen.getByText('Next')).toBeInTheDocument();
     expect(screen.getAllByText(/^Position$/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/^OUT$/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/^IN$/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('LM -> RM').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('RM -> Bench').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('Bench -> LM').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows last-rotation state when there is no upcoming rotation', () => {

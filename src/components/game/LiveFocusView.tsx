@@ -1,6 +1,5 @@
 import { ArrowDownIcon, ArrowRightLeftIcon, ArrowUpIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { cn } from '@/lib/utils.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { Player, PlayerId, Rotation, SubPosition } from '@/types/domain.ts';
@@ -355,49 +354,6 @@ export function LiveFocusView({ currentRotation, nextRotation, playerMap, usePos
         transitionByPlayerId={new Map()}
         usePositions={usePositions}
       />
-
-      {nextRotation && transitions.length > 0 && (
-        <GroupedList header={t('live.upcoming_changes')} className="mx-4">
-          {transitions.map((transition, i) => {
-            const tone = getTransitionTone(transition.kind);
-            const ToneIcon = tone.icon;
-            return (
-              <GroupedListRow
-                key={transition.playerId}
-                last={i === transitions.length - 1}
-                trailing={
-                  <span
-                    className={cn(
-                      'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide',
-                      tone.chipTone,
-                    )}
-                  >
-                    <ToneIcon className="size-3.5" />
-                    {t(transitionLabelKey(transition.kind))}
-                  </span>
-                }
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className={cn(
-                      'inline-flex size-7 items-center justify-center rounded-full shrink-0',
-                      tone.iconBg,
-                    )}
-                  >
-                    <ToneIcon className={cn('size-3.5', tone.iconTone)} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-ios-subheadline truncate">{transition.playerName}</p>
-                    <p className="text-ios-caption1 text-muted-foreground truncate tabular-nums">
-                      {transition.fromLabel} -&gt; {transition.toLabel}
-                    </p>
-                  </div>
-                </div>
-              </GroupedListRow>
-            );
-          })}
-        </GroupedList>
-      )}
 
       {nextRotation ? (
         <RotationSection
