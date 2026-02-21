@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from 'react';
+import { forwardRef } from 'react';
 import { ChevronRightIcon, ChevronDownIcon, EllipsisIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
@@ -6,7 +6,6 @@ import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { SUB_POSITION_LABELS } from '@/types/domain.ts';
 import type { Player, PlayerId, Rotation, PlayerStats, GameConfig } from '@/types/domain.ts';
 import { getAssignmentDisplay } from '@/utils/positions.ts';
-import { getHighPlayPercentageOutlierIds } from '@/utils/playPercentageOutliers.ts';
 
 function PlayPercentageCell({
   percentage,
@@ -68,6 +67,29 @@ function PlayPercentageCell({
   );
 }
 
+function PeriodActionButton({
+  periodIndex,
+  disabled,
+  onClick,
+}: {
+  periodIndex: number;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const { t } = useTranslation('game');
+  return (
+    <button
+      type="button"
+      className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40"
+      aria-label={t('rotation_table.period_actions', { number: periodIndex + 1 })}
+      disabled={disabled}
+      onClick={onClick}
+    >
+      <EllipsisIcon className="size-4 text-muted-foreground" />
+    </button>
+  );
+}
+
 interface PeriodGroup {
   periodIndex: number;
   rotations: Rotation[];
@@ -86,6 +108,7 @@ interface RotationTableProps {
   subTooltipMap: Map<PlayerId, string>;
   collapsedPeriods: Set<number>;
   togglePeriod: (periodIndex: number) => void;
+  highPlayOutlierIds: Set<PlayerId>;
   canEditPeriodDivision: (periodIndex: number) => boolean;
   onPeriodActionsClick: (periodIndex: number) => void;
   swapSource: { rotationIndex: number; playerId: PlayerId } | null;
@@ -109,6 +132,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
       subTooltipMap,
       collapsedPeriods,
       togglePeriod,
+      highPlayOutlierIds,
       canEditPeriodDivision,
       onPeriodActionsClick,
       swapSource,
@@ -118,18 +142,6 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
     } = props;
 
     const { t } = useTranslation('game');
-    const highPlayOutlierIds = useMemo(
-      () =>
-        getHighPlayPercentageOutlierIds(
-          allDisplayPlayers
-            .filter((player) => !gameRemovedPlayerIds.includes(player.id))
-            .map((player) => ({
-              playerId: player.id,
-              playPercentage: playerStats[player.id]?.playPercentage ?? 0,
-            })),
-        ),
-      [allDisplayPlayers, gameRemovedPlayerIds, playerStats],
-    );
 
     return (
       <div className="overflow-x-auto px-4" ref={ref}>
@@ -160,17 +172,11 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                           </span>
                           <ChevronRightIcon className="size-3 text-muted-foreground" />
                         </button>
-                        <button
-                          type="button"
-                          className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40"
-                          aria-label={t('rotation_table.period_actions', {
-                            number: group.periodIndex + 1,
-                          })}
+                        <PeriodActionButton
+                          periodIndex={group.periodIndex}
                           disabled={!canEditPeriodDivision(group.periodIndex)}
                           onClick={() => onPeriodActionsClick(group.periodIndex)}
-                        >
-                          <EllipsisIcon className="size-4 text-muted-foreground" />
-                        </button>
+                        />
                       </div>
                     </th>
                   );
@@ -225,17 +231,11 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                                 P{r.periodIndex + 1}
                               </span>
                             )}
-                            <button
-                              type="button"
-                              className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40"
-                              aria-label={t('rotation_table.period_actions', {
-                                number: group.periodIndex + 1,
-                              })}
+                            <PeriodActionButton
+                              periodIndex={group.periodIndex}
                               disabled={!canEditPeriodDivision(group.periodIndex)}
                               onClick={() => onPeriodActionsClick(group.periodIndex)}
-                            >
-                              <EllipsisIcon className="size-4" />
-                            </button>
+                            />
                           </div>
                         ) : (
                           <>P{r.periodIndex + 1}</>

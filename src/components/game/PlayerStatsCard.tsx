@@ -1,28 +1,20 @@
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { RotationSchedule, Player } from '@/types/domain.ts';
-import { getHighPlayPercentageOutlierIds } from '@/utils/playPercentageOutliers.ts';
+import type { RotationSchedule, Player, PlayerId } from '@/types/domain.ts';
 
 interface PlayerStatsCardProps {
   players: Player[];
   playerStats: RotationSchedule['playerStats'];
   minPlayPercentage: number;
+  highPlayOutlierIds: Set<PlayerId>;
 }
 
-export function PlayerStatsCard({ players, playerStats, minPlayPercentage }: PlayerStatsCardProps) {
+export function PlayerStatsCard({
+  players,
+  playerStats,
+  minPlayPercentage,
+  highPlayOutlierIds,
+}: PlayerStatsCardProps) {
   const { t } = useTranslation('game');
-  const highPlayOutlierIds = useMemo(
-    () =>
-      getHighPlayPercentageOutlierIds(
-        players
-          .filter((player) => playerStats[player.id] != null)
-          .map((player) => ({
-            playerId: player.id,
-            playPercentage: playerStats[player.id]!.playPercentage,
-          })),
-      ),
-    [players, playerStats],
-  );
 
   return (
     <section>

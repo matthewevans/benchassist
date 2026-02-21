@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
@@ -18,8 +18,10 @@ import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import type { PlayerId } from '@/types/domain.ts';
 import { redivideSchedulePeriod } from '@/utils/rotationDivision.ts';
 import { getPeriodRange } from '@/utils/rotationLayout.ts';
+import { getHighPlayPercentageOutlierIds } from '@/utils/playPercentageOutliers.ts';
 
 function RotationPips({
   periodGroups,
@@ -93,6 +95,21 @@ export function RotationGrid() {
     isLive: g.isLive,
     totalPeriods: g.config?.periods ?? 2,
   });
+
+  const highPlayOutlierIds = useMemo(
+    () =>
+      g.schedule
+        ? getHighPlayPercentageOutlierIds(
+            g.allDisplayPlayers
+              .filter((player) => !g.game!.removedPlayerIds.includes(player.id))
+              .map((player) => ({
+                playerId: player.id,
+                playPercentage: g.schedule!.playerStats[player.id]?.playPercentage ?? 0,
+              })),
+          )
+        : new Set<PlayerId>(),
+    [g.allDisplayPlayers, g.game, g.schedule],
+  );
 
   // Auto-scroll to current rotation column in live mode
   useEffect(() => {
@@ -345,6 +362,7 @@ export function RotationGrid() {
             subTooltipMap={g.subTooltipMap}
             collapsedPeriods={collapsedPeriods}
             togglePeriod={togglePeriod}
+            highPlayOutlierIds={highPlayOutlierIds}
             canEditPeriodDivision={canEditPeriodDivision}
             onPeriodActionsClick={(periodIndex) => setPeriodActionPeriodIndex(periodIndex)}
             swapSource={g.swapSource}
