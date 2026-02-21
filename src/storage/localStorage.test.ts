@@ -5,6 +5,7 @@ import {
   migrateV1toV2,
   migrateV2toV3,
   migrateV3toV4,
+  migrateV4toV5,
   CURRENT_VERSION,
 } from './localStorage.ts';
 
@@ -105,7 +106,7 @@ describe('loadData', () => {
   });
 
   it('loads valid data with empty collections', () => {
-    const data = { version: 4, teams: {}, games: {} };
+    const data = { version: CURRENT_VERSION, teams: {}, games: {} };
     localStorage.setItem('benchassist_data', JSON.stringify(data));
     expect(loadData()).toEqual(data);
   });
@@ -120,7 +121,7 @@ describe('loadData', () => {
     };
     localStorage.setItem('benchassist_data', JSON.stringify(data));
     const result = loadData();
-    expect(result!.version).toBe(4);
+    expect(result!.version).toBe(CURRENT_VERSION);
     expect(result!.teams.t1.gender).toBe('coed');
     expect(result!.teams.t1.birthYear).toBeNull();
   });
@@ -169,7 +170,7 @@ describe('localStorage migration v2→v3', () => {
 
     const result = loadData();
     expect(result).not.toBeNull();
-    expect(result!.version).toBe(4);
+    expect(result!.version).toBe(CURRENT_VERSION);
     expect(result!.teams['t1'].birthYear).toBeNull();
     // v4 migration should convert balancePriority to skillBalance
     const config = result!.teams['t1'].gameConfigs[0];
@@ -199,7 +200,7 @@ describe('localStorage migration v2→v3', () => {
     expect(result!.teams['t1'].birthYear).toBeNull();
   });
 
-  it('preserves existing v3 data with birthYear and migrates to v4', () => {
+  it('preserves existing v3 data with birthYear and migrates to latest', () => {
     const v3Data = {
       version: 3,
       teams: {
@@ -219,14 +220,14 @@ describe('localStorage migration v2→v3', () => {
     localStorage.setItem('benchassist_data', JSON.stringify(v3Data));
 
     const result = loadData();
-    expect(result!.version).toBe(4);
+    expect(result!.version).toBe(CURRENT_VERSION);
     expect(result!.teams['t1'].birthYear).toBe(2017);
   });
 });
 
 describe('CURRENT_VERSION', () => {
   it('equals migration steps count + 1', () => {
-    expect(CURRENT_VERSION).toBe(4);
+    expect(CURRENT_VERSION).toBe(5);
   });
 });
 
@@ -336,10 +337,51 @@ describe('migrateV3toV4', () => {
   });
 });
 
-describe('migrateData error logging', () => {
-  it('logs and gracefully handles a broken migration step via loadData', () => {
+describe('migrateV4toV5', () => {
+  it('adds periodDivisions to games from linked config', () => {
+    const result = migrateV4toV5({
+      version: 4,
+      teams: {
+        t1: {
+          id: 't1',
+          gameConfigs: [{ id: 'cfg-1', periods: 4, rotationsPerPeriod: 2 }],
+        },
+      },
+      games: {
+        g1: {
+          id: 'g1',
+          teamId: 't1',
+          gameConfigId: 'cfg-1',
+        },
+      },
+    });
+
+    expect(result.version).toBe(5);
+    expect(result.games.g1.periodDivisions).toEqual([2, 2, 2, 2]);
+  });
+
+  it('preserves existing periodDivisions', () => {
+    const result = migrateV4toV5({
+      version: 4,
+      teams: {},
+      games: {
+        g1: {
+          id: 'g1',
+          teamId: 't1',
+          gameConfigId: 'cfg-1',
+          periodDivisions: [1, 3, 2],
+        },
+      },
+    });
+
+    expect(result.games.g1.periodDivisions).toEqual([1, 3, 2]);
+  });
+});
+
+describe('migrateData resilience', () => {
+  it('gracefully handles malformed team gameConfigs during migration', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    // Store v3 data with a gameConfigs value that will cause .map to fail
+
     const broken = {
       version: 3,
       teams: { t1: { id: 't1', name: 'A', rosters: [], gameConfigs: 'not-an-array' } },
@@ -348,8 +390,10 @@ describe('migrateData error logging', () => {
     localStorage.setItem('benchassist_data', JSON.stringify(broken));
 
     const result = loadData();
-    expect(result).toBeNull();
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('v3'), expect.anything());
+    expect(result).not.toBeNull();
+    expect(result!.version).toBe(CURRENT_VERSION);
+    expect(result!.teams.t1.gameConfigs).toEqual([]);
+    expect(consoleSpy).not.toHaveBeenCalled();
     consoleSpy.mockRestore();
   });
 });

@@ -12,6 +12,11 @@ import {
   calculateRotationStrength,
   computeStrengthStats,
 } from '@/utils/stats.ts';
+import {
+  normalizePeriodDivisions,
+  getPeriodOffsets,
+  getPeriodForRotation,
+} from '@/utils/rotationLayout.ts';
 import { autoAssignPositions } from '@/utils/positions.ts';
 import { optimizePositionAssignments } from './position-planner.ts';
 import type { SolverContext, BenchPattern } from './types.ts';
@@ -115,17 +120,20 @@ function generatePatternPoolForPlayer(params: {
   totalRotations: number;
   maxConsecutive: number;
   enforceMinPlayTime: boolean;
-  minPlayPercentage: number;
+  rotationWeights: number[];
+  maxBenchWeight: number;
 }): BenchPattern[] {
-  const { constraints, totalRotations, maxConsecutive, enforceMinPlayTime, minPlayPercentage } =
-    params;
+  const {
+    constraints,
+    totalRotations,
+    maxConsecutive,
+    enforceMinPlayTime,
+    rotationWeights,
+    maxBenchWeight,
+  } = params;
 
   const minBench = constraints.mustBench.size;
-  let maxBench = totalRotations - constraints.cannotBench.size;
-  if (enforceMinPlayTime) {
-    const maxBenchFromMinPlay = Math.floor(totalRotations * (1 - minPlayPercentage / 100));
-    maxBench = Math.min(maxBench, maxBenchFromMinPlay);
-  }
+  const maxBench = totalRotations - constraints.cannotBench.size;
   if (maxBench < minBench) return [];
 
   const patterns: BenchPattern[] = [];
@@ -137,6 +145,8 @@ function generatePatternPoolForPlayer(params: {
         constraints.cannotBench,
         constraints.mustBench,
         maxConsecutive,
+        rotationWeights,
+        enforceMinPlayTime ? maxBenchWeight : undefined,
       ),
     );
   }
@@ -149,7 +159,8 @@ function findFallbackFeasibleBenchSets(params: {
   benchSlotsPerRotation: number;
   maxConsecutive: number;
   enforceMinPlayTime: boolean;
-  minPlayPercentage: number;
+  rotationWeights: number[];
+  maxBenchWeight: number;
   cancellation: { cancelled: boolean };
   onProgress: (percentage: number, message: string) => void;
 }): { orderedPlayers: Player[]; benchSets: BenchPattern[] } | null {
@@ -159,7 +170,8 @@ function findFallbackFeasibleBenchSets(params: {
     benchSlotsPerRotation,
     maxConsecutive,
     enforceMinPlayTime,
-    minPlayPercentage,
+    rotationWeights,
+    maxBenchWeight,
     cancellation,
     onProgress,
   } = params;
@@ -172,7 +184,8 @@ function findFallbackFeasibleBenchSets(params: {
         totalRotations,
         maxConsecutive,
         enforceMinPlayTime,
-        minPlayPercentage,
+        rotationWeights,
+        maxBenchWeight,
       }),
     }))
     .sort((a, b) => a.patterns.length - b.patterns.length);
@@ -255,10 +268,27 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     config,
     goalieAssignments,
     manualOverrides,
+    periodDivisions,
     totalRotations,
     benchSlotsPerRotation,
     cancellation,
   } = ctx;
+  const normalizedPeriodDivisions = normalizePeriodDivisions(
+    periodDivisions,
+    config.periods,
+    config.rotationsPerPeriod,
+  );
+  const periodOffsets = getPeriodOffsets(normalizedPeriodDivisions);
+  const rotationWeights = normalizedPeriodDivisions.flatMap((division) =>
+    Array.from({ length: division }, () => 1 / division),
+  );
+
+  if (rotationWeights.length !== totalRotations) {
+    throw new Error('Period divisions do not match total rotations.');
+  }
+
+  const totalRotationWeight = rotationWeights.reduce((sum, weight) => sum + weight, 0);
+  const maxBenchWeight = totalRotationWeight * (1 - config.minPlayPercentage / 100);
 
   const goalieMap = new Map<number, string>();
   const forcedBench = new Map<string, Set<number>>();
@@ -284,8 +314,10 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     // Build goalie map: rotationIndex -> playerId
     for (let period = 0; period < config.periods; period++) {
       const goalieId = goaliePerPeriod[period];
-      for (let rot = 0; rot < config.rotationsPerPeriod; rot++) {
-        const rotIndex = period * config.rotationsPerPeriod + rot;
+      const periodStart = periodOffsets[period] ?? 0;
+      const periodDivision = normalizedPeriodDivisions[period] ?? 1;
+      for (let rot = 0; rot < periodDivision; rot++) {
+        const rotIndex = periodStart + rot;
         if (config.goaliePlayFullPeriod) {
           goalieMap.set(rotIndex, goalieId);
         } else if (rot === 0) {
@@ -298,7 +330,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     if (config.goalieRestAfterPeriod) {
       for (let period = 0; period < config.periods; period++) {
         const goalieId = goaliePerPeriod[period];
-        const nextPeriodFirstRot = (period + 1) * config.rotationsPerPeriod;
+        const nextPeriodFirstRot = periodOffsets[period + 1];
         if (nextPeriodFirstRot < totalRotations) {
           if (!forcedBench.has(goalieId)) forcedBench.set(goalieId, new Set());
           forcedBench.get(goalieId)!.add(nextPeriodFirstRot);
@@ -395,6 +427,8 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       cannotBench,
       mustBench,
       maxConsecutive,
+      rotationWeights,
+      config.enforceMinPlayTime ? maxBenchWeight : undefined,
     );
 
     while (patterns.length === 0 && targetBenchCount > mustBench.size) {
@@ -405,6 +439,8 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
         cannotBench,
         mustBench,
         maxConsecutive,
+        rotationWeights,
+        config.enforceMinPlayTime ? maxBenchWeight : undefined,
       );
     }
 
@@ -469,6 +505,8 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
             constraints.cannotBench,
             constraints.mustBench,
             maxConsecutive,
+            rotationWeights,
+            config.enforceMinPlayTime ? maxBenchWeight : undefined,
           );
           if (patterns.length > 0) {
             benchCounts.set(constraints.player.id, newCount);
@@ -581,7 +619,8 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       benchSlotsPerRotation,
       maxConsecutive,
       enforceMinPlayTime: config.enforceMinPlayTime,
-      minPlayPercentage: config.minPlayPercentage,
+      rotationWeights,
+      maxBenchWeight,
       cancellation,
       onProgress: ctx.onProgress,
     });
@@ -595,7 +634,10 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
         fallback.benchSets,
         goalieMap,
         players,
-        config,
+        {
+          ...config,
+          periodDivisions: normalizedPeriodDivisions,
+        },
         totalRotations,
       );
     }
@@ -617,7 +659,17 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
 
   ctx.onProgress(95, 'game:solver.building_schedule');
 
-  return buildSchedule(playerPatterns, bestBenchSets, goalieMap, players, config, totalRotations);
+  return buildSchedule(
+    playerPatterns,
+    bestBenchSets,
+    goalieMap,
+    players,
+    {
+      ...config,
+      periodDivisions: normalizedPeriodDivisions,
+    },
+    totalRotations,
+  );
 }
 
 function resolveGoalieAssignments(
@@ -661,7 +713,7 @@ function calculateBenchCounts(
   players: Player[],
   totalRotations: number,
   benchSlotsPerRotation: number,
-  config: { skillBalance: boolean; enforceMinPlayTime: boolean; minPlayPercentage: number },
+  config: { skillBalance: boolean },
 ): Map<string, number> {
   const totalBenchSlots = totalRotations * benchSlotsPerRotation;
   const counts = new Map<string, number>();
@@ -687,11 +739,6 @@ function calculateBenchCounts(
 
     for (const entry of weighted) {
       let benchCount = Math.round((entry.weight / totalWeight) * totalBenchSlots);
-
-      if (config.enforceMinPlayTime) {
-        const maxBench = Math.floor(totalRotations * (1 - config.minPlayPercentage / 100));
-        benchCount = Math.min(benchCount, maxBench);
-      }
 
       benchCount = Math.min(benchCount, totalRotations);
       benchCount = Math.max(benchCount, 0);
@@ -732,10 +779,19 @@ function generateBenchPatterns(
   cannotBench: Set<number>,
   mustBench: Set<number>,
   maxConsecutive: number,
+  rotationWeights?: number[],
+  maxBenchWeight?: number,
 ): BenchPattern[] {
   if (mustBench.size > benchCount) return [];
   for (const idx of mustBench) {
     if (cannotBench.has(idx)) return [];
+  }
+
+  const weightForRotation = (index: number): number => rotationWeights?.[index] ?? 1;
+  const mustBenchWeight = [...mustBench].reduce((sum, idx) => sum + weightForRotation(idx), 0);
+  const epsilon = 1e-9;
+  if (maxBenchWeight != null && mustBenchWeight > maxBenchWeight + epsilon) {
+    return [];
   }
 
   const availableSlots: number[] = [];
@@ -766,10 +822,14 @@ function generateBenchPatterns(
     return true;
   }
 
-  function choose(start: number, chosen: number[]) {
+  function choose(start: number, chosen: number[], chosenWeight: number) {
     if (chosen.length === remaining) {
       const fullPattern = [...mustBenchArr, ...chosen].sort((a, b) => a - b);
-      if (isValidPattern(fullPattern)) {
+      const totalBenchWeight = mustBenchWeight + chosenWeight;
+      if (
+        isValidPattern(fullPattern) &&
+        (maxBenchWeight == null || totalBenchWeight <= maxBenchWeight + epsilon)
+      ) {
         results.push(fullPattern);
       }
       return;
@@ -777,13 +837,18 @@ function generateBenchPatterns(
 
     const slotsNeeded = remaining - chosen.length;
     for (let i = start; i <= availableSlots.length - slotsNeeded; i++) {
-      chosen.push(availableSlots[i]);
-      choose(i + 1, chosen);
+      const slot = availableSlots[i];
+      const nextWeight = chosenWeight + weightForRotation(slot);
+      if (maxBenchWeight != null && mustBenchWeight + nextWeight > maxBenchWeight + epsilon) {
+        continue;
+      }
+      chosen.push(slot);
+      choose(i + 1, chosen, nextWeight);
       chosen.pop();
     }
   }
 
-  choose(0, []);
+  choose(0, [], 0);
   return results;
 }
 
@@ -814,8 +879,8 @@ function buildSchedule(
   goalieMap: Map<number, string>,
   allPlayers: Player[],
   config: {
-    rotationsPerPeriod: number;
     periods: number;
+    periodDivisions: number[];
     usePositions: boolean;
     formation: FormationSlot[];
   },
@@ -829,7 +894,7 @@ function buildSchedule(
 
   for (let r = 0; r < totalRotations; r++) {
     const assignments: Record<string, RotationAssignment> = {};
-    const periodIndex = Math.floor(r / config.rotationsPerPeriod);
+    const periodIndex = getPeriodForRotation(config.periodDivisions, r);
 
     for (let p = 0; p < playerPatterns.length; p++) {
       const playerId = playerPatterns[p].player.id;

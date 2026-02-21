@@ -153,7 +153,16 @@
   },
   "rotation_table": {
     "player": "Jugador",
-    "expand_period": "Expandir tiempo {{number}}"
+    "expand_period": "Expandir tiempo {{number}}",
+    "period_actions": "Acciones del tiempo {{number}}"
+  },
+  "period_division": {
+    "title": "División del tiempo {{period}}",
+    "instruction": "Elige cuántas celdas de rotación tendrá este tiempo.",
+    "options_header": "Rotaciones en este tiempo",
+    "option_one": "{{count}} rotación",
+    "option_other": "{{count}} rotaciones",
+    "unavailable": "No disponible"
   },
   "error": {
     "not_found": "Partido o rotaciones no encontradas",

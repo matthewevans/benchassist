@@ -3,6 +3,10 @@ import type { Rotation, RotationSchedule, Player } from '@/types/domain.ts';
 import { exhaustiveSearch } from './solver/exhaustive.ts';
 import { calculatePlayerStats, computeStrengthStats } from '@/utils/stats.ts';
 import { validateGoalieAssignments } from '@/utils/validation.ts';
+import {
+  normalizePeriodDivisions,
+  getTotalRotationsFromDivisions,
+} from '@/utils/rotationLayout.ts';
 
 let currentRequestId: string | null = null;
 let currentCancellation: { cancelled: boolean } | null = null;
@@ -52,6 +56,7 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           absentPlayerIds,
           goalieAssignments,
           manualOverrides,
+          periodDivisions,
           startFromRotation,
           existingRotations,
         } = request.payload;
@@ -67,7 +72,12 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
         onProgress(1, 'game:solver.initializing');
 
         const activePlayers = players.filter((p) => !absentPlayerIds.includes(p.id));
-        const totalRotations = config.periods * config.rotationsPerPeriod;
+        const normalizedPeriodDivisions = normalizePeriodDivisions(
+          periodDivisions,
+          config.periods,
+          config.rotationsPerPeriod,
+        );
+        const totalRotations = getTotalRotationsFromDivisions(normalizedPeriodDivisions);
         const benchSlotsPerRotation = activePlayers.length - config.fieldSize;
 
         if (benchSlotsPerRotation < 0) {
@@ -90,6 +100,7 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           config,
           goalieAssignments,
           manualOverrides,
+          periodDivisions: normalizedPeriodDivisions,
           totalRotations,
           benchSlotsPerRotation,
           onProgress,

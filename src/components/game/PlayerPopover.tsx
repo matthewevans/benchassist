@@ -6,6 +6,8 @@ import type { PlayerStats } from '@/types/domain.ts';
 interface PlayerPopoverProps {
   playerName: string;
   stats: PlayerStats | undefined;
+  belowMinimum?: boolean;
+  highDeviation?: boolean;
   isRemoved: boolean;
   onRemove: () => void;
   onAddBack: () => void;
@@ -15,6 +17,8 @@ interface PlayerPopoverProps {
 export function PlayerPopover({
   playerName,
   stats,
+  belowMinimum = false,
+  highDeviation = false,
   isRemoved,
   onRemove,
   onAddBack,
@@ -35,7 +39,15 @@ export function PlayerPopover({
                 {t('player.bench')}
                 {stats.rotationsGoalie > 0 ? ` \u00b7 ${stats.rotationsGoalie} GK` : ''}
               </p>
-              <p className="text-ios-subheadline font-medium text-foreground">
+              <p
+                className={
+                  belowMinimum
+                    ? 'text-ios-subheadline font-medium text-orange-600 dark:text-orange-400'
+                    : highDeviation
+                      ? 'text-ios-subheadline font-medium text-blue-600 dark:text-blue-400'
+                      : 'text-ios-subheadline font-medium text-foreground'
+                }
+              >
                 {stats.playPercentage}%
               </p>
             </div>

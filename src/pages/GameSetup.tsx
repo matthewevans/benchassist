@@ -114,6 +114,10 @@ export function GameSetup() {
       goalieAssignments: effectiveGoalieAssignments,
       manualOverrides: [],
       schedule: null,
+      periodDivisions: Array.from(
+        { length: selectedConfig.periods },
+        () => selectedConfig.rotationsPerPeriod,
+      ),
       currentRotationIndex: 0,
       removedPlayerIds: [],
       addedPlayerIds: [],
@@ -134,6 +138,7 @@ export function GameSetup() {
       absentPlayerIds: [...absentPlayerIds],
       goalieAssignments: effectiveGoalieAssignments,
       manualOverrides: [],
+      periodDivisions: game.periodDivisions,
     });
   }
 

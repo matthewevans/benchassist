@@ -222,6 +222,7 @@ export interface Game {
   manualOverrides: ManualOverride[];
 
   schedule: RotationSchedule | null;
+  periodDivisions: number[]; // per-period rotation counts (defaults from config)
 
   currentRotationIndex: number;
   removedPlayerIds: PlayerId[];

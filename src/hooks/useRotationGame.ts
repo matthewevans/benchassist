@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver } from '@/hooks/useSolver.ts';
 import { previewSwap, previewSwapRange } from '@/utils/stats.ts';
+import { redivideSchedulePeriod } from '@/utils/rotationDivision.ts';
+import { normalizePeriodDivisions, getPeriodRange } from '@/utils/rotationLayout.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { PlayerId, Game, GoalieAssignment } from '@/types/domain.ts';
 
@@ -22,6 +24,15 @@ export function useRotationGame(gameId: string | undefined) {
   const currentRotation = schedule?.rotations[currentRotationIndex];
   const nextRotation = schedule?.rotations[currentRotationIndex + 1];
   const currentPeriodIndex = currentRotation?.periodIndex ?? 0;
+  const periodDivisions = useMemo(
+    () =>
+      normalizePeriodDivisions(
+        game?.periodDivisions,
+        config?.periods ?? 0,
+        config?.rotationsPerPeriod ?? 1,
+      ),
+    [game?.periodDivisions, config?.periods, config?.rotationsPerPeriod],
+  );
 
   // --- Swap state ---
   const [swapSource, setSwapSource] = useState<{
@@ -180,6 +191,46 @@ export function useRotationGame(gameId: string | undefined) {
     dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
   }
 
+  function handleSetPeriodDivision(periodIndex: number, nextDivision: number) {
+    if (!gameId || !game || !config || !schedule) return;
+    if (periodIndex < 0 || periodIndex >= periodDivisions.length) return;
+
+    const safeDivision = Math.max(1, Math.min(6, Math.floor(nextDivision) || 1));
+    if (safeDivision === periodDivisions[periodIndex]) return;
+
+    if (isLive) {
+      const range = getPeriodRange(periodDivisions, periodIndex);
+      if (range?.start != null && range.start < currentRotationIndex) {
+        solver.setError(`Cannot change period ${periodIndex + 1}: it has already started.`);
+        return;
+      }
+    }
+
+    const result = redivideSchedulePeriod({
+      schedule,
+      players: activePlayers,
+      periodDivisions,
+      periodIndex,
+      nextDivision: safeDivision,
+    });
+
+    if (!result.ok) {
+      solver.setError(result.error);
+      return;
+    }
+
+    dispatch({
+      type: 'UPDATE_GAME',
+      payload: {
+        ...game,
+        periodDivisions: result.periodDivisions,
+      },
+    });
+    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: result.schedule } });
+    setSwapSource(null);
+    setPendingSwap(null);
+  }
+
   function handleAdvance() {
     if (!gameId) return;
     if (currentRotationIndex >= (schedule?.rotations.length ?? 0) - 1) {
@@ -217,6 +268,7 @@ export function useRotationGame(gameId: string | undefined) {
       absentPlayerIds: [...game.absentPlayerIds, removingPlayerId, ...game.removedPlayerIds],
       goalieAssignments: game.goalieAssignments,
       manualOverrides: [],
+      periodDivisions,
       startFromRotation: game.currentRotationIndex,
       existingRotations: schedule.rotations,
     });
@@ -236,6 +288,7 @@ export function useRotationGame(gameId: string | undefined) {
       absentPlayerIds: [...game.absentPlayerIds, ...updatedRemoved],
       goalieAssignments: game.goalieAssignments,
       manualOverrides: [],
+      periodDivisions,
       startFromRotation: game.currentRotationIndex,
       existingRotations: schedule.rotations,
     });
@@ -250,6 +303,7 @@ export function useRotationGame(gameId: string | undefined) {
         absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
         goalieAssignments: game.goalieAssignments,
         manualOverrides: [],
+        periodDivisions,
         startFromRotation: game.currentRotationIndex,
         existingRotations: schedule.rotations,
       });
@@ -260,6 +314,7 @@ export function useRotationGame(gameId: string | undefined) {
         absentPlayerIds: game.absentPlayerIds,
         goalieAssignments: game.goalieAssignments,
         manualOverrides: game.manualOverrides,
+        periodDivisions,
       });
     }
   }
@@ -277,6 +332,7 @@ export function useRotationGame(gameId: string | undefined) {
       absentPlayerIds: absentIds,
       goalieAssignments,
       manualOverrides: game.manualOverrides,
+      periodDivisions,
     });
   }
 
@@ -317,6 +373,7 @@ export function useRotationGame(gameId: string | undefined) {
     currentRotation,
     nextRotation,
     currentPeriodIndex,
+    periodDivisions,
     // Derived
     periodGroups,
     changingPlayerIds,
@@ -356,6 +413,7 @@ export function useRotationGame(gameId: string | undefined) {
     handleAdvance,
     handleRetreat,
     handleEndGame,
+    handleSetPeriodDivision,
     handleConfirmRemovePlayer,
     handleAddPlayerBack,
     handleRegenerate,

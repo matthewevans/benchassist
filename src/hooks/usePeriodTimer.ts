@@ -71,10 +71,27 @@ export function usePeriodTimer(
   const gameId = game?.id ?? '';
   const periodDurationMs = (config?.periodDurationMinutes ?? 0) * 60 * 1000;
   const periodIndex = currentRotation?.periodIndex ?? 0;
-  const rotationsPerPeriod = config?.rotationsPerPeriod ?? 1;
+
+  // Live games can have period-specific divisions. Derive current period size from schedule first.
+  const rotationsInCurrentPeriod = useMemo(() => {
+    if (game?.schedule && currentRotation) {
+      const count = game.schedule.rotations.filter((r) => r.periodIndex === periodIndex).length;
+      if (count > 0) return count;
+    }
+    return config?.rotationsPerPeriod ?? 1;
+  }, [game?.schedule, currentRotation, periodIndex, config?.rotationsPerPeriod]);
 
   // Which rotation within this period (0-based)
-  const withinPeriodIndex = (currentRotation?.index ?? 0) - periodIndex * rotationsPerPeriod;
+  const withinPeriodIndex = useMemo(() => {
+    if (!game?.schedule || !currentRotation) return 0;
+    let idx = 0;
+    for (const rotation of game.schedule.rotations) {
+      if (rotation.periodIndex !== periodIndex) continue;
+      if (rotation.index === currentRotation.index) break;
+      idx++;
+    }
+    return idx;
+  }, [game?.schedule, currentRotation, periodIndex]);
 
   // Calculate current elapsed from persisted state
   function getElapsedMs(): number {
@@ -119,18 +136,18 @@ export function usePeriodTimer(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, game?.periodTimerStartedAt, game?.periodTimerPausedElapsed]);
 
-  // Substitution markers: R-1 markers for R rotations per period
+  // Substitution markers: R-1 markers for R rotations in the current period
   const markers: SubstitutionMarker[] = useMemo(() => {
     const result: SubstitutionMarker[] = [];
-    for (let i = 0; i < rotationsPerPeriod - 1; i++) {
-      const progress = (i + 1) / rotationsPerPeriod;
+    for (let i = 0; i < rotationsInCurrentPeriod - 1; i++) {
+      const progress = (i + 1) / rotationsInCurrentPeriod;
       result.push({
         progress,
         timeMs: progress * periodDurationMs,
       });
     }
     return result;
-  }, [rotationsPerPeriod, periodDurationMs]);
+  }, [rotationsInCurrentPeriod, periodDurationMs]);
 
   // Alert when crossing a substitution marker
   useEffect(() => {

@@ -66,24 +66,31 @@ export function validateSchedule(
   }
 
   if (config.useGoalie && config.goalieRestAfterPeriod) {
-    const rotationsPerPeriod = config.rotationsPerPeriod;
+    const firstRotationByPeriod = new Map<number, RotationSchedule['rotations'][number]>();
+    for (const rotation of schedule.rotations) {
+      const existing = firstRotationByPeriod.get(rotation.periodIndex);
+      if (!existing || rotation.index < existing.index) {
+        firstRotationByPeriod.set(rotation.periodIndex, rotation);
+      }
+    }
+
     for (const player of players) {
-      const checkedPeriods = new Set<number>();
+      const goaliePeriods = new Set<number>();
       for (const rotation of schedule.rotations) {
+        if (rotation.assignments[player.id] === RotationAssignment.Goalie) {
+          goaliePeriods.add(rotation.periodIndex);
+        }
+      }
+
+      for (const goaliePeriod of goaliePeriods) {
+        const nextPeriodFirst = firstRotationByPeriod.get(goaliePeriod + 1);
         if (
-          rotation.assignments[player.id] === RotationAssignment.Goalie &&
-          !checkedPeriods.has(rotation.periodIndex)
+          nextPeriodFirst &&
+          nextPeriodFirst.assignments[player.id] !== RotationAssignment.Bench
         ) {
-          checkedPeriods.add(rotation.periodIndex);
-          const periodEnd = (rotation.periodIndex + 1) * rotationsPerPeriod;
-          if (periodEnd < schedule.rotations.length) {
-            const nextPeriodFirst = schedule.rotations[periodEnd];
-            if (nextPeriodFirst.assignments[player.id] !== RotationAssignment.Bench) {
-              violations.push(
-                `${player.name}: must rest first rotation after goalkeeping period ${rotation.periodIndex + 1}`,
-              );
-            }
-          }
+          violations.push(
+            `${player.name}: must rest first rotation after goalkeeping period ${goaliePeriod + 1}`,
+          );
         }
       }
     }

@@ -5,6 +5,7 @@ export interface SolverContext {
   config: GameConfig;
   goalieAssignments: GoalieAssignment[];
   manualOverrides: ManualOverride[];
+  periodDivisions?: number[];
   totalRotations: number;
   benchSlotsPerRotation: number;
   onProgress: (percentage: number, message: string) => void;

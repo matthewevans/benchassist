@@ -1,18 +1,21 @@
-import { forwardRef } from 'react';
-import { ChevronRightIcon, ChevronDownIcon } from 'lucide-react';
+import { forwardRef, useMemo } from 'react';
+import { ChevronRightIcon, ChevronDownIcon, EllipsisIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
 import { SUB_POSITION_LABELS } from '@/types/domain.ts';
 import type { Player, PlayerId, Rotation, PlayerStats, GameConfig } from '@/types/domain.ts';
 import { getAssignmentDisplay } from '@/utils/positions.ts';
+import { getHighPlayPercentageOutlierIds } from '@/utils/playPercentageOutliers.ts';
 
 function PlayPercentageCell({
   percentage,
   belowMinimum,
+  highDeviation,
 }: {
   percentage: number;
   belowMinimum: boolean;
+  highDeviation: boolean;
 }) {
   const size = 24;
   const strokeWidth = 2.5;
@@ -21,10 +24,13 @@ function PlayPercentageCell({
   const offset = circumference - (percentage / 100) * circumference;
   const color = belowMinimum
     ? 'stroke-orange-500 dark:stroke-orange-400'
-    : 'stroke-green-500 dark:stroke-green-400';
+    : highDeviation
+      ? 'stroke-blue-500 dark:stroke-blue-400'
+      : 'stroke-green-500 dark:stroke-green-400';
+  const status = belowMinimum ? 'below-minimum' : highDeviation ? 'high-deviation' : 'normal';
 
   return (
-    <div className="flex flex-col items-center gap-0.5">
+    <div className="flex flex-col items-center gap-0.5" data-play-status={status}>
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}
@@ -49,7 +55,11 @@ function PlayPercentageCell({
       <span
         className={cn(
           'text-[10px] tabular-nums leading-none',
-          belowMinimum ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground',
+          belowMinimum
+            ? 'text-orange-600 dark:text-orange-400'
+            : highDeviation
+              ? 'text-blue-600 dark:text-blue-400'
+              : 'text-muted-foreground',
         )}
       >
         {percentage}
@@ -76,6 +86,8 @@ interface RotationTableProps {
   subTooltipMap: Map<PlayerId, string>;
   collapsedPeriods: Set<number>;
   togglePeriod: (periodIndex: number) => void;
+  canEditPeriodDivision: (periodIndex: number) => boolean;
+  onPeriodActionsClick: (periodIndex: number) => void;
   swapSource: { rotationIndex: number; playerId: PlayerId } | null;
   onCellClick: (rotationIndex: number, playerId: PlayerId) => void;
   onRemovePlayer: (playerId: PlayerId) => void;
@@ -97,6 +109,8 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
       subTooltipMap,
       collapsedPeriods,
       togglePeriod,
+      canEditPeriodDivision,
+      onPeriodActionsClick,
       swapSource,
       onCellClick,
       onRemovePlayer,
@@ -104,6 +118,18 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
     } = props;
 
     const { t } = useTranslation('game');
+    const highPlayOutlierIds = useMemo(
+      () =>
+        getHighPlayPercentageOutlierIds(
+          allDisplayPlayers
+            .filter((player) => !gameRemovedPlayerIds.includes(player.id))
+            .map((player) => ({
+              playerId: player.id,
+              playPercentage: playerStats[player.id]?.playPercentage ?? 0,
+            })),
+        ),
+      [allDisplayPlayers, gameRemovedPlayerIds, playerStats],
+    );
 
     return (
       <div className="overflow-x-auto px-4" ref={ref}>
@@ -120,19 +146,32 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       key={`collapsed-${group.periodIndex}`}
                       className="text-center py-2 px-1 font-medium min-w-[44px] hover:bg-accent/50 transition-colors"
                     >
-                      <button
-                        type="button"
-                        className="mx-auto inline-flex min-h-11 min-w-11 items-center justify-center gap-0.5 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80"
-                        aria-label={t('rotation_table.expand_period', {
-                          number: group.periodIndex + 1,
-                        })}
-                        onClick={() => togglePeriod(group.periodIndex)}
-                      >
-                        <span className="text-ios-caption1 text-muted-foreground bg-secondary/50 rounded px-2 py-0.5">
-                          P{group.periodIndex + 1}
-                        </span>
-                        <ChevronRightIcon className="size-3 text-muted-foreground" />
-                      </button>
+                      <div className="mx-auto flex items-center justify-center gap-1">
+                        <button
+                          type="button"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center gap-0.5 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80"
+                          aria-label={t('rotation_table.expand_period', {
+                            number: group.periodIndex + 1,
+                          })}
+                          onClick={() => togglePeriod(group.periodIndex)}
+                        >
+                          <span className="text-ios-caption1 text-muted-foreground bg-secondary/50 rounded px-2 py-0.5">
+                            P{group.periodIndex + 1}
+                          </span>
+                          <ChevronRightIcon className="size-3 text-muted-foreground" />
+                        </button>
+                        <button
+                          type="button"
+                          className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40"
+                          aria-label={t('rotation_table.period_actions', {
+                            number: group.periodIndex + 1,
+                          })}
+                          disabled={!canEditPeriodDivision(group.periodIndex)}
+                          onClick={() => onPeriodActionsClick(group.periodIndex)}
+                        >
+                          <EllipsisIcon className="size-4 text-muted-foreground" />
+                        </button>
+                      </div>
                     </th>
                   );
                 }
@@ -171,14 +210,33 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         </span>
                       )}
                       <div className="text-xs text-muted-foreground font-normal">
-                        {i === 0 && isLive ? (
-                          <button
-                            className="flex items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] hover:text-foreground active:opacity-60 transition-colors mx-auto"
-                            onClick={() => togglePeriod(group.periodIndex)}
-                          >
-                            P{r.periodIndex + 1}
-                            <ChevronDownIcon className="size-3" />
-                          </button>
+                        {i === 0 ? (
+                          <div className="flex items-center justify-center gap-1">
+                            {isLive ? (
+                              <button
+                                className="flex items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] hover:text-foreground active:opacity-60 transition-colors"
+                                onClick={() => togglePeriod(group.periodIndex)}
+                              >
+                                P{r.periodIndex + 1}
+                                <ChevronDownIcon className="size-3" />
+                              </button>
+                            ) : (
+                              <span className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center">
+                                P{r.periodIndex + 1}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40"
+                              aria-label={t('rotation_table.period_actions', {
+                                number: group.periodIndex + 1,
+                              })}
+                              disabled={!canEditPeriodDivision(group.periodIndex)}
+                              onClick={() => onPeriodActionsClick(group.periodIndex)}
+                            >
+                              <EllipsisIcon className="size-4" />
+                            </button>
+                          </div>
                         ) : (
                           <>P{r.periodIndex + 1}</>
                         )}
@@ -196,6 +254,8 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
             {allDisplayPlayers.map((player) => {
               const stats = playerStats[player.id];
               const isRemoved = gameRemovedPlayerIds.includes(player.id);
+              const belowMinimum = stats != null && stats.playPercentage < config.minPlayPercentage;
+              const highDeviation = stats != null && highPlayOutlierIds.has(player.id);
               const playerNameEl = (
                 <span
                   className={cn(
@@ -224,6 +284,8 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       <PlayerPopover
                         playerName={player.name}
                         stats={stats}
+                        belowMinimum={belowMinimum}
+                        highDeviation={highDeviation}
                         isRemoved={isRemoved}
                         onRemove={() => onRemovePlayer(player.id)}
                         onAddBack={() => onAddPlayerBack(player.id)}
@@ -335,9 +397,8 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                   <td className="text-center py-1.5 px-2">
                     <PlayPercentageCell
                       percentage={stats?.playPercentage ?? 0}
-                      belowMinimum={
-                        stats != null && stats.playPercentage < config.minPlayPercentage
-                      }
+                      belowMinimum={belowMinimum}
+                      highDeviation={highDeviation && !belowMinimum}
                     />
                   </td>
                 </tr>

@@ -111,6 +111,41 @@ describe('exhaustiveSearch', () => {
     }
   });
 
+  it('enforces minimum play percentage with non-uniform period divisions', () => {
+    const players = buildRoster(4, { goalieCount: 0 });
+    const config = gameConfigFactory.build({
+      fieldSize: 2,
+      periods: 2,
+      rotationsPerPeriod: 2,
+      useGoalie: false,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: true,
+      minPlayPercentage: 50,
+      skillBalance: false,
+    });
+    const periodDivisions = [1, 3];
+    const totalRotations = periodDivisions.reduce((sum, division) => sum + division, 0);
+
+    const schedule = exhaustiveSearch({
+      players,
+      config,
+      goalieAssignments: [],
+      manualOverrides: [],
+      periodDivisions,
+      totalRotations,
+      benchSlotsPerRotation: players.length - config.fieldSize,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    expect(schedule.rotations.filter((r) => r.periodIndex === 0)).toHaveLength(1);
+    expect(schedule.rotations.filter((r) => r.periodIndex === 1)).toHaveLength(3);
+
+    for (const player of players) {
+      expect(schedule.playerStats[player.id].playPercentage).toBeGreaterThanOrEqual(50);
+    }
+  });
+
   it('enforces goalie rest after their period when rule is enabled', () => {
     const players = buildRoster(10, { goalieCount: 3 });
     const config = gameConfigFactory.build({

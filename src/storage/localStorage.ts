@@ -62,7 +62,81 @@ export function migrateV3toV4(data: RawStorageData): RawStorageData {
   return { ...data, version: 4, teams };
 }
 
-const migrationSteps = [migrateV1toV2, migrateV2toV3, migrateV3toV4];
+function readPositiveInt(value: unknown): number | null {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 1) return null;
+  return Math.floor(num);
+}
+
+function readNonNegativeInt(value: unknown): number | null {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num < 0) return null;
+  return Math.floor(num);
+}
+
+function inferPeriodCount(gameRecord: Record<string, unknown>): number {
+  const schedule = asRecord(gameRecord.schedule);
+  const rotations = Array.isArray(schedule.rotations) ? schedule.rotations : [];
+  const maxPeriodIndex = rotations.reduce((max, rotation) => {
+    const periodIndex = readNonNegativeInt(asRecord(rotation).periodIndex);
+    return periodIndex == null ? max : Math.max(max, periodIndex + 1);
+  }, 0);
+  return Math.max(1, maxPeriodIndex || 0);
+}
+
+function inferDivisionFromSchedule(
+  gameRecord: Record<string, unknown>,
+  periodIndex: number,
+): number {
+  const schedule = asRecord(gameRecord.schedule);
+  const rotations = Array.isArray(schedule.rotations) ? schedule.rotations : [];
+  const count = rotations.filter((rotation) => {
+    const period = Number(asRecord(rotation).periodIndex);
+    return Number.isFinite(period) && Math.floor(period) === periodIndex;
+  }).length;
+  return Math.max(1, count || 1);
+}
+
+/** v4→v5: Add periodDivisions to games */
+export function migrateV4toV5(data: RawStorageData): RawStorageData {
+  const games: Record<string, unknown> = {};
+  for (const [id, game] of Object.entries(data.games)) {
+    const gameRecord = asRecord(game);
+    const existingDivisions = Array.isArray(gameRecord.periodDivisions)
+      ? gameRecord.periodDivisions
+          .map((value) => readPositiveInt(value))
+          .filter((v): v is number => v != null)
+      : [];
+
+    if (existingDivisions.length > 0) {
+      games[id] = { ...gameRecord, periodDivisions: existingDivisions };
+      continue;
+    }
+
+    const teamId = String(gameRecord.teamId ?? '');
+    const configId = String(gameRecord.gameConfigId ?? '');
+    const teamRecord = asRecord(data.teams[teamId]);
+    const gameConfigs = Array.isArray(teamRecord.gameConfigs) ? teamRecord.gameConfigs : [];
+    const config = gameConfigs.find((cfg) => String(asRecord(cfg).id ?? '') === configId);
+    const configRecord = asRecord(config);
+
+    const configuredPeriods = readPositiveInt(configRecord.periods);
+    const configuredDivision = readPositiveInt(configRecord.rotationsPerPeriod);
+
+    const periodCount = configuredPeriods ?? inferPeriodCount(gameRecord);
+    const defaultDivision = configuredDivision ?? inferDivisionFromSchedule(gameRecord, 0);
+    const periodDivisions = Array.from({ length: periodCount }, (_, periodIndex) => {
+      const inferredForPeriod = inferDivisionFromSchedule(gameRecord, periodIndex);
+      return configuredDivision ?? inferredForPeriod ?? defaultDivision;
+    });
+
+    games[id] = { ...gameRecord, periodDivisions };
+  }
+
+  return { ...data, version: 5, games };
+}
+
+const migrationSteps = [migrateV1toV2, migrateV2toV3, migrateV3toV4, migrateV4toV5];
 export const CURRENT_VERSION = migrationSteps.length + 1;
 
 function migrateData(data: RawStorageData): StorageData {

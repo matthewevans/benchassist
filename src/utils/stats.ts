@@ -5,18 +5,31 @@ export function calculatePlayerStats(
   rotations: Rotation[],
   players: Player[],
 ): Record<PlayerId, PlayerStats> {
+  const periodRotationCounts = new Map<number, number>();
+  for (const rotation of rotations) {
+    periodRotationCounts.set(
+      rotation.periodIndex,
+      (periodRotationCounts.get(rotation.periodIndex) ?? 0) + 1,
+    );
+  }
+
   const stats: Record<PlayerId, PlayerStats> = {};
 
   for (const player of players) {
     let played = 0;
     let benched = 0;
     let goalie = 0;
+    let playedWeight = 0;
+    let totalWeight = 0;
     let currentBenchStreak = 0;
     let maxBenchStreak = 0;
 
     for (const rotation of rotations) {
       const assignment = rotation.assignments[player.id];
       if (!assignment) continue;
+      const periodCount = periodRotationCounts.get(rotation.periodIndex) ?? 1;
+      const rotationWeight = 1 / periodCount;
+      totalWeight += rotationWeight;
 
       if (assignment === RotationAssignment.Bench) {
         benched++;
@@ -27,8 +40,10 @@ export function calculatePlayerStats(
         if (assignment === RotationAssignment.Goalie) {
           goalie++;
           played++;
+          playedWeight += rotationWeight;
         } else {
           played++;
+          playedWeight += rotationWeight;
         }
       }
     }
@@ -41,7 +56,7 @@ export function calculatePlayerStats(
       rotationsBenched: benched,
       rotationsGoalie: goalie,
       totalRotations,
-      playPercentage: totalRotations > 0 ? Math.round((played / totalRotations) * 100) : 0,
+      playPercentage: totalWeight > 0 ? Math.round((playedWeight / totalWeight) * 100) : 0,
       maxConsecutiveBench: maxBenchStreak,
     };
   }
@@ -99,7 +114,7 @@ function swapRotation(r: Rotation, playerAId: PlayerId, playerBId: PlayerId): Ro
   return { ...r, assignments: newAssignments, fieldPositions: newFieldPositions };
 }
 
-function rebuildSchedule(
+export function rebuildScheduleWithRotations(
   schedule: RotationSchedule,
   newRotations: Rotation[],
   players: Player[],
@@ -138,7 +153,7 @@ export function previewSwap(
   const newRotations = schedule.rotations.map((r, i) =>
     i === rotationIndex ? swapRotation(r, playerAId, playerBId) : r,
   );
-  return rebuildSchedule(schedule, newRotations, players);
+  return rebuildScheduleWithRotations(schedule, newRotations, players);
 }
 
 export function previewSwapRange(
@@ -151,5 +166,5 @@ export function previewSwapRange(
   const newRotations = schedule.rotations.map((r, i) =>
     i >= fromRotationIndex ? swapRotation(r, playerAId, playerBId) : r,
   );
-  return rebuildSchedule(schedule, newRotations, players);
+  return rebuildScheduleWithRotations(schedule, newRotations, players);
 }

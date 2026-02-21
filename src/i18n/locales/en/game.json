@@ -153,7 +153,16 @@
   },
   "rotation_table": {
     "player": "Player",
-    "expand_period": "Expand period {{number}}"
+    "expand_period": "Expand period {{number}}",
+    "period_actions": "Period {{number}} actions"
+  },
+  "period_division": {
+    "title": "Period {{period}} Division",
+    "instruction": "Choose how many rotation cells this period should have.",
+    "options_header": "Rotations in this period",
+    "option_one": "{{count}} rotation",
+    "option_other": "{{count}} rotations",
+    "unavailable": "Unavailable"
   },
   "error": {
     "not_found": "Game or schedule not found",

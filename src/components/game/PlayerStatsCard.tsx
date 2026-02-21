@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { RotationSchedule, Player } from '@/types/domain.ts';
+import { getHighPlayPercentageOutlierIds } from '@/utils/playPercentageOutliers.ts';
 
 interface PlayerStatsCardProps {
   players: Player[];
@@ -9,6 +11,18 @@ interface PlayerStatsCardProps {
 
 export function PlayerStatsCard({ players, playerStats, minPlayPercentage }: PlayerStatsCardProps) {
   const { t } = useTranslation('game');
+  const highPlayOutlierIds = useMemo(
+    () =>
+      getHighPlayPercentageOutlierIds(
+        players
+          .filter((player) => playerStats[player.id] != null)
+          .map((player) => ({
+            playerId: player.id,
+            playPercentage: playerStats[player.id]!.playPercentage,
+          })),
+      ),
+    [players, playerStats],
+  );
 
   return (
     <section>
@@ -19,6 +33,8 @@ export function PlayerStatsCard({ players, playerStats, minPlayPercentage }: Pla
         {players.map((player, i) => {
           const stats = playerStats[player.id];
           if (!stats) return null;
+          const belowMinimum = stats.playPercentage < minPlayPercentage;
+          const highDeviation = highPlayOutlierIds.has(player.id);
           return (
             <div
               key={player.id}
@@ -37,9 +53,11 @@ export function PlayerStatsCard({ players, playerStats, minPlayPercentage }: Pla
                 {stats.rotationsGoalie > 0 && <span>{stats.rotationsGoalie} GK</span>}
                 <span
                   className={`font-medium ${
-                    stats.playPercentage < minPlayPercentage
+                    belowMinimum
                       ? 'text-destructive'
-                      : 'text-foreground'
+                      : highDeviation
+                        ? 'text-blue-600 dark:text-blue-400'
+                        : 'text-foreground'
                   }`}
                 >
                   {stats.playPercentage}%

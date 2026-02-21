@@ -83,6 +83,40 @@ describe('usePeriodTimer', () => {
     expect(result.current.markers).toHaveLength(0);
   });
 
+  it('derives markers from the current period schedule when divisions differ by period', () => {
+    const rotations: Rotation[] = [
+      buildRotation(0, 0),
+      buildRotation(1, 1),
+      buildRotation(2, 1),
+      buildRotation(3, 1),
+    ];
+    const game = gameFactory.build({
+      schedule: {
+        rotations,
+        playerStats: {},
+        overallStats: {
+          strengthVariance: 0,
+          minStrength: 0,
+          maxStrength: 0,
+          avgStrength: 0,
+          violations: [],
+          isValid: true,
+        },
+        generatedAt: Date.now(),
+      },
+      periodDivisions: [1, 3],
+    });
+    // Intentionally mismatched global config value — hook should use schedule for current period.
+    const config = gameConfigFactory.build({ periodDurationMinutes: 30, rotationsPerPeriod: 1 });
+    const currentRotation = rotations[1];
+
+    const { result } = renderHook(() => usePeriodTimer(game, config, currentRotation, dispatch));
+
+    expect(result.current.markers).toHaveLength(2);
+    expect(result.current.markers[0].progress).toBeCloseTo(1 / 3);
+    expect(result.current.markers[1].progress).toBeCloseTo(2 / 3);
+  });
+
   it('dispatches START_PERIOD_TIMER on play', () => {
     const game = gameFactory.build();
     const config = gameConfigFactory.build();

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
@@ -13,10 +13,13 @@ import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
+import { PeriodDivisionSheet } from '@/components/game/PeriodDivisionSheet.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { redivideSchedulePeriod } from '@/utils/rotationDivision.ts';
+import { getPeriodRange } from '@/utils/rotationLayout.ts';
 
 function RotationPips({
   periodGroups,
@@ -74,6 +77,7 @@ export function RotationGrid() {
   const { t } = useTranslation('game');
   const { t: tCommon } = useTranslation('common');
   const g = useRotationGame(gameId);
+  const [periodActionPeriodIndex, setPeriodActionPeriodIndex] = useState<number | null>(null);
 
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -112,6 +116,29 @@ export function RotationGrid() {
         </Link>
       </div>
     );
+  }
+
+  function canEditPeriodDivision(periodIndex: number): boolean {
+    if (g.isCompleted || !g.schedule) return false;
+    if (!g.isLive) return true;
+    const range = getPeriodRange(g.periodDivisions, periodIndex);
+    if (!range) return false;
+    return range.start >= g.currentRotationIndex;
+  }
+
+  function isDivisionEnabled(division: number): boolean {
+    if (periodActionPeriodIndex == null || !g.schedule) return false;
+    const currentDivision = g.periodDivisions[periodActionPeriodIndex];
+    if (currentDivision === division) return true;
+    if (!canEditPeriodDivision(periodActionPeriodIndex)) return false;
+
+    return redivideSchedulePeriod({
+      schedule: g.schedule,
+      players: g.activePlayers,
+      periodDivisions: g.periodDivisions,
+      periodIndex: periodActionPeriodIndex,
+      nextDivision: division,
+    }).ok;
   }
 
   return (
@@ -319,6 +346,8 @@ export function RotationGrid() {
             subTooltipMap={g.subTooltipMap}
             collapsedPeriods={collapsedPeriods}
             togglePeriod={togglePeriod}
+            canEditPeriodDivision={canEditPeriodDivision}
+            onPeriodActionsClick={(periodIndex) => setPeriodActionPeriodIndex(periodIndex)}
             swapSource={g.swapSource}
             onCellClick={g.handleCellClick}
             onRemovePlayer={(pid) => g.setRemovingPlayerId(pid)}
@@ -355,6 +384,25 @@ export function RotationGrid() {
           onThisRotation={g.handleSwapThisRotation}
           onAllRemaining={g.handleSwapAllRemaining}
           onCancel={() => g.setPendingSwap(null)}
+        />
+
+        <PeriodDivisionSheet
+          open={periodActionPeriodIndex != null}
+          periodIndex={periodActionPeriodIndex}
+          currentDivision={
+            periodActionPeriodIndex != null
+              ? (g.periodDivisions[periodActionPeriodIndex] ?? null)
+              : null
+          }
+          isDivisionEnabled={isDivisionEnabled}
+          onOpenChange={(open) => {
+            if (!open) setPeriodActionPeriodIndex(null);
+          }}
+          onSelectDivision={(division) => {
+            if (periodActionPeriodIndex == null) return;
+            g.handleSetPeriodDivision(periodActionPeriodIndex, division);
+            setPeriodActionPeriodIndex(null);
+          }}
         />
 
         {/* End game confirmation */}

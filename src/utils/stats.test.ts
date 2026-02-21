@@ -43,6 +43,35 @@ describe('calculatePlayerStats', () => {
 
     expect(stats[p1.id].maxConsecutiveBench).toBe(2);
   });
+
+  it('weights play percentage by period divisions instead of raw rotation count', () => {
+    const p1 = playerFactory.build({ name: 'A' });
+    const p2 = playerFactory.build({ name: 'B' });
+
+    const r0 = buildRotation(0, {
+      [p1.id]: RotationAssignment.Field,
+      [p2.id]: RotationAssignment.Bench,
+    });
+    r0.periodIndex = 0; // single rotation period
+
+    const r1 = buildRotation(1, {
+      [p1.id]: RotationAssignment.Bench,
+      [p2.id]: RotationAssignment.Field,
+    });
+    r1.periodIndex = 1;
+
+    const r2 = buildRotation(2, {
+      [p1.id]: RotationAssignment.Bench,
+      [p2.id]: RotationAssignment.Field,
+    });
+    r2.periodIndex = 1; // split period into two rotations
+
+    const stats = calculatePlayerStats([r0, r1, r2], [p1, p2]);
+
+    // Two periods total. P1 plays all of period 1 and none of period 2 => 50%.
+    expect(stats[p1.id].playPercentage).toBe(50);
+    expect(stats[p2.id].playPercentage).toBe(50);
+  });
 });
 
 describe('computeStrengthStats', () => {

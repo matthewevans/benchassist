@@ -76,6 +76,7 @@ export const gameFactory = Factory.define<Game>(() => ({
   goalieAssignments: [],
   manualOverrides: [],
   schedule: null,
+  periodDivisions: [2, 2],
   currentRotationIndex: 0,
   removedPlayerIds: [],
   addedPlayerIds: [],

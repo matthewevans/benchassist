@@ -17,6 +17,7 @@ export type SolverRequest =
         absentPlayerIds: string[];
         goalieAssignments: GoalieAssignment[];
         manualOverrides: ManualOverride[];
+        periodDivisions?: number[]; // per-period rotation counts (defaults from config)
         startFromRotation?: number; // for mid-game re-solve
         existingRotations?: Rotation[]; // played rotations to preserve
       };

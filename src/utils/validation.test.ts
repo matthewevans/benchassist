@@ -334,6 +334,147 @@ describe('validateSchedule', () => {
     const restViolations = violations.filter((v) => v.includes('must rest'));
     expect(restViolations).toHaveLength(0);
   });
+
+  it('checks goalie rest against the actual first rotation of the next period', () => {
+    const [p1, p2, p3] = [
+      playerFactory.build({ name: 'GoalieA' }),
+      playerFactory.build({ name: 'GoalieB' }),
+      playerFactory.build({ name: 'C' }),
+    ];
+    const rotations: Rotation[] = [
+      // Period 0 has one rotation.
+      {
+        index: 0,
+        periodIndex: 0,
+        assignments: {
+          [p1.id]: RotationAssignment.Goalie,
+          [p2.id]: RotationAssignment.Field,
+          [p3.id]: RotationAssignment.Bench,
+        },
+        teamStrength: 0,
+        violations: [],
+      },
+      // Period 1 starts at index 1. p1 must bench here, but does not.
+      {
+        index: 1,
+        periodIndex: 1,
+        assignments: {
+          [p1.id]: RotationAssignment.Field,
+          [p2.id]: RotationAssignment.Goalie,
+          [p3.id]: RotationAssignment.Bench,
+        },
+        teamStrength: 0,
+        violations: [],
+      },
+      {
+        index: 2,
+        periodIndex: 1,
+        assignments: {
+          [p1.id]: RotationAssignment.Bench,
+          [p2.id]: RotationAssignment.Goalie,
+          [p3.id]: RotationAssignment.Field,
+        },
+        teamStrength: 0,
+        violations: [],
+      },
+      {
+        index: 3,
+        periodIndex: 1,
+        assignments: {
+          [p1.id]: RotationAssignment.Bench,
+          [p2.id]: RotationAssignment.Goalie,
+          [p3.id]: RotationAssignment.Field,
+        },
+        teamStrength: 0,
+        violations: [],
+      },
+    ];
+    const config = gameConfigFactory.build({
+      fieldSize: 2,
+      periods: 2,
+      rotationsPerPeriod: 2,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: false,
+      goalieRestAfterPeriod: true,
+    });
+    const schedule = buildSchedule(rotations, [p1, p2, p3]);
+
+    const violations = validateSchedule(schedule, config, [p1, p2, p3]);
+
+    expect(violations).toContainEqual(
+      expect.stringContaining('GoalieA: must rest first rotation after goalkeeping period 1'),
+    );
+  });
+
+  it('does not raise goalie rest violation when the next period first rotation is benched', () => {
+    const [p1, p2, p3] = [
+      playerFactory.build({ name: 'GoalieA' }),
+      playerFactory.build({ name: 'GoalieB' }),
+      playerFactory.build({ name: 'C' }),
+    ];
+    const rotations: Rotation[] = [
+      // Period 0 has three rotations.
+      {
+        index: 0,
+        periodIndex: 0,
+        assignments: {
+          [p1.id]: RotationAssignment.Goalie,
+          [p2.id]: RotationAssignment.Field,
+          [p3.id]: RotationAssignment.Bench,
+        },
+        teamStrength: 0,
+        violations: [],
+      },
+      {
+        index: 1,
+        periodIndex: 0,
+        assignments: {
+          [p1.id]: RotationAssignment.Goalie,
+          [p2.id]: RotationAssignment.Bench,
+          [p3.id]: RotationAssignment.Field,
+        },
+        teamStrength: 0,
+        violations: [],
+      },
+      {
+        index: 2,
+        periodIndex: 0,
+        assignments: {
+          [p1.id]: RotationAssignment.Goalie,
+          [p2.id]: RotationAssignment.Field,
+          [p3.id]: RotationAssignment.Bench,
+        },
+        teamStrength: 0,
+        violations: [],
+      },
+      // Period 1 starts at index 3 and p1 is correctly benched there.
+      {
+        index: 3,
+        periodIndex: 1,
+        assignments: {
+          [p1.id]: RotationAssignment.Bench,
+          [p2.id]: RotationAssignment.Goalie,
+          [p3.id]: RotationAssignment.Field,
+        },
+        teamStrength: 0,
+        violations: [],
+      },
+    ];
+    const config = gameConfigFactory.build({
+      fieldSize: 2,
+      periods: 2,
+      rotationsPerPeriod: 2,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: false,
+      goalieRestAfterPeriod: true,
+    });
+    const schedule = buildSchedule(rotations, [p1, p2, p3]);
+
+    const violations = validateSchedule(schedule, config, [p1, p2, p3]);
+
+    const restViolations = violations.filter((v) => v.includes('must rest'));
+    expect(restViolations).toHaveLength(0);
+  });
 });
 
 describe('validateRosterForGame', () => {

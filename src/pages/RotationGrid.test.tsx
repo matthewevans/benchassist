@@ -223,6 +223,14 @@ describe('RotationGrid', () => {
       expect(screen.getByText('Variance')).toBeInTheDocument();
     });
 
+    it('flags high play-percentage outliers in the grid', () => {
+      const { state, game } = buildTestState();
+      const { container } = renderGrid(state, game.id);
+
+      const highDeviationFlags = container.querySelectorAll('[data-play-status="high-deviation"]');
+      expect(highDeviationFlags.length).toBeGreaterThan(0);
+    });
+
     it('dispatches UPDATE_GAME to start the game', async () => {
       const { state, game } = buildTestState();
       const { dispatch } = renderGrid(state, game.id);
@@ -256,6 +264,42 @@ describe('RotationGrid', () => {
       expect(screen.getByText(/saved without rotations/i)).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: /generate rotations/i }));
       expect(mockSolver.solve).toHaveBeenCalled();
+    });
+
+    it('opens period division sheet and applies a split', async () => {
+      const { state, game } = buildTestState();
+      const { dispatch } = renderGrid(state, game.id);
+
+      await userEvent.click(screen.getByRole('button', { name: /period 1 actions/i }));
+      expect(screen.getByText(/Period 1 Division/)).toBeInTheDocument();
+
+      await userEvent.click(screen.getByText('3 rotations'));
+
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'UPDATE_GAME',
+          payload: expect.objectContaining({ periodDivisions: [3, 2] }),
+        }),
+      );
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'SET_GAME_SCHEDULE',
+          payload: expect.objectContaining({
+            schedule: expect.objectContaining({
+              rotations: expect.any(Array),
+            }),
+          }),
+        }),
+      );
+    });
+
+    it('marks unavailable merge options when period rotations conflict', async () => {
+      const { state, game } = buildTestState();
+      renderGrid(state, game.id);
+
+      await userEvent.click(screen.getByRole('button', { name: /period 1 actions/i }));
+      expect(screen.getByText('1 rotation')).toBeInTheDocument();
+      expect(screen.getByText('Unavailable')).toBeInTheDocument();
     });
   });
 
@@ -299,6 +343,58 @@ describe('RotationGrid', () => {
       const { state, game } = buildLiveState();
       renderGrid(state, game.id);
       expect(screen.getByRole('button', { name: /previous rotation/i })).toBeInTheDocument();
+    });
+
+    it('focus view and bottom bar follow custom period divisions in schedule', () => {
+      const { state, game } = buildLiveState();
+      const customRotations = game.schedule!.rotations.map((rotation, idx) => ({
+        ...rotation,
+        periodIndex: idx === 0 ? 0 : 1,
+      }));
+      const customGame: Game = {
+        ...game,
+        periodDivisions: [1, 3],
+        currentRotationIndex: 1,
+        schedule: {
+          ...game.schedule!,
+          rotations: customRotations,
+        },
+      };
+      const customState: AppState = {
+        ...state,
+        games: { [game.id]: customGame },
+      };
+
+      renderGrid(customState, game.id);
+
+      expect(screen.getByText('Rotation 2')).toBeInTheDocument();
+      expect(screen.getByText('Rotation 3')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^next$/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /next period/i })).not.toBeInTheDocument();
+    });
+
+    it('shows Next Period when custom divisions cross a period boundary', () => {
+      const { state, game } = buildLiveState();
+      const customRotations = game.schedule!.rotations.map((rotation, idx) => ({
+        ...rotation,
+        periodIndex: idx === 0 ? 0 : 1,
+      }));
+      const customGame: Game = {
+        ...game,
+        periodDivisions: [1, 3],
+        currentRotationIndex: 0,
+        schedule: {
+          ...game.schedule!,
+          rotations: customRotations,
+        },
+      };
+      const customState: AppState = {
+        ...state,
+        games: { [game.id]: customGame },
+      };
+
+      renderGrid(customState, game.id);
+      expect(screen.getByRole('button', { name: /next period/i })).toBeInTheDocument();
     });
   });
 
@@ -447,6 +543,25 @@ describe('RotationGrid', () => {
 
       await userEvent.click(screen.getByRole('button', { name: 'Just This Rotation' }));
       expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_GAME_SCHEDULE' }));
+    });
+
+    it('disables period actions for periods that already started', async () => {
+      const { state, game } = buildLiveState();
+      const startedState: AppState = {
+        ...state,
+        games: {
+          [game.id]: {
+            ...game,
+            currentRotationIndex: 1, // already in period 1
+          },
+        },
+      };
+
+      renderGrid(startedState, game.id);
+      await userEvent.click(screen.getByRole('tab', { name: 'Grid' }));
+
+      expect(screen.getByRole('button', { name: /period 1 actions/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /period 2 actions/i })).not.toBeDisabled();
     });
   });
 

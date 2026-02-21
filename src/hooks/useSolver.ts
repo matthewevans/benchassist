@@ -16,6 +16,7 @@ export interface SolverInput {
   absentPlayerIds: string[];
   goalieAssignments: GoalieAssignment[];
   manualOverrides: ManualOverride[];
+  periodDivisions?: number[];
   startFromRotation?: number;
   existingRotations?: Rotation[];
 }
