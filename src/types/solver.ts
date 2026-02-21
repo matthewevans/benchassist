@@ -20,6 +20,7 @@ export type SolverRequest =
         periodDivisions?: number[]; // per-period rotation counts (defaults from config)
         startFromRotation?: number; // for mid-game re-solve
         existingRotations?: Rotation[]; // played rotations to preserve
+        allowConstraintRelaxation?: boolean; // for live regenerate fallback behavior
       };
     }
   | {

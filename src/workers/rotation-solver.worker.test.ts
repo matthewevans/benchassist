@@ -1,6 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { mergeSchedules, buildMidGameSolveWindow } from './rotation-solver.worker.ts';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  mergeSchedules,
+  buildMidGameSolveWindow,
+  buildMidGameMinPlayInputs,
+} from './rotation-solver.worker.ts';
+import { exhaustiveSearch } from './solver/exhaustive.ts';
 import { RotationAssignment } from '@/types/domain.ts';
+import type { SolverResponse } from '@/types/solver.ts';
 import {
   playerFactory,
   gameConfigFactory,
@@ -306,5 +312,289 @@ describe('buildMidGameSolveWindow', () => {
     });
 
     expect(window).toBeNull();
+  });
+
+  it('pins the first remaining period goalie to the existing live schedule when auto-assigned', () => {
+    const p1 = playerFactory.build({ name: 'A', canPlayGoalie: true });
+    const p2 = playerFactory.build({ name: 'B', canPlayGoalie: true });
+    const p3 = playerFactory.build({ name: 'C', canPlayGoalie: false });
+    const p4 = playerFactory.build({ name: 'D', canPlayGoalie: false });
+    const p5 = playerFactory.build({ name: 'E', canPlayGoalie: false });
+    const p6 = playerFactory.build({ name: 'F', canPlayGoalie: false });
+
+    const config = gameConfigFactory.build({
+      periods: 4,
+      rotationsPerPeriod: 1,
+      fieldSize: 4,
+      useGoalie: true,
+      goaliePlayFullPeriod: true,
+      goalieRestAfterPeriod: true,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: false,
+    });
+
+    const existingRotations = [
+      buildRotation(0, {
+        [p1.id]: RotationAssignment.Field,
+        [p2.id]: RotationAssignment.Goalie,
+        [p3.id]: RotationAssignment.Field,
+        [p4.id]: RotationAssignment.Field,
+        [p5.id]: RotationAssignment.Bench,
+        [p6.id]: RotationAssignment.Bench,
+      }),
+      buildRotation(1, {
+        [p1.id]: RotationAssignment.Goalie,
+        [p2.id]: RotationAssignment.Field,
+        [p3.id]: RotationAssignment.Bench,
+        [p4.id]: RotationAssignment.Field,
+        [p5.id]: RotationAssignment.Field,
+        [p6.id]: RotationAssignment.Bench,
+      }),
+      buildRotation(2, {
+        [p1.id]: RotationAssignment.Field,
+        [p2.id]: RotationAssignment.Goalie,
+        [p3.id]: RotationAssignment.Bench,
+        [p4.id]: RotationAssignment.Field,
+        [p5.id]: RotationAssignment.Bench,
+        [p6.id]: RotationAssignment.Field,
+      }),
+      buildRotation(3, {
+        [p1.id]: RotationAssignment.Goalie,
+        [p2.id]: RotationAssignment.Field,
+        [p3.id]: RotationAssignment.Field,
+        [p4.id]: RotationAssignment.Bench,
+        [p5.id]: RotationAssignment.Field,
+        [p6.id]: RotationAssignment.Bench,
+      }),
+      buildRotation(4, {
+        [p1.id]: RotationAssignment.Goalie,
+        [p2.id]: RotationAssignment.Field,
+        [p3.id]: RotationAssignment.Bench,
+        [p4.id]: RotationAssignment.Bench,
+        [p5.id]: RotationAssignment.Field,
+        [p6.id]: RotationAssignment.Field,
+      }),
+      buildRotation(5, {
+        [p1.id]: RotationAssignment.Goalie,
+        [p2.id]: RotationAssignment.Field,
+        [p3.id]: RotationAssignment.Field,
+        [p4.id]: RotationAssignment.Bench,
+        [p5.id]: RotationAssignment.Bench,
+        [p6.id]: RotationAssignment.Field,
+      }),
+      buildRotation(6, {
+        [p1.id]: RotationAssignment.Goalie,
+        [p2.id]: RotationAssignment.Field,
+        [p3.id]: RotationAssignment.Field,
+        [p4.id]: RotationAssignment.Bench,
+        [p5.id]: RotationAssignment.Field,
+        [p6.id]: RotationAssignment.Bench,
+      }),
+    ];
+    existingRotations[0].periodIndex = 0;
+    existingRotations[1].periodIndex = 1;
+    existingRotations[2].periodIndex = 2;
+    existingRotations[3].periodIndex = 3;
+    existingRotations[4].periodIndex = 3;
+    existingRotations[5].periodIndex = 3;
+    existingRotations[6].periodIndex = 3;
+
+    const window = buildMidGameSolveWindow({
+      config,
+      periodDivisions: [1, 1, 1, 4],
+      goalieAssignments: [],
+      manualOverrides: [],
+      startFromRotation: 2,
+      existingRotations,
+      players: [p1, p2, p3, p4, p5, p6],
+    });
+
+    expect(window).not.toBeNull();
+    expect(window?.goalieAssignments).toEqual(
+      expect.arrayContaining([{ periodIndex: 0, playerId: p2.id }]),
+    );
+
+    const schedule = exhaustiveSearch({
+      players: [p1, p2, p3, p4, p5, p6],
+      config: window!.config,
+      goalieAssignments: window!.goalieAssignments,
+      manualOverrides: window!.manualOverrides,
+      periodDivisions: window!.periodDivisions,
+      totalRotations: 5,
+      benchSlotsPerRotation: 2,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    expect(schedule.rotations).toHaveLength(5);
+  });
+});
+
+describe('buildMidGameMinPlayInputs', () => {
+  it('keeps mid-game regenerate feasible when future period divisions increase', () => {
+    const players = [
+      playerFactory.build({ name: 'A', canPlayGoalie: false }),
+      playerFactory.build({ name: 'B', canPlayGoalie: false }),
+      playerFactory.build({ name: 'C', canPlayGoalie: false }),
+      playerFactory.build({ name: 'D', canPlayGoalie: false }),
+      playerFactory.build({ name: 'E', canPlayGoalie: false }),
+      playerFactory.build({ name: 'F', canPlayGoalie: false }),
+    ];
+
+    const config = gameConfigFactory.build({
+      periods: 4,
+      rotationsPerPeriod: 1,
+      fieldSize: 4,
+      useGoalie: false,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: true,
+      minPlayPercentage: 75,
+      skillBalance: false,
+    });
+
+    const periodDivisions = [1, 1, 1, 4];
+    const existingRotations = [
+      buildRotation(0, {
+        [players[0].id]: RotationAssignment.Field,
+        [players[1].id]: RotationAssignment.Field,
+        [players[2].id]: RotationAssignment.Field,
+        [players[3].id]: RotationAssignment.Field,
+        [players[4].id]: RotationAssignment.Bench,
+        [players[5].id]: RotationAssignment.Bench,
+      }),
+      buildRotation(1, {
+        [players[0].id]: RotationAssignment.Field,
+        [players[1].id]: RotationAssignment.Field,
+        [players[2].id]: RotationAssignment.Field,
+        [players[3].id]: RotationAssignment.Field,
+        [players[4].id]: RotationAssignment.Bench,
+        [players[5].id]: RotationAssignment.Bench,
+      }),
+    ];
+
+    const minPlayInputs = buildMidGameMinPlayInputs({
+      config,
+      players,
+      periodDivisions,
+      startFromRotation: 2,
+      existingRotations,
+    });
+
+    expect(minPlayInputs.rotationWeights).toEqual([1, 0.25, 0.25, 0.25, 0.25]);
+    expect(minPlayInputs.maxBenchWeightByPlayer[players[0].id]).toBeCloseTo(1, 6);
+    expect(minPlayInputs.maxBenchWeightByPlayer[players[4].id]).toBe(0);
+
+    const schedule = exhaustiveSearch({
+      players,
+      config: { ...config, periods: 2 },
+      goalieAssignments: [],
+      manualOverrides: [],
+      periodDivisions: [1, 4],
+      rotationWeights: minPlayInputs.rotationWeights,
+      maxBenchWeightByPlayer: minPlayInputs.maxBenchWeightByPlayer,
+      totalRotations: 5,
+      benchSlotsPerRotation: 2,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    expect(schedule.rotations).toHaveLength(5);
+  });
+});
+
+describe('worker solver fallback', () => {
+  it('retries with min-play relaxed when live regenerate allows constraint relaxation', () => {
+    const players = [
+      playerFactory.build({ name: 'A', canPlayGoalie: false }),
+      playerFactory.build({ name: 'B', canPlayGoalie: false }),
+      playerFactory.build({ name: 'C', canPlayGoalie: false }),
+    ];
+    const config = gameConfigFactory.build({
+      periods: 1,
+      rotationsPerPeriod: 2,
+      fieldSize: 2,
+      useGoalie: false,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: true,
+      minPlayPercentage: 80,
+      skillBalance: false,
+    });
+
+    const posted: SolverResponse[] = [];
+    const originalPostMessage = self.postMessage;
+    const mockPostMessage = vi.fn((message: SolverResponse) => {
+      posted.push(message);
+    });
+    self.postMessage = mockPostMessage as typeof self.postMessage;
+
+    try {
+      (self.onmessage as ((event: MessageEvent) => void) | null)?.({
+        data: {
+          type: 'SOLVE',
+          payload: {
+            requestId: 'req-relax',
+            players,
+            config,
+            absentPlayerIds: [],
+            goalieAssignments: [],
+            manualOverrides: [],
+            periodDivisions: [2],
+            allowConstraintRelaxation: true,
+          },
+        },
+      } as MessageEvent);
+    } finally {
+      self.postMessage = originalPostMessage;
+    }
+
+    expect(posted.some((message) => message.type === 'SUCCESS')).toBe(true);
+    expect(posted.some((message) => message.type === 'ERROR')).toBe(false);
+  });
+
+  it('returns an error without relaxation when min-play constraints are infeasible', () => {
+    const players = [
+      playerFactory.build({ name: 'A', canPlayGoalie: false }),
+      playerFactory.build({ name: 'B', canPlayGoalie: false }),
+      playerFactory.build({ name: 'C', canPlayGoalie: false }),
+    ];
+    const config = gameConfigFactory.build({
+      periods: 1,
+      rotationsPerPeriod: 2,
+      fieldSize: 2,
+      useGoalie: false,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: true,
+      minPlayPercentage: 80,
+      skillBalance: false,
+    });
+
+    const posted: SolverResponse[] = [];
+    const originalPostMessage = self.postMessage;
+    const mockPostMessage = vi.fn((message: SolverResponse) => {
+      posted.push(message);
+    });
+    self.postMessage = mockPostMessage as typeof self.postMessage;
+
+    try {
+      (self.onmessage as ((event: MessageEvent) => void) | null)?.({
+        data: {
+          type: 'SOLVE',
+          payload: {
+            requestId: 'req-no-relax',
+            players,
+            config,
+            absentPlayerIds: [],
+            goalieAssignments: [],
+            manualOverrides: [],
+            periodDivisions: [2],
+            allowConstraintRelaxation: false,
+          },
+        },
+      } as MessageEvent);
+    } finally {
+      self.postMessage = originalPostMessage;
+    }
+
+    expect(posted.some((message) => message.type === 'ERROR')).toBe(true);
   });
 });

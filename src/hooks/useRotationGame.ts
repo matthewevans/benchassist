@@ -321,6 +321,7 @@ export function useRotationGame(gameId: string | undefined) {
           periodDivisions,
           startFromRotation: game.currentRotationIndex,
           existingRotations: schedule.rotations,
+          allowConstraintRelaxation: true,
         },
         'preview-regenerate',
       );

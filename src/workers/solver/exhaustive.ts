@@ -160,7 +160,8 @@ function findFallbackFeasibleBenchSets(params: {
   maxConsecutive: number;
   enforceMinPlayTime: boolean;
   rotationWeights: number[];
-  maxBenchWeight: number;
+  defaultMaxBenchWeight: number;
+  maxBenchWeightByPlayer?: Record<string, number>;
   cancellation: { cancelled: boolean };
   onProgress: (percentage: number, message: string) => void;
 }): { orderedPlayers: Player[]; benchSets: BenchPattern[] } | null {
@@ -171,7 +172,8 @@ function findFallbackFeasibleBenchSets(params: {
     maxConsecutive,
     enforceMinPlayTime,
     rotationWeights,
-    maxBenchWeight,
+    defaultMaxBenchWeight,
+    maxBenchWeightByPlayer,
     cancellation,
     onProgress,
   } = params;
@@ -185,7 +187,7 @@ function findFallbackFeasibleBenchSets(params: {
         maxConsecutive,
         enforceMinPlayTime,
         rotationWeights,
-        maxBenchWeight,
+        maxBenchWeight: maxBenchWeightByPlayer?.[constraints.player.id] ?? defaultMaxBenchWeight,
       }),
     }))
     .sort((a, b) => a.patterns.length - b.patterns.length);
@@ -279,16 +281,19 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     config.rotationsPerPeriod,
   );
   const periodOffsets = getPeriodOffsets(normalizedPeriodDivisions);
-  const rotationWeights = normalizedPeriodDivisions.flatMap((division) =>
+  const defaultRotationWeights = normalizedPeriodDivisions.flatMap((division) =>
     Array.from({ length: division }, () => 1 / division),
   );
+  const rotationWeights = ctx.rotationWeights ?? defaultRotationWeights;
 
   if (rotationWeights.length !== totalRotations) {
     throw new Error('Period divisions do not match total rotations.');
   }
 
   const totalRotationWeight = rotationWeights.reduce((sum, weight) => sum + weight, 0);
-  const maxBenchWeight = totalRotationWeight * (1 - config.minPlayPercentage / 100);
+  const defaultMaxBenchWeight = totalRotationWeight * (1 - config.minPlayPercentage / 100);
+  const getPlayerMaxBenchWeight = (playerId: string): number =>
+    ctx.maxBenchWeightByPlayer?.[playerId] ?? defaultMaxBenchWeight;
 
   const goalieMap = new Map<number, string>();
   const forcedBench = new Map<string, Set<number>>();
@@ -428,7 +433,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       mustBench,
       maxConsecutive,
       rotationWeights,
-      config.enforceMinPlayTime ? maxBenchWeight : undefined,
+      config.enforceMinPlayTime ? getPlayerMaxBenchWeight(player.id) : undefined,
     );
 
     while (patterns.length === 0 && targetBenchCount > mustBench.size) {
@@ -440,7 +445,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
         mustBench,
         maxConsecutive,
         rotationWeights,
-        config.enforceMinPlayTime ? maxBenchWeight : undefined,
+        config.enforceMinPlayTime ? getPlayerMaxBenchWeight(player.id) : undefined,
       );
     }
 
@@ -506,7 +511,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
             constraints.mustBench,
             maxConsecutive,
             rotationWeights,
-            config.enforceMinPlayTime ? maxBenchWeight : undefined,
+            config.enforceMinPlayTime ? getPlayerMaxBenchWeight(constraints.player.id) : undefined,
           );
           if (patterns.length > 0) {
             benchCounts.set(constraints.player.id, newCount);
@@ -620,7 +625,8 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       maxConsecutive,
       enforceMinPlayTime: config.enforceMinPlayTime,
       rotationWeights,
-      maxBenchWeight,
+      defaultMaxBenchWeight,
+      maxBenchWeightByPlayer: ctx.maxBenchWeightByPlayer,
       cancellation,
       onProgress: ctx.onProgress,
     });

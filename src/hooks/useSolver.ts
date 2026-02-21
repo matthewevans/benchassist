@@ -19,6 +19,7 @@ export interface SolverInput {
   periodDivisions?: number[];
   startFromRotation?: number;
   existingRotations?: Rotation[];
+  allowConstraintRelaxation?: boolean;
 }
 
 export interface UseSolverReturn {

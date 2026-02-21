@@ -6,6 +6,8 @@ export interface SolverContext {
   goalieAssignments: GoalieAssignment[];
   manualOverrides: ManualOverride[];
   periodDivisions?: number[];
+  rotationWeights?: number[];
+  maxBenchWeightByPlayer?: Record<string, number>;
   totalRotations: number;
   benchSlotsPerRotation: number;
   onProgress: (percentage: number, message: string) => void;
