@@ -210,7 +210,11 @@ export function GameSetup() {
     if (solver.result) {
       dispatch({
         type: 'SET_GAME_SCHEDULE',
-        payload: { gameId, schedule: solver.result },
+        payload: {
+          gameId,
+          schedule: solver.result,
+          optimizationSuggestion: solver.suggestion,
+        },
       });
       pendingGameIdRef.current = null;
       navigate(`/games/${gameId}/rotations`);
@@ -219,7 +223,7 @@ export function GameSetup() {
     if (solver.error) {
       pendingGameIdRef.current = null;
     }
-  }, [solver.result, solver.error, dispatch, navigate]);
+  }, [solver.result, solver.suggestion, solver.error, dispatch, navigate]);
 
   return (
     <div>

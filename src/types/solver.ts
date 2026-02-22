@@ -6,6 +6,7 @@ import type {
   Rotation,
   RotationSchedule,
 } from './domain.ts';
+import type { OptimizationSuggestion } from '@/utils/divisionOptimizer.ts';
 
 export type SolverRequest =
   | {
@@ -21,6 +22,7 @@ export type SolverRequest =
         startFromRotation?: number; // for mid-game re-solve
         existingRotations?: Rotation[]; // played rotations to preserve
         allowConstraintRelaxation?: boolean; // for live regenerate fallback behavior
+        skipOptimizationCheck?: boolean; // skip post-solve optimization detection
       };
     }
   | {
@@ -42,6 +44,7 @@ export type SolverResponse =
       payload: {
         requestId: string;
         schedule: RotationSchedule;
+        optimizationSuggestion?: OptimizationSuggestion;
       };
     }
   | {

@@ -59,7 +59,16 @@ export type AppAction =
   | { type: 'CREATE_GAME'; payload: Game }
   | { type: 'UPDATE_GAME'; payload: Game }
   | { type: 'DELETE_GAME'; payload: GameId }
-  | { type: 'SET_GAME_SCHEDULE'; payload: { gameId: GameId; schedule: RotationSchedule } }
+  | {
+      type: 'SET_GAME_SCHEDULE';
+      payload: {
+        gameId: GameId;
+        schedule: RotationSchedule;
+        optimizationSuggestion?:
+          | import('@/utils/divisionOptimizer.ts').OptimizationSuggestion
+          | null;
+      };
+    }
   | { type: 'ADVANCE_ROTATION'; payload: GameId }
   | { type: 'RETREAT_ROTATION'; payload: GameId }
   | { type: 'REMOVE_PLAYER_FROM_GAME'; payload: { gameId: GameId; playerId: PlayerId } }
@@ -69,6 +78,16 @@ export type AppAction =
   | { type: 'RESET_PERIOD_TIMER'; payload: { gameId: GameId } }
   // Favorites
   | { type: 'TOGGLE_FAVORITE_DRILL'; payload: string }
+  // Optimization
+  | {
+      type: 'APPLY_OPTIMIZED_SCHEDULE';
+      payload: {
+        gameId: GameId;
+        schedule: RotationSchedule;
+        periodDivisions: number[];
+        clearFutureOverridesFrom?: number;
+      };
+    }
   // Team birth year
   | { type: 'SET_TEAM_BIRTH_YEAR'; payload: { teamId: TeamId; birthYear: number | null } };
 
@@ -228,6 +247,10 @@ export function applyAction(draft: AppState, action: AppAction): void {
     case 'SET_GAME_SCHEDULE':
       if (draft.games[action.payload.gameId]) {
         draft.games[action.payload.gameId].schedule = action.payload.schedule;
+        if ('optimizationSuggestion' in action.payload) {
+          draft.games[action.payload.gameId].optimizationSuggestion =
+            action.payload.optimizationSuggestion ?? null;
+        }
       }
       break;
 
@@ -294,6 +317,21 @@ export function applyAction(draft: AppState, action: AppAction): void {
         draft.favoriteDrillIds.splice(idx, 1);
       } else {
         draft.favoriteDrillIds.push(action.payload);
+      }
+      break;
+    }
+
+    case 'APPLY_OPTIMIZED_SCHEDULE': {
+      const game = draft.games[action.payload.gameId];
+      if (game) {
+        game.schedule = action.payload.schedule;
+        game.periodDivisions = action.payload.periodDivisions;
+        game.optimizationSuggestion = null;
+        if (action.payload.clearFutureOverridesFrom != null) {
+          game.manualOverrides = game.manualOverrides.filter(
+            (o) => o.rotationIndex < action.payload.clearFutureOverridesFrom!,
+          );
+        }
       }
       break;
     }

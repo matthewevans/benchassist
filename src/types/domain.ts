@@ -227,6 +227,7 @@ export interface Game {
 
   schedule: RotationSchedule | null;
   periodDivisions: number[]; // per-period rotation counts (defaults from config)
+  optimizationSuggestion?: import('@/utils/divisionOptimizer.ts').OptimizationSuggestion | null;
 
   currentRotationIndex: number;
   removedPlayerIds: PlayerId[];

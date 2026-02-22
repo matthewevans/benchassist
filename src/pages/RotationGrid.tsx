@@ -16,6 +16,7 @@ import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { PeriodDivisionSheet } from '@/components/game/PeriodDivisionSheet.tsx';
 import { RegeneratePreviewSheet } from '@/components/game/RegeneratePreviewSheet.tsx';
+import { PlaytimeOptimizeBanner } from '@/components/game/PlaytimeOptimizeBanner.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
@@ -289,6 +290,18 @@ export function RotationGrid() {
         {!g.isLive && !g.isCompleted && g.schedule && (
           <div className="max-w-4xl mx-auto px-4">
             <OverallStatsCards stats={g.schedule.overallStats} />
+          </div>
+        )}
+
+        {/* Playtime optimization banner */}
+        {g.schedule && !g.isCompleted && g.optimizationSuggestion && !g.optimizeBannerDismissed && (
+          <div className="max-w-4xl mx-auto px-4">
+            <PlaytimeOptimizeBanner
+              suggestion={g.optimizationSuggestion}
+              onOptimize={g.handleOptimizeDivisions}
+              onDismiss={() => g.setOptimizeBannerDismissed(true)}
+              isRunning={g.solver.isRunning}
+            />
           </div>
         )}
 

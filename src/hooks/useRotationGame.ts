@@ -61,6 +61,21 @@ export function useRotationGame(gameId: string | undefined) {
     useState<LiveRegenerateLockPolicy>('off');
   const [liveRegeneratePolicySheetOpen, setLiveRegeneratePolicySheetOpen] = useState(false);
 
+  // --- Optimization state ---
+  const [pendingOptimizeDivisions, setPendingOptimizeDivisions] = useState<number[] | null>(null);
+  // Track which generatedAt the banner was dismissed for — auto-resets on new schedule
+  const [dismissedForGeneratedAt, setDismissedForGeneratedAt] = useState<number | null>(null);
+  const optimizeBannerDismissed = dismissedForGeneratedAt === schedule?.generatedAt;
+  const setOptimizeBannerDismissed = (dismissed: boolean) => {
+    setDismissedForGeneratedAt(dismissed ? (schedule?.generatedAt ?? null) : null);
+  };
+
+  // Read from persisted game state (survives navigation), with solver as live override
+  const optimizationSuggestion =
+    solverResultBehavior === 'apply'
+      ? (solver.suggestion ?? game?.optimizationSuggestion ?? null)
+      : null;
+
   // --- Derived data ---
   const periodGroups = useMemo(() => {
     if (!schedule) return [];
@@ -141,15 +156,19 @@ export function useRotationGame(gameId: string | undefined) {
 
   // --- Solver result effect ---
   const solverResult = solver.result;
+  const solverSuggestion = solver.suggestion;
   const solverReset = solver.reset;
   useEffect(() => {
     if (solverResult && gameId) {
       if (solverResultBehavior === 'apply') {
-        dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: solverResult } });
+        dispatch({
+          type: 'SET_GAME_SCHEDULE',
+          payload: { gameId, schedule: solverResult, optimizationSuggestion: solverSuggestion },
+        });
         solverReset();
       }
     }
-  }, [solverResult, gameId, dispatch, solverReset, solverResultBehavior]);
+  }, [solverResult, solverSuggestion, gameId, dispatch, solverReset, solverResultBehavior]);
 
   function runSolve(input: SolverInput, behavior: 'apply' | 'preview-regenerate' = 'apply') {
     setSolverResultBehavior(behavior);
@@ -369,9 +388,62 @@ export function useRotationGame(gameId: string | undefined) {
     handleRegenerate(policy);
   }
 
+  function handleOptimizeDivisions() {
+    if (!roster || !config || !game || !schedule || !optimizationSuggestion) return;
+    const suggestedDivisions = optimizationSuggestion.suggestedDivisions;
+    setPendingOptimizeDivisions(suggestedDivisions);
+    setRegeneratePreviewBase(schedule);
+
+    if (isLive) {
+      runSolve(
+        {
+          players: activePlayers,
+          config,
+          absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
+          goalieAssignments: game.goalieAssignments,
+          manualOverrides: [],
+          periodDivisions: suggestedDivisions,
+          startFromRotation: game.currentRotationIndex,
+          existingRotations: schedule.rotations,
+          skipOptimizationCheck: true,
+        },
+        'preview-regenerate',
+      );
+    } else {
+      runSolve(
+        {
+          players: activePlayers,
+          config,
+          absentPlayerIds: game.absentPlayerIds,
+          goalieAssignments: game.goalieAssignments,
+          manualOverrides: [],
+          periodDivisions: suggestedDivisions,
+          skipOptimizationCheck: true,
+        },
+        'preview-regenerate',
+      );
+    }
+  }
+
   function handleApplyRegeneratePreview() {
     if (!gameId || !regeneratePreview) return;
-    dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: regeneratePreview } });
+
+    if (pendingOptimizeDivisions) {
+      // Atomic apply: schedule + periodDivisions + clear future overrides
+      dispatch({
+        type: 'APPLY_OPTIMIZED_SCHEDULE',
+        payload: {
+          gameId,
+          schedule: regeneratePreview,
+          periodDivisions: pendingOptimizeDivisions,
+          clearFutureOverridesFrom: isLive ? currentRotationIndex : 0,
+        },
+      });
+      setPendingOptimizeDivisions(null);
+    } else {
+      dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: regeneratePreview } });
+    }
+
     setSolverResultBehavior('apply');
     solverReset();
     setRegeneratePreviewBase(null);
@@ -381,6 +453,7 @@ export function useRotationGame(gameId: string | undefined) {
     setSolverResultBehavior('apply');
     solverReset();
     setRegeneratePreviewBase(null);
+    setPendingOptimizeDivisions(null);
   }
 
   function handleRegenerateWithSettings(
@@ -469,6 +542,10 @@ export function useRotationGame(gameId: string | undefined) {
     solver,
     regeneratePreview,
     regeneratePreviewBase,
+    // Optimization
+    optimizationSuggestion,
+    optimizeBannerDismissed,
+    setOptimizeBannerDismissed,
     // Swap state
     swapSource,
     pendingSwap,
@@ -508,5 +585,6 @@ export function useRotationGame(gameId: string | undefined) {
     handleRegenerateWithSettings,
     handleApplyRegeneratePreview,
     handleDismissRegeneratePreview,
+    handleOptimizeDivisions,
   };
 }

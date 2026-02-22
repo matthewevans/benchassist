@@ -202,6 +202,11 @@
     "lock_policy_hard_soft": "Hard + Soft Locks",
     "lock_policy_hard_soft_desc": "Apply all direct-entry locks and preferences."
   },
+  "optimize": {
+    "headline": "More Equal Play Time Available",
+    "detail": "Up to {{extraCount}} players at ~{{maxPercent}}% instead of {{currentExtra}} at {{currentMax}}%",
+    "action": "Optimize Rotations"
+  },
   "error": {
     "not_found": "Game or schedule not found",
     "no_schedule": "This game was saved without rotations. Generate rotations to continue.",

@@ -202,6 +202,11 @@
     "lock_policy_hard_soft": "Bloqueos duros y suaves",
     "lock_policy_hard_soft_desc": "Aplica todos los bloqueos y preferencias de captura."
   },
+  "optimize": {
+    "headline": "Tiempo de juego más equitativo",
+    "detail": "Hasta {{extraCount}} jugadores a ~{{maxPercent}}% en vez de {{currentExtra}} a {{currentMax}}%",
+    "action": "Optimizar rotaciones"
+  },
   "error": {
     "not_found": "Partido o rotaciones no encontradas",
     "no_schedule": "Este partido se guardó sin rotaciones. Genera rotaciones para continuar.",

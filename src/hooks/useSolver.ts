@@ -8,6 +8,7 @@ import type {
   Rotation,
   RotationSchedule,
 } from '@/types/domain.ts';
+import type { OptimizationSuggestion } from '@/utils/divisionOptimizer.ts';
 import { generateId } from '@/utils/id.ts';
 
 export interface SolverInput {
@@ -20,6 +21,7 @@ export interface SolverInput {
   startFromRotation?: number;
   existingRotations?: Rotation[];
   allowConstraintRelaxation?: boolean;
+  skipOptimizationCheck?: boolean;
 }
 
 export interface UseSolverReturn {
@@ -29,6 +31,7 @@ export interface UseSolverReturn {
   message: string;
   isRunning: boolean;
   result: RotationSchedule | null;
+  suggestion: OptimizationSuggestion | null;
   error: string | null;
   setError: (error: string) => void;
   reset: () => void;
@@ -42,6 +45,7 @@ export function useSolver(): UseSolverReturn {
   const [message, setMessage] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<RotationSchedule | null>(null);
+  const [suggestion, setSuggestion] = useState<OptimizationSuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const setupWorker = useCallback((): Worker => {
@@ -66,6 +70,7 @@ export function useSolver(): UseSolverReturn {
             setProgress(100);
             setMessage('game:solver.complete');
             setResult(response.payload.schedule);
+            setSuggestion(response.payload.optimizationSuggestion ?? null);
             setIsRunning(false);
             requestIdRef.current = null;
           }
@@ -104,6 +109,7 @@ export function useSolver(): UseSolverReturn {
       setMessage('game:solver.initializing');
       setIsRunning(true);
       setResult(null);
+      setSuggestion(null);
       setError(null);
 
       const msg: SolverRequest = {
@@ -131,9 +137,21 @@ export function useSolver(): UseSolverReturn {
     setProgress(0);
     setMessage('');
     setResult(null);
+    setSuggestion(null);
     setError(null);
     setIsRunning(false);
   }, []);
 
-  return { solve, cancel, progress, message, isRunning, result, error, setError, reset };
+  return {
+    solve,
+    cancel,
+    progress,
+    message,
+    isRunning,
+    result,
+    suggestion,
+    error,
+    setError,
+    reset,
+  };
 }

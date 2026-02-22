@@ -925,7 +925,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   );
 }
 
-function resolveGoalieAssignments(
+export function resolveGoalieAssignments(
   players: Player[],
   periods: number,
   assignments: GoalieAssignment[],
@@ -980,7 +980,7 @@ function resolveGoalieAssignments(
   return result;
 }
 
-function calculateBenchCounts(
+export function calculateBenchCounts(
   players: Player[],
   totalRotations: number,
   benchSlotsPerRotation: number,
@@ -1044,7 +1044,7 @@ function calculateBenchCounts(
   return counts;
 }
 
-function generateBenchPatterns(
+export function generateBenchPatterns(
   totalRotations: number,
   benchCount: number,
   cannotBench: Set<number>,

@@ -9,6 +9,7 @@ import type {
   GameConfig,
 } from '@/types/domain.ts';
 import { exhaustiveSearch } from './solver/exhaustive.ts';
+import { checkOptimizationFeasibility } from './solver/optimizationCheck.ts';
 import {
   calculatePlayerStats,
   computeStrengthStats,
@@ -352,6 +353,7 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           startFromRotation,
           existingRotations,
           allowConstraintRelaxation,
+          skipOptimizationCheck,
         } = request.payload;
 
         const onProgress = (percentage: number, message: string) => {
@@ -493,9 +495,32 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           }
         }
 
+        // Post-solve: check if period division optimization can improve playtime equity
+        let optimizationSuggestion:
+          | import('@/utils/divisionOptimizer.ts').OptimizationSuggestion
+          | undefined;
+        if (!skipOptimizationCheck && schedule.playerStats) {
+          try {
+            const requestedStartFromRotation = Math.max(0, Math.floor(startFromRotation ?? 0));
+            const suggestion = checkOptimizationFeasibility({
+              currentDivisions: basePeriodDivisions,
+              players: activePlayers,
+              config,
+              goalieAssignments,
+              currentPlayerStats: schedule.playerStats,
+              currentRotationIndex:
+                requestedStartFromRotation > 0 ? requestedStartFromRotation : undefined,
+            });
+            if (suggestion) optimizationSuggestion = suggestion;
+          } catch (err) {
+            console.error('[worker] Optimization check error:', err);
+            // Non-critical — don't block the success response
+          }
+        }
+
         const response: SolverResponse = {
           type: 'SUCCESS',
-          payload: { requestId: request.payload.requestId, schedule },
+          payload: { requestId: request.payload.requestId, schedule, optimizationSuggestion },
         };
         self.postMessage(response);
       } catch (error) {

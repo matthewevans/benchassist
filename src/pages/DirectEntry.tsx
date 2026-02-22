@@ -121,7 +121,7 @@ export function DirectEntry() {
     });
     dispatch({
       type: 'SET_GAME_SCHEDULE',
-      payload: { gameId, schedule: solver.result },
+      payload: { gameId, schedule: solver.result, optimizationSuggestion: solver.suggestion },
     });
     pendingOverridesRef.current = null;
     solver.reset();
