@@ -200,7 +200,11 @@ export function TeamManagement() {
             </GroupedListRow>
           ) : (
             team.rosters.map((roster, i) => (
-              <Link key={roster.id} to={`/teams/${teamId}/rosters/${roster.id}`}>
+              <Link
+                key={roster.id}
+                to={`/teams/${teamId}/rosters/${roster.id}`}
+                className="block active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
+              >
                 <GroupedListRow chevron last={i === team.rosters.length - 1}>
                   <div>
                     <div className="text-ios-body font-medium">{roster.name}</div>
@@ -257,10 +261,16 @@ export function TeamManagement() {
 
         {/* Actions */}
         <GroupedList header={t('team.actions')}>
-          <Link to={`/practice?team=${teamId}`}>
+          <Link
+            to={`/practice?team=${teamId}`}
+            className="block active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
+          >
             <GroupedListRow chevron>{t('team.practice_planner')}</GroupedListRow>
           </Link>
-          <Link to={`/games/new?teamId=${teamId}`}>
+          <Link
+            to={`/games/new?teamId=${teamId}`}
+            className="block active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
+          >
             <GroupedListRow chevron>{tGame('history.new_game')}</GroupedListRow>
           </Link>
           <GroupedListRow last onClick={() => setConfirmDeleteTeam(true)}>

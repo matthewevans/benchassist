@@ -52,6 +52,7 @@ export function Settings() {
                 onClick={() => setPreference(option.value)}
                 className={cn(
                   'flex items-center justify-between w-full h-11 px-4 text-ios-body text-left',
+                  'active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors',
                   i < appearanceOptions.length - 1 && 'border-b border-border/50',
                 )}
               >
@@ -74,6 +75,7 @@ export function Settings() {
                 onClick={() => setLocale(loc.code)}
                 className={cn(
                   'flex items-center justify-between w-full h-11 px-4 text-ios-body text-left',
+                  'active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors',
                   i < supportedLocales.length - 1 && 'border-b border-border/50',
                 )}
               >
@@ -92,14 +94,14 @@ export function Settings() {
           <div className="bg-card rounded-[10px] overflow-hidden">
             <button
               onClick={() => setIsExporting(true)}
-              className="flex items-center justify-between w-full h-11 px-4 text-ios-body border-b border-border/50 text-left"
+              className="flex items-center justify-between w-full h-11 px-4 text-ios-body border-b border-border/50 text-left active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
             >
               <span>{t('data.export_backup')}</span>
               <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />
             </button>
             <button
               onClick={() => setIsImporting(true)}
-              className="flex items-center justify-between w-full h-11 px-4 text-ios-body text-left"
+              className="flex items-center justify-between w-full h-11 px-4 text-ios-body text-left active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
             >
               <span>{t('data.import_backup')}</span>
               <ChevronRight className="size-5 text-[#C7C7CC] dark:text-[#48484A]" />

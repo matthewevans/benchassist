@@ -187,9 +187,10 @@ describe('RotationGrid', () => {
   });
 
   describe('setup mode', () => {
-    it('renders game name and back link to Games', () => {
+    it('renders setup nav title, game name, and back link to Games', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
+      expect(screen.getByRole('heading', { name: 'Game' })).toBeInTheDocument();
       expect(screen.getAllByText('Test Match').length).toBeGreaterThanOrEqual(1);
       const backLink = screen.getByRole('link', { name: 'Back to Games' });
       expect(backLink).toHaveAttribute('href', '/games');
@@ -202,7 +203,7 @@ describe('RotationGrid', () => {
       // Regenerate is behind the overflow menu
       await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
       expect(screen.getByRole('button', { name: /regenerate/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /enter coach plan/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /coach plan/i })).toBeInTheDocument();
     });
 
     it('renders all players in the grid', () => {

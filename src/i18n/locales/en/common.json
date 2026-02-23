@@ -25,6 +25,7 @@
     "clear_all": "Clear All"
   },
   "nav": {
+    "game": "Game",
     "teams": "Teams",
     "games": "Games",
     "practice": "Practice",

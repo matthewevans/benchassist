@@ -445,24 +445,28 @@ export function useRotationGame(gameId: string | undefined) {
       return;
     }
 
-    if (pendingOptimizeOption) {
-      dispatch({
-        type: 'APPLY_OPTIMIZED_SCHEDULE',
-        payload: {
-          gameId,
-          schedule: solverResult,
-          periodDivisions: pendingOptimizeOption.periodDivisions,
-          clearFutureOverridesFrom: isLive ? currentRotationIndex : 0,
-        },
-      });
-      setPendingOptimizeOption(null);
-      setFailedOptimizeOptionKeys([]);
-      setOptimizeAttemptError(null);
-    }
+    const timeoutId = setTimeout(() => {
+      if (pendingOptimizeOption) {
+        dispatch({
+          type: 'APPLY_OPTIMIZED_SCHEDULE',
+          payload: {
+            gameId,
+            schedule: solverResult,
+            periodDivisions: pendingOptimizeOption.periodDivisions,
+            clearFutureOverridesFrom: isLive ? currentRotationIndex : 0,
+          },
+        });
+        setPendingOptimizeOption(null);
+        setFailedOptimizeOptionKeys([]);
+        setOptimizeAttemptError(null);
+      }
 
-    setSolverResultBehavior('apply');
-    solverReset();
-    setRegeneratePreviewBase(null);
+      setSolverResultBehavior('apply');
+      solverReset();
+      setRegeneratePreviewBase(null);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
   }, [
     solverResult,
     gameId,

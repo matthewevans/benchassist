@@ -31,7 +31,7 @@
     "need_custom_setup": "¿Necesitas una configuración personalizada? Créala desde los ajustes del equipo.",
     "manage_configs": "Administrar configuraciones",
     "generate_rotations": "Generar rotaciones",
-    "enter_coach_plan": "Capturar plan de entrenadora",
+    "enter_coach_plan": "Abrir plan de entrenadora",
     "generating": "Generando...",
     "summary": "{{players}} jugadores · {{fieldSize}}v{{fieldSize}} · {{rotations}} rotaciones · ~{{bench}} en banca por rotación",
     "roster_count_one": "{{count}} plantilla",
@@ -202,12 +202,13 @@
     "unavailable": "No disponible"
   },
   "direct_entry": {
-    "title": "Captura del plan",
+    "title": "Plan de entrenadora",
     "summary": "Resumen del partido",
     "slot": "Puesto",
-    "setup_only": "La captura directa solo está disponible antes de iniciar el partido.",
+    "setup_only": "El plan de entrenadora solo está disponible antes de iniciar el partido.",
     "autofill_blanks": "Autocompletar espacios",
     "entered_locks": "Bloqueos duros / capturados",
+    "lock_help": "H = bloqueo duro (se mantiene). S = bloqueo suave (el solver puede cambiarlo si hace falta). Toca H/S para alternar.",
     "lock_all": "Bloquear todo",
     "soften_all": "Suavizar todo",
     "clear_rotation": "Limpiar rotación",
@@ -217,13 +218,13 @@
     "lock_state_hard": "Bloqueo duro",
     "lock_state_soft": "Bloqueo suave",
     "live_lock_policy_title": "Política de bloqueos al regenerar",
-    "live_lock_policy_desc": "Elige cómo aplicar los bloqueos de captura en esta regeneración.",
+    "live_lock_policy_desc": "Elige cómo aplicar los bloqueos del plan de entrenadora en esta regeneración.",
     "lock_policy_off": "Bloqueos desactivados",
-    "lock_policy_off_desc": "Ignora bloqueos de captura y maximiza la flexibilidad.",
+    "lock_policy_off_desc": "Ignora los bloqueos del plan de entrenadora y maximiza la flexibilidad.",
     "lock_policy_hard_only": "Solo bloqueos duros",
     "lock_policy_hard_only_desc": "Aplica bloqueos duros e ignora preferencias suaves.",
     "lock_policy_hard_soft": "Bloqueos duros y suaves",
-    "lock_policy_hard_soft_desc": "Aplica todos los bloqueos y preferencias de captura."
+    "lock_policy_hard_soft_desc": "Aplica todos los bloqueos y preferencias del plan de entrenadora."
   },
   "optimize": {
     "headline": "Tiempo de juego más equitativo",
@@ -274,6 +275,7 @@
   },
   "error": {
     "not_found": "Partido o rotaciones no encontradas",
-    "back_to_teams": "Regresar a equipos"
+    "back_to_teams": "Regresar a equipos",
+    "back_to_games": "Regresar a partidos"
   }
 }

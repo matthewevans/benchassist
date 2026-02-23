@@ -221,7 +221,7 @@ export function RotationGrid() {
         />
       ) : (
         <NavBar
-          title={g.game.name}
+          title={tCommon('nav.game')}
           backTo="/games"
           backLabel={tCommon('nav.games')}
           trailing={
@@ -279,6 +279,15 @@ export function RotationGrid() {
       )}
 
       <div className="space-y-6 pt-4">
+        {!g.isLive && !g.isCompleted && g.game.name.trim().length > 0 && (
+          <p
+            className="max-w-4xl mx-auto px-4 text-ios-subheadline text-muted-foreground truncate"
+            title={g.game.name}
+          >
+            {g.game.name}
+          </p>
+        )}
+
         {/* Completed indicator */}
         {g.isCompleted && (
           <p className="max-w-4xl mx-auto text-ios-footnote text-muted-foreground px-4">

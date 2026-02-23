@@ -130,7 +130,11 @@ export function Dashboard() {
             {teams.map((team, i) => {
               const players = getAllPlayers(team);
               return (
-                <Link key={team.id} to={`/teams/${team.id}`}>
+                <Link
+                  key={team.id}
+                  to={`/teams/${team.id}`}
+                  className="block active:bg-[#D1D1D6] dark:active:bg-[#3A3A3C] transition-colors"
+                >
                   <GroupedListRow chevron last={i === teams.length - 1}>
                     <div className="flex items-center gap-3">
                       <span

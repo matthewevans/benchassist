@@ -62,7 +62,9 @@ export function OverallStatsCards({ stats }: OverallStatsCardsProps) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-ios-caption1 text-muted-foreground">{t('schedule.balance_label')}</p>
-            <p className={cn('text-ios-title3 font-semibold', balanceClass)}>{t(`schedule.${balanceKey}`)}</p>
+            <p className={cn('text-ios-title3 font-semibold', balanceClass)}>
+              {t(`schedule.${balanceKey}`)}
+            </p>
             <p className="mt-0.5 text-ios-caption1 text-muted-foreground">
               {t(`schedule.${balanceTipKey}`)}
             </p>
@@ -71,7 +73,7 @@ export function OverallStatsCards({ stats }: OverallStatsCardsProps) {
             type="button"
             variant="plain"
             size="xs"
-            className="h-auto min-h-0 px-0 text-ios-caption1 text-primary"
+            className="px-2 text-ios-caption1 text-primary"
             onClick={() => setShowDetails((prev) => !prev)}
           >
             {showDetails ? t('schedule.hide_details') : t('schedule.show_details')}
@@ -80,12 +82,14 @@ export function OverallStatsCards({ stats }: OverallStatsCardsProps) {
 
         <div className="mt-3 rounded-[10px] bg-muted/40 px-3 py-2">
           <div className="flex items-center gap-1.5">
-            <p className="text-ios-caption1 text-muted-foreground">{t('schedule.strength_range')}</p>
+            <p className="text-ios-caption1 text-muted-foreground">
+              {t('schedule.strength_range')}
+            </p>
             <Popover>
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="rounded-full p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+                  className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground active:bg-accent/60"
                   aria-label={t('schedule.strength_range_help_button')}
                 >
                   <CircleHelpIcon className="size-3.5" />
@@ -117,13 +121,17 @@ export function OverallStatsCards({ stats }: OverallStatsCardsProps) {
         {showDetails && (
           <div className="mt-2 grid grid-cols-2 gap-2">
             <div className="rounded-[10px] bg-muted/40 px-3 py-2">
-              <p className="text-ios-caption1 text-muted-foreground">{t('schedule.avg_strength')}</p>
+              <p className="text-ios-caption1 text-muted-foreground">
+                {t('schedule.avg_strength')}
+              </p>
               <p className="text-ios-subheadline tabular-nums text-foreground">
                 {formatValue(stats.avgStrength)}
               </p>
             </div>
             <div className="rounded-[10px] bg-muted/40 px-3 py-2">
-              <p className="text-ios-caption1 text-muted-foreground">{t('schedule.consistency_label')}</p>
+              <p className="text-ios-caption1 text-muted-foreground">
+                {t('schedule.consistency_label')}
+              </p>
               <p className="text-ios-subheadline tabular-nums text-foreground">
                 {formatValue(stats.strengthVariance)}
               </p>

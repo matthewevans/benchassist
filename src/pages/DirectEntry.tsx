@@ -27,14 +27,6 @@ interface PickerTarget {
   slot: DirectEntrySlot;
 }
 
-function clearSheetInteractionLockArtifacts() {
-  if (typeof document === 'undefined') return;
-  document.body.removeAttribute('data-scroll-locked');
-  if (document.body.style.pointerEvents === 'none') {
-    document.body.style.pointerEvents = '';
-  }
-}
-
 export function DirectEntry() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
@@ -93,17 +85,6 @@ export function DirectEntry() {
   }, [config]);
 
   useEffect(() => {
-    if (pickerTarget != null) return;
-    clearSheetInteractionLockArtifacts();
-    const raf = window.requestAnimationFrame(clearSheetInteractionLockArtifacts);
-    const timeoutId = window.setTimeout(clearSheetInteractionLockArtifacts, 120);
-    return () => {
-      window.cancelAnimationFrame(raf);
-      window.clearTimeout(timeoutId);
-    };
-  }, [pickerTarget]);
-
-  useEffect(() => {
     if (!solver.result || !gameId) return;
     if (processedSolverResultRef.current === solver.result) return;
     processedSolverResultRef.current = solver.result;
@@ -133,7 +114,7 @@ export function DirectEntry() {
       <div className="text-center py-12">
         <p className="text-sm text-muted-foreground">{t('error.not_found')}</p>
         <Link to="/games" className="text-primary underline mt-2 inline-block">
-          {t('error.back_to_teams')}
+          {t('error.back_to_games')}
         </Link>
       </div>
     );
@@ -225,7 +206,6 @@ export function DirectEntry() {
   }
 
   function handleAutofill() {
-    clearSheetInteractionLockArtifacts();
     const compiled = compileDirectEntryOverrides({
       slots,
       totalRotations,
@@ -257,7 +237,11 @@ export function DirectEntry() {
 
   return (
     <div>
-      <NavBar title={t('direct_entry.title')} backTo="/games" backLabel={tCommon('nav.games')} />
+      <NavBar
+        title={t('direct_entry.title')}
+        backTo={`/games/${game.id}/rotations`}
+        backLabel={tCommon('nav.game')}
+      />
 
       <div className="max-w-5xl mx-auto px-4 pt-4 space-y-6">
         <GroupedList header={t('direct_entry.summary')}>
@@ -277,17 +261,6 @@ export function DirectEntry() {
             <div className="flex w-full items-center justify-between gap-3 pr-2">
               <span className="text-ios-body">{t('setup.game_config')}</span>
               <span className="text-ios-subheadline text-muted-foreground">{config.name}</span>
-            </div>
-          </GroupedListRow>
-          <GroupedListRow>
-            <div className="flex w-full items-center justify-between gap-3 pr-2">
-              <span className="text-ios-body">
-                {t('setup.attendance', {
-                  present: activePlayers.length,
-                  total: roster.players.length,
-                })}
-              </span>
-              <span className="text-ios-subheadline text-muted-foreground">{totalRotations}</span>
             </div>
           </GroupedListRow>
           <GroupedListRow last>
@@ -327,6 +300,8 @@ export function DirectEntry() {
             {t('direct_entry.copy_previous_rotation')}
           </Button>
         </div>
+
+        <p className="text-ios-footnote text-muted-foreground">{t('direct_entry.lock_help')}</p>
 
         <DirectEntryMatrix
           slots={slots}

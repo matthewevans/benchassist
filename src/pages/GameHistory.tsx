@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwipeableRow } from '@/components/ui/swipeable-row.tsx';
-import { GAME_STATUS_STYLES } from '@/types/domain.ts';
+import { GAME_STATUS_STYLES, TEAM_GENDER_DOT_COLORS } from '@/types/domain.ts';
 
 export function GameHistory() {
   const { state } = useAppContext();
@@ -80,9 +80,21 @@ export function GameHistory() {
                           }
                         >
                           <div>
-                            <div className="text-ios-body font-medium">{game.name}</div>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <div className="min-w-0 truncate text-ios-body font-medium">
+                                {game.name}
+                              </div>
+                              {team && (
+                                <span className="inline-flex max-w-44 items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-ios-caption2 text-muted-foreground">
+                                  <span
+                                    className={`size-1.5 shrink-0 rounded-full ${TEAM_GENDER_DOT_COLORS[team.gender]}`}
+                                  />
+                                  <span className="truncate">{team.name}</span>
+                                </span>
+                              )}
+                            </div>
                             <div className="text-ios-caption1 text-muted-foreground">
-                              {team?.name} &middot; {new Date(game.createdAt).toLocaleDateString()}
+                              {new Date(game.createdAt).toLocaleDateString()}
                             </div>
                           </div>
                         </GroupedListRow>

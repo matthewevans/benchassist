@@ -25,6 +25,7 @@
     "clear_all": "Limpiar todo"
   },
   "nav": {
+    "game": "Partido",
     "teams": "Equipos",
     "games": "Partidos",
     "practice": "Práctica",

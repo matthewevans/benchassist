@@ -35,7 +35,7 @@ export function PlaytimeOptimizeBanner({
             </p>
             <button
               type="button"
-              className="-mt-0.5 -mr-1 shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
+              className="-mt-0.5 -mr-1 inline-flex min-h-11 min-w-11 items-center justify-center shrink-0 rounded-full text-muted-foreground transition-colors hover:text-foreground active:bg-accent/60"
               onClick={onDismiss}
               aria-label={tCommon('actions.close')}
             >
@@ -55,7 +55,7 @@ export function PlaytimeOptimizeBanner({
 
           <button
             type="button"
-            className="mt-2 flex items-center gap-0.5 text-ios-subheadline font-medium text-primary disabled:opacity-50"
+            className="mt-1 inline-flex min-h-11 items-center gap-0.5 rounded-md pr-2 text-ios-subheadline font-medium text-primary active:bg-accent/60 disabled:opacity-50"
             onClick={onOptimize}
             disabled={isRunning}
           >

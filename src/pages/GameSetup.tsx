@@ -78,6 +78,13 @@ export function GameSetup() {
     };
   }, [selectedRoster, selectedConfig, activePlayers]);
 
+  const navBackTo =
+    preselectedTeamId && state.teams[preselectedTeamId] ? `/teams/${preselectedTeamId}` : '/games';
+  const navBackLabel =
+    preselectedTeamId && state.teams[preselectedTeamId]
+      ? state.teams[preselectedTeamId].name
+      : tCommon('nav.games');
+
   function handleToggleAbsent(playerId: PlayerId) {
     setAbsentPlayerIds((prev) => {
       const next = new Set(prev);
@@ -227,7 +234,7 @@ export function GameSetup() {
 
   return (
     <div>
-      <NavBar title={t('setup.title')} backTo="/games" backLabel={tCommon('nav.games')} />
+      <NavBar title={t('setup.title')} backTo={navBackTo} backLabel={navBackLabel} />
 
       <div className="max-w-4xl mx-auto px-4 space-y-6 pt-4">
         {/* Step 1: Team & Configuration */}
