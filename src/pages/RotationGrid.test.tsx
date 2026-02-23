@@ -269,8 +269,8 @@ describe('RotationGrid', () => {
 
       renderGrid(draftState, game.id);
 
-      expect(screen.getByText(/saved without rotations/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /enter coach plan/i })).toBeInTheDocument();
+      expect(screen.getByText(/no rotations yet/i)).toBeInTheDocument();
+      expect(screen.getByText(/or enter your own plan/i)).toBeInTheDocument();
       await userEvent.click(screen.getByRole('button', { name: /generate rotations/i }));
       expect(mockSolver.solve).toHaveBeenCalled();
     });
@@ -309,6 +309,54 @@ describe('RotationGrid', () => {
       await userEvent.click(screen.getByRole('button', { name: /period 1 actions/i }));
       expect(screen.getByText('1 rotation')).toBeInTheDocument();
       expect(screen.getByText('Unavailable')).toBeInTheDocument();
+    });
+
+    it('opens optimize sheet and previews the selected division option', async () => {
+      const { state, game } = buildTestState();
+      state.games[game.id] = {
+        ...game,
+        optimizationSuggestion: {
+          currentGap: 25,
+          currentMaxPercent: 75,
+          currentMinPercent: 50,
+          currentExtraCount: 2,
+          options: [
+            {
+              periodDivisions: [2, 2],
+              totalRotations: 4,
+              expectedGap: 25,
+              expectedMaxPercent: 75,
+              expectedMinPercent: 50,
+              expectedExtraCount: 2,
+              gapImprovement: 0,
+            },
+            {
+              periodDivisions: [3, 2],
+              totalRotations: 5,
+              expectedGap: 20,
+              expectedMaxPercent: 60,
+              expectedMinPercent: 40,
+              expectedExtraCount: 3,
+              gapImprovement: 5,
+            },
+          ],
+        },
+      };
+
+      renderGrid(state, game.id);
+
+      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      expect(screen.getByText('Split Period 1')).toBeInTheDocument();
+
+      await userEvent.click(screen.getByText('Split Period 1'));
+      await userEvent.click(screen.getByRole('button', { name: /preview option/i }));
+
+      expect(mockSolver.solve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          periodDivisions: [3, 2],
+          skipOptimizationCheck: true,
+        }),
+      );
     });
   });
 
@@ -599,6 +647,59 @@ describe('RotationGrid', () => {
           type: 'SET_GAME_SCHEDULE',
         }),
       );
+    });
+
+    it('highlights changed cells in regenerate preview grid', async () => {
+      const { state, game } = buildLiveState();
+      renderGrid(state, game.id);
+
+      const schedule = game.schedule!;
+      const targetRotationIndex = game.currentRotationIndex;
+      const targetRotation = schedule.rotations[targetRotationIndex];
+      const fieldEntry = Object.entries(targetRotation.assignments).find(
+        ([, assignment]) => assignment === RotationAssignment.Field,
+      );
+      const benchEntry = Object.entries(targetRotation.assignments).find(
+        ([, assignment]) => assignment === RotationAssignment.Bench,
+      );
+      if (!fieldEntry || !benchEntry) throw new Error('Expected both field and bench assignments');
+
+      const [fieldPlayerId] = fieldEntry;
+      const [benchPlayerId] = benchEntry;
+      const changedSchedule = {
+        ...schedule,
+        rotations: schedule.rotations.map((rotation) =>
+          rotation.index === targetRotationIndex
+            ? {
+                ...rotation,
+                assignments: {
+                  ...rotation.assignments,
+                  [fieldPlayerId]: RotationAssignment.Bench,
+                  [benchPlayerId]: RotationAssignment.Field,
+                },
+              }
+            : rotation,
+        ),
+      };
+
+      mockSolver.solve = vi.fn(() => {
+        mockSolver.result = changedSchedule;
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
+
+      const previewDialog = await screen.findByRole('dialog', {
+        name: /review regenerated rotations/i,
+      });
+      expect(
+        within(previewDialog).getByText(/Highlighted cells changed in this preview\./i),
+      ).toBeInTheDocument();
+      expect(previewDialog.querySelectorAll('[data-preview-change="changed"]').length).toBe(2);
     });
 
     it('applies the live regenerate preview when confirmed', async () => {

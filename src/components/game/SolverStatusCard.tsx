@@ -15,6 +15,7 @@ const SOLVER_KEY_MAP: Record<string, string> = {
   'game:solver.calculating_goalie': 'solver.calculating_goalie',
   'game:solver.generating_patterns': 'solver.generating_patterns',
   'game:solver.building_schedule': 'solver.building_schedule',
+  'game:solver.checking_optimizations': 'solver.checking_optimizations',
   'game:solver.complete': 'solver.complete',
   'game:solver.searching': 'solver.searching',
 };
@@ -44,6 +45,7 @@ function useTranslatedMessage(message: string): string {
       | 'solver.calculating_goalie'
       | 'solver.generating_patterns'
       | 'solver.building_schedule'
+      | 'solver.checking_optimizations'
       | 'solver.complete';
     return t(keyPath);
   }

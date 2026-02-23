@@ -1,14 +1,8 @@
-import type {
-  Player,
-  GameConfig,
-  GoalieAssignment,
-  PlayerStats,
-  PlayerId,
-} from '@/types/domain.ts';
-import { resolveGoalieAssignments, generateBenchPatterns } from './exhaustive.ts';
+import type { Player, GameConfig, GoalieAssignment, PlayerStats } from '@/types/domain.ts';
 import {
   generateBalancedDivisionCandidates,
   evaluateDivisionCandidate,
+  getOptimizationOptionKey,
   type OptimizationSuggestion,
 } from '@/utils/divisionOptimizer.ts';
 import {
@@ -34,8 +28,9 @@ export function checkOptimizationFeasibility(params: {
   currentPlayerStats: Record<string, PlayerStats>;
   currentRotationIndex?: number;
 }): OptimizationSuggestion | null {
-  const { currentDivisions, players, config, goalieAssignments, currentPlayerStats } = params;
+  const { currentDivisions, players, config, currentPlayerStats } = params;
   const currentRotationIndex = params.currentRotationIndex ?? 0;
+  const currentTotalRotations = getTotalRotationsFromDivisions(currentDivisions);
 
   const benchSlotsPerRotation = players.length - config.fieldSize;
   if (benchSlotsPerRotation <= 0) return null;
@@ -78,144 +73,58 @@ export function checkOptimizationFeasibility(params: {
   if (candidates.length === 0) return null;
 
   // Evaluate candidates. They arrive in ascending total-rotation order from
-  // the generator, so the first feasible match uses the fewest extra divisions.
+  // the generator, so we preserve that order in the returned option list.
   const evaluated = candidates
     .map((candidate) => ({
       candidate,
       evaluation: evaluateDivisionCandidate(candidate, players.length, config.fieldSize),
+      totalRotations: getTotalRotationsFromDivisions(candidate),
     }))
-    .filter((e) => currentGap - e.evaluation.gap >= MIN_GAP_IMPROVEMENT_PP);
+    .map((entry) => ({
+      ...entry,
+      improvement: Math.round((currentGap - entry.evaluation.gap) * 10) / 10,
+    }))
+    .filter((entry) => entry.improvement >= MIN_GAP_IMPROVEMENT_PP);
 
-  // Check feasibility for each candidate, fewest divisions first
-  for (const { candidate, evaluation } of evaluated) {
-    if (isDivisionFeasible(candidate, players, config, goalieAssignments)) {
+  const options: OptimizationSuggestion['options'] = evaluated.map(
+    ({ candidate, evaluation, totalRotations, improvement }) => {
+      let periodsChanged = 0;
+      for (let i = 0; i < Math.max(candidate.length, currentDivisions.length); i++) {
+        if ((candidate[i] ?? 1) !== (currentDivisions[i] ?? 1)) periodsChanged++;
+      }
+
       return {
-        suggestedDivisions: candidate,
-        currentGap,
-        currentMaxPercent,
-        suggestedGap: evaluation.gap,
-        currentExtraCount,
-        suggestedExtraCount: evaluation.extraPlayerCount,
-        suggestedMaxPercent: evaluation.maxPlayPercent,
-        suggestedMinPercent: evaluation.minPlayPercent,
+        periodDivisions: candidate,
+        totalRotations,
+        addedRotations: Math.max(0, totalRotations - currentTotalRotations),
+        periodsChanged,
+        expectedGap: evaluation.gap,
+        expectedMaxPercent: evaluation.maxPlayPercent,
+        expectedMinPercent: evaluation.minPlayPercent,
+        expectedExtraCount: evaluation.extraPlayerCount,
+        gapImprovement: improvement,
       };
-    }
-  }
+    },
+  );
 
-  return null;
-}
+  if (options.length === 0) return null;
 
-/**
- * Quick feasibility check: verifies that goalie assignments, bench counts,
- * and bench patterns all succeed for the given division config.
- */
-function isDivisionFeasible(
-  candidateDivisions: number[],
-  players: Player[],
-  config: GameConfig,
-  goalieAssignments: GoalieAssignment[],
-): boolean {
-  try {
-    const totalRotations = getTotalRotationsFromDivisions(candidateDivisions);
-    const benchSlotsPerRotation = players.length - config.fieldSize;
-    if (benchSlotsPerRotation <= 0) return true;
+  options.sort((a, b) => {
+    if (a.addedRotations !== b.addedRotations) return a.addedRotations - b.addedRotations;
+    if (a.periodsChanged !== b.periodsChanged) return a.periodsChanged - b.periodsChanged;
+    if (a.totalRotations !== b.totalRotations) return a.totalRotations - b.totalRotations;
+    if (a.expectedGap !== b.expectedGap) return a.expectedGap - b.expectedGap;
+    return getOptimizationOptionKey(a.periodDivisions).localeCompare(
+      getOptimizationOptionKey(b.periodDivisions),
+    );
+  });
 
-    const periodOffsets = getPeriodOffsets(candidateDivisions);
-    const maxConsecutive = config.noConsecutiveBench ? config.maxConsecutiveBench : totalRotations;
-
-    // 1. Check goalie assignments
-    let goaliePerPeriod: string[] = [];
-    if (config.useGoalie) {
-      goaliePerPeriod = resolveGoalieAssignments(
-        players,
-        config.periods,
-        goalieAssignments,
-        new Map<number, Set<PlayerId>>(),
-      );
-
-      // Verify goalie rest is possible
-      if (config.goalieRestAfterPeriod) {
-        for (let period = 0; period < config.periods - 1; period++) {
-          if (goaliePerPeriod[period] === goaliePerPeriod[period + 1]) {
-            return false;
-          }
-        }
-      }
-    }
-
-    // 2. Build goalie map (rotation → playerId)
-    const goalieMap = new Map<number, string>();
-    if (config.useGoalie) {
-      for (let period = 0; period < config.periods; period++) {
-        const goalieId = goaliePerPeriod[period];
-        const periodStart = periodOffsets[period] ?? 0;
-        const periodDivision = candidateDivisions[period] ?? 1;
-        for (let rot = 0; rot < periodDivision; rot++) {
-          const rotIndex = periodStart + rot;
-          if (config.goaliePlayFullPeriod || rot === 0) {
-            goalieMap.set(rotIndex, goalieId);
-          }
-        }
-      }
-    }
-
-    // 3. Build forced bench from goalie rest
-    const forcedBench = new Map<string, Set<number>>();
-    if (config.useGoalie && config.goalieRestAfterPeriod) {
-      for (let period = 0; period < config.periods; period++) {
-        const goalieId = goaliePerPeriod[period];
-        const nextPeriodFirstRot = periodOffsets[period + 1];
-        if (nextPeriodFirstRot != null && nextPeriodFirstRot < totalRotations) {
-          if (!forcedBench.has(goalieId)) forcedBench.set(goalieId, new Set());
-          forcedBench.get(goalieId)!.add(nextPeriodFirstRot);
-        }
-      }
-    }
-
-    // 4. Capacity check: verify a valid bench-count distribution exists.
-    //    For each player compute min required (forced benches) and max feasible
-    //    bench count (largest count with valid patterns given their constraints).
-    //    A distribution exists iff sum(min) <= totalBenchSlots <= sum(max).
-    const totalBenchSlots = totalRotations * benchSlotsPerRotation;
-    let sumMinRequired = 0;
-    let sumMaxFeasible = 0;
-
-    for (const player of players) {
-      const cannotBench = new Set<number>();
-      for (const [rotIndex, goalieId] of goalieMap.entries()) {
-        if (goalieId === player.id) cannotBench.add(rotIndex);
-      }
-
-      const mustBench = new Set<number>();
-      const fb = forcedBench.get(player.id);
-      if (fb) for (const idx of fb) mustBench.add(idx);
-
-      const minRequired = mustBench.size;
-      sumMinRequired += minRequired;
-
-      // Search downward from upper bound for max feasible bench count
-      const upperBound = totalRotations - cannotBench.size;
-      let maxFeasible = 0;
-      for (let count = upperBound; count >= minRequired; count--) {
-        const patterns = generateBenchPatterns(
-          totalRotations,
-          count,
-          cannotBench,
-          mustBench,
-          maxConsecutive,
-        );
-        if (patterns.length > 0) {
-          maxFeasible = count;
-          break;
-        }
-      }
-
-      if (maxFeasible < minRequired) return false;
-      sumMaxFeasible += maxFeasible;
-    }
-
-    return sumMinRequired <= totalBenchSlots && totalBenchSlots <= sumMaxFeasible;
-  } catch {
-    return false;
-  }
+  return {
+    currentGap,
+    currentMaxPercent,
+    currentMinPercent,
+    currentExtraCount,
+    currentTotalRotations,
+    options,
+  };
 }

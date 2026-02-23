@@ -5,6 +5,7 @@
     "generating_patterns": "Generating valid bench patterns...",
     "searching": "Searching {{combinations}} combinations...",
     "building_schedule": "Building schedule...",
+    "checking_optimizations": "Checking optimizations...",
     "complete": "Complete"
   },
   "setup": {
@@ -133,7 +134,12 @@
     "regenerate_preview_players_footer_one": "{{count}} player changed",
     "regenerate_preview_players_footer_other": "{{count}} players changed",
     "regenerate_preview_grid_header": "Grid Preview",
-    "regenerate_preview_apply": "Apply Regenerate"
+    "regenerate_preview_grid_legend": "Highlighted cells changed in this preview.",
+    "regenerate_preview_grid_count": "Changed cells: {{cells}} · Rotations impacted: {{rotations}}",
+    "regenerate_preview_cell_changed": "Changed in preview",
+    "regenerate_preview_cell_changed_aria": "changed in preview",
+    "regenerate_preview_apply": "Apply Regenerate",
+    "reset_rotations": "Reset Rotations"
   },
   "swap": {
     "title": "Swap {{playerA}} and {{playerB}}",
@@ -204,12 +210,36 @@
   },
   "optimize": {
     "headline": "More Equal Play Time Available",
-    "detail": "Up to {{extraCount}} players at ~{{maxPercent}}% instead of {{currentExtra}} at {{currentMax}}%",
-    "action": "Optimize Rotations"
+    "detail_single": "Up to {{extraCount}} players at ~{{maxPercent}}% instead of {{currentExtra}} at {{currentMax}}%",
+    "detail_multi": "{{optionCount}} options available. Up to {{extraCount}} players at ~{{maxPercent}}% instead of {{currentExtra}} at {{currentMax}}%",
+    "action": "Optimize Rotations",
+    "sheet_title": "Optimize Rotations",
+    "sheet_desc": "Choose how much to split periods for the next preview.",
+    "preview_option": "Preview Option",
+    "recommended_title": "Recommended: least change first",
+    "recommended_detail": "Adds {{addedRotations}} rotation(s), changes {{periodsChanged}} period(s), and improves equity by {{improvement}}pp.",
+    "recommended_badge": "Recommended",
+    "current_label": "Current",
+    "preview_label": "Selected Preview",
+    "current_summary": "Gap {{gap}}pp, top at {{maxPercent}}%",
+    "current_summary_compact": "Gap {{gap}}pp | Max {{maxPercent}}%",
+    "preview_summary_compact": "Gap {{gap}}pp | Max {{maxPercent}}%",
+    "current_rotations": "{{count}} rotations",
+    "group_header": "Change {{addedRotations}} rotations",
+    "change_split_one": "Split Period {{period}}",
+    "change_split_multi": "Split Periods {{periods}} & {{last}}",
+    "option_rotations_added": "+{{count}} rotation",
+    "option_rotations_added_other": "+{{count}} rotations",
+    "option_summary": "Gap {{gap}}pp · Max {{maxPercent}}% · Min {{minPercent}}%",
+    "option_failed": "This option failed during preview. Try another option."
+  },
+  "empty": {
+    "title": "No Rotations Yet",
+    "description": "Generate a rotation schedule to balance playing time across your team.",
+    "or_enter_plan": "Or enter your own plan"
   },
   "error": {
     "not_found": "Game or schedule not found",
-    "no_schedule": "This game was saved without rotations. Generate rotations to continue.",
     "back_to_teams": "Back to teams"
   }
 }

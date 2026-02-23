@@ -1,9 +1,21 @@
 import { describe, it, expect, vi } from 'vitest';
+
+// Mock the MIP solver so WASM doesn't need to load in jsdom.
+// Delegates to exhaustiveSearch for deterministic results.
+vi.mock('./solver/mipSolver.ts', async () => {
+  const exhaustive = await import('./solver/exhaustive.ts');
+  return {
+    initHiGHS: vi.fn(() => Promise.resolve()),
+    mipSolve: vi.fn((ctx: unknown) => Promise.resolve(exhaustive.exhaustiveSearch(ctx as never))),
+  };
+});
+
 import {
   mergeSchedules,
   buildMidGameSolveWindow,
   buildMidGameMinPlayInputs,
 } from './rotation-solver.worker.ts';
+import { mipSolve } from './solver/mipSolver.ts';
 import { exhaustiveSearch } from './solver/exhaustive.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { SolverResponse } from '@/types/solver.ts';
@@ -528,7 +540,72 @@ describe('buildMidGameMinPlayInputs', () => {
 });
 
 describe('worker solver fallback', () => {
-  it('retries with no-consecutive-bench relaxed when live regenerate allows relaxation', () => {
+  it('retries after runtime solver crashes when relaxation is enabled', async () => {
+    const players = [
+      playerFactory.build({ name: 'A', canPlayGoalie: false }),
+      playerFactory.build({ name: 'B', canPlayGoalie: false }),
+      playerFactory.build({ name: 'C', canPlayGoalie: false }),
+      playerFactory.build({ name: 'D', canPlayGoalie: false }),
+    ];
+    const config = gameConfigFactory.build({
+      periods: 2,
+      rotationsPerPeriod: 1,
+      fieldSize: 2,
+      useGoalie: false,
+      noConsecutiveBench: true,
+      maxConsecutiveBench: 1,
+      enforceMinPlayTime: false,
+      skillBalance: true,
+    });
+
+    const mipSolveMock = vi.mocked(mipSolve);
+    const defaultImpl = (ctx: unknown) => Promise.resolve(exhaustiveSearch(ctx as never));
+    mipSolveMock.mockImplementation(defaultImpl);
+    mipSolveMock
+      .mockImplementationOnce(() =>
+        Promise.reject(
+          new Error(
+            'No valid rotation schedule found. Solver crashed: function signature mismatch',
+          ),
+        ),
+      )
+      .mockImplementation(defaultImpl);
+
+    const posted: SolverResponse[] = [];
+    const originalPostMessage = self.postMessage;
+    const mockPostMessage = vi.fn((message: SolverResponse) => {
+      posted.push(message);
+    });
+    self.postMessage = mockPostMessage as typeof self.postMessage;
+
+    try {
+      await (self.onmessage as ((event: MessageEvent) => Promise<void>) | null)?.({
+        data: {
+          type: 'SOLVE',
+          payload: {
+            requestId: 'req-runtime-retry',
+            players,
+            config,
+            absentPlayerIds: [],
+            goalieAssignments: [],
+            manualOverrides: [],
+            periodDivisions: [1, 1],
+            allowConstraintRelaxation: true,
+            skipOptimizationCheck: true,
+          },
+        },
+      } as MessageEvent);
+    } finally {
+      self.postMessage = originalPostMessage;
+      mipSolveMock.mockImplementation(defaultImpl);
+    }
+
+    expect(mipSolveMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(posted.some((message) => message.type === 'SUCCESS')).toBe(true);
+    expect(posted.some((message) => message.type === 'ERROR')).toBe(false);
+  });
+
+  it('retries with no-consecutive-bench relaxed when live regenerate allows relaxation', async () => {
     const players = [
       playerFactory.build({ name: 'A', canPlayGoalie: false }),
       playerFactory.build({ name: 'B', canPlayGoalie: false }),
@@ -570,7 +647,7 @@ describe('worker solver fallback', () => {
     self.postMessage = mockPostMessage as typeof self.postMessage;
 
     try {
-      (self.onmessage as ((event: MessageEvent) => void) | null)?.({
+      await (self.onmessage as ((event: MessageEvent) => Promise<void>) | null)?.({
         data: {
           type: 'SOLVE',
           payload: {
@@ -602,7 +679,7 @@ describe('worker solver fallback', () => {
     expect(posted.some((message) => message.type === 'ERROR')).toBe(false);
   });
 
-  it('returns an error without relaxation when min-play constraints are infeasible', () => {
+  it('returns an error without relaxation when min-play constraints are infeasible', async () => {
     const players = [
       playerFactory.build({ name: 'A', canPlayGoalie: false }),
       playerFactory.build({ name: 'B', canPlayGoalie: false }),
@@ -627,7 +704,7 @@ describe('worker solver fallback', () => {
     self.postMessage = mockPostMessage as typeof self.postMessage;
 
     try {
-      (self.onmessage as ((event: MessageEvent) => void) | null)?.({
+      await (self.onmessage as ((event: MessageEvent) => Promise<void>) | null)?.({
         data: {
           type: 'SOLVE',
           payload: {
@@ -649,7 +726,7 @@ describe('worker solver fallback', () => {
     expect(posted.some((message) => message.type === 'ERROR')).toBe(true);
   });
 
-  it('keeps existing schedule when all relaxed attempts are still infeasible', () => {
+  it('keeps existing schedule when all relaxed attempts are still infeasible', async () => {
     const players = [
       playerFactory.build({ name: 'A', canPlayGoalie: false }),
       playerFactory.build({ name: 'B', canPlayGoalie: false }),
@@ -688,7 +765,7 @@ describe('worker solver fallback', () => {
     self.postMessage = mockPostMessage as typeof self.postMessage;
 
     try {
-      (self.onmessage as ((event: MessageEvent) => void) | null)?.({
+      await (self.onmessage as ((event: MessageEvent) => Promise<void>) | null)?.({
         data: {
           type: 'SOLVE',
           payload: {
@@ -719,83 +796,83 @@ describe('worker solver fallback', () => {
     expect(solvedSchedule.rotations[1].assignments).toEqual(existingRotations[1].assignments);
   });
 
-  it('keeps all players at or above 50% in the P4 split regenerate backup scenario', () => {
+  it('keeps all players at or above 50% in the P4 split regenerate backup scenario', async () => {
     const players = [
       playerFactory.build({
         id: '5f1263f5-143a-425f-84bf-0e4be8cd9a7b',
-        name: 'Sloane',
-        skillRanking: 4,
+        name: 'Riley',
+        skillRanking: 5,
         canPlayGoalie: true,
       }),
       playerFactory.build({
         id: 'a8d30cb2-d986-4196-ae69-3ceb6ddfe5a2',
-        name: 'Ella',
-        skillRanking: 4,
-        canPlayGoalie: true,
-      }),
-      playerFactory.build({
-        id: '04c3162c-2241-4c24-9246-0b43fecf39ba',
-        name: 'Averie',
+        name: 'Jordan',
         skillRanking: 3,
         canPlayGoalie: true,
       }),
       playerFactory.build({
+        id: '04c3162c-2241-4c24-9246-0b43fecf39ba',
+        name: 'Casey',
+        skillRanking: 2,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
         id: 'ac16468a-f3d7-49cc-903c-6789d49f757c',
-        name: 'Kendall',
-        skillRanking: 5,
+        name: 'Sky',
+        skillRanking: 4,
         canPlayGoalie: true,
       }),
       playerFactory.build({
         id: '886f7cba-9f1e-4003-9b04-cc2a47b6cc44',
-        name: 'Ava G',
-        skillRanking: 4,
+        name: 'Harper',
+        skillRanking: 1,
         canPlayGoalie: true,
       }),
       playerFactory.build({
         id: '0666d455-94a4-4375-bd90-09031d8f5427',
-        name: 'Evalyn',
-        skillRanking: 4,
+        name: 'Parker',
+        skillRanking: 5,
         canPlayGoalie: true,
       }),
       playerFactory.build({
         id: 'c5a1bdc4-891d-44d7-a227-1db8340aa115',
-        name: 'Holly',
-        skillRanking: 5,
+        name: 'Morgan',
+        skillRanking: 3,
         canPlayGoalie: true,
       }),
       playerFactory.build({
         id: 'd3606e71-c6ab-4eee-810a-d612c07ca523',
-        name: 'Paige',
-        skillRanking: 5,
-        canPlayGoalie: true,
-      }),
-      playerFactory.build({
-        id: '3c58da20-6ac7-4f19-9c0f-e7c80191dd01',
-        name: 'Denver',
-        skillRanking: 5,
-        canPlayGoalie: true,
-      }),
-      playerFactory.build({
-        id: 'e9946de1-9d34-40c8-9c65-e7a7985509cd',
-        name: 'Avee',
-        skillRanking: 2,
-        canPlayGoalie: false,
-      }),
-      playerFactory.build({
-        id: '84381b62-dccb-44a2-9d0f-6f08c592a8d2',
-        name: 'Lu',
+        name: 'Quinn',
         skillRanking: 4,
         canPlayGoalie: true,
       }),
       playerFactory.build({
-        id: '298796f4-4526-4c28-b745-5322f9ba6ffd',
-        name: 'Reagan',
+        id: '3c58da20-6ac7-4f19-9c0f-e7c80191dd01',
+        name: 'Dakota',
+        skillRanking: 2,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: 'e9946de1-9d34-40c8-9c65-e7a7985509cd',
+        name: 'Emery',
         skillRanking: 1,
         canPlayGoalie: false,
       }),
       playerFactory.build({
+        id: '84381b62-dccb-44a2-9d0f-6f08c592a8d2',
+        name: 'Blake',
+        skillRanking: 5,
+        canPlayGoalie: true,
+      }),
+      playerFactory.build({
+        id: '298796f4-4526-4c28-b745-5322f9ba6ffd',
+        name: 'Ariel',
+        skillRanking: 2,
+        canPlayGoalie: false,
+      }),
+      playerFactory.build({
         id: 'e2e924e3-830e-44da-93bb-18f7f8971d4c',
-        name: 'Margot',
+        name: 'Tatum',
         skillRanking: 4,
         canPlayGoalie: true,
       }),
@@ -912,7 +989,7 @@ describe('worker solver fallback', () => {
     self.postMessage = mockPostMessage as typeof self.postMessage;
 
     try {
-      (self.onmessage as ((event: MessageEvent) => void) | null)?.({
+      await (self.onmessage as ((event: MessageEvent) => Promise<void>) | null)?.({
         data: {
           type: 'SOLVE',
           payload: {

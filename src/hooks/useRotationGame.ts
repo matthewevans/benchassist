@@ -4,6 +4,11 @@ import { useSolver, type SolverInput } from '@/hooks/useSolver.ts';
 import { previewSwap, previewSwapRange } from '@/utils/stats.ts';
 import { redivideSchedulePeriod } from '@/utils/rotationDivision.ts';
 import { normalizePeriodDivisions, getPeriodRange } from '@/utils/rotationLayout.ts';
+import {
+  getOptimizationOptionKey,
+  normalizeOptimizationSuggestion,
+  type OptimizationOption,
+} from '@/utils/divisionOptimizer.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { PlayerId, Game, GoalieAssignment, RotationSchedule } from '@/types/domain.ts';
 
@@ -36,6 +41,11 @@ export function useRotationGame(gameId: string | undefined) {
     [game?.periodDivisions, config?.periods, config?.rotationsPerPeriod],
   );
 
+  const divisionsModified = useMemo(() => {
+    if (!config) return false;
+    return periodDivisions.some((d) => d !== config.rotationsPerPeriod);
+  }, [periodDivisions, config]);
+
   // --- Swap state ---
   const [swapSource, setSwapSource] = useState<{
     rotationIndex: number;
@@ -62,7 +72,13 @@ export function useRotationGame(gameId: string | undefined) {
   const [liveRegeneratePolicySheetOpen, setLiveRegeneratePolicySheetOpen] = useState(false);
 
   // --- Optimization state ---
-  const [pendingOptimizeDivisions, setPendingOptimizeDivisions] = useState<number[] | null>(null);
+  const [pendingOptimizeOption, setPendingOptimizeOption] = useState<OptimizationOption | null>(
+    null,
+  );
+  const [optimizeSheetOpen, setOptimizeSheetOpen] = useState(false);
+  const [selectedOptimizeOptionKey, setSelectedOptimizeOptionKey] = useState<string | null>(null);
+  const [optimizeAttemptError, setOptimizeAttemptError] = useState<string | null>(null);
+  const [failedOptimizeOptionKeys, setFailedOptimizeOptionKeys] = useState<string[]>([]);
   // Track which generatedAt the banner was dismissed for — auto-resets on new schedule
   const [dismissedForGeneratedAt, setDismissedForGeneratedAt] = useState<number | null>(null);
   const optimizeBannerDismissed = dismissedForGeneratedAt === schedule?.generatedAt;
@@ -70,11 +86,47 @@ export function useRotationGame(gameId: string | undefined) {
     setDismissedForGeneratedAt(dismissed ? (schedule?.generatedAt ?? null) : null);
   };
 
-  // Read from persisted game state (survives navigation), with solver as live override
-  const optimizationSuggestion =
-    solverResultBehavior === 'apply'
-      ? (solver.suggestion ?? game?.optimizationSuggestion ?? null)
-      : null;
+  // Read from persisted game state (survives navigation), with solver as live override.
+  const optimizationSuggestion = useMemo(
+    () =>
+      normalizeOptimizationSuggestion(
+        solver.suggestion ?? game?.optimizationSuggestion ?? null,
+        periodDivisions,
+      ),
+    [solver.suggestion, game?.optimizationSuggestion, periodDivisions],
+  );
+
+  const resolvedSelectedOptimizeOptionKey = useMemo(() => {
+    if (!optimizationSuggestion || optimizationSuggestion.options.length === 0) return null;
+
+    if (
+      selectedOptimizeOptionKey &&
+      !failedOptimizeOptionKeys.includes(selectedOptimizeOptionKey) &&
+      optimizationSuggestion.options.some(
+        (option) => getOptimizationOptionKey(option.periodDivisions) === selectedOptimizeOptionKey,
+      )
+    ) {
+      return selectedOptimizeOptionKey;
+    }
+
+    const firstOption =
+      optimizationSuggestion.options.find(
+        (option) =>
+          !failedOptimizeOptionKeys.includes(getOptimizationOptionKey(option.periodDivisions)),
+      ) ?? optimizationSuggestion.options[0];
+
+    return firstOption ? getOptimizationOptionKey(firstOption.periodDivisions) : null;
+  }, [optimizationSuggestion, selectedOptimizeOptionKey, failedOptimizeOptionKeys]);
+
+  const selectedOptimizationOption = useMemo(() => {
+    if (!optimizationSuggestion || !resolvedSelectedOptimizeOptionKey) return null;
+    return (
+      optimizationSuggestion.options.find(
+        (option) =>
+          getOptimizationOptionKey(option.periodDivisions) === resolvedSelectedOptimizeOptionKey,
+      ) ?? null
+    );
+  }, [optimizationSuggestion, resolvedSelectedOptimizeOptionKey]);
 
   // --- Derived data ---
   const periodGroups = useMemo(() => {
@@ -169,6 +221,27 @@ export function useRotationGame(gameId: string | undefined) {
       }
     }
   }, [solverResult, solverSuggestion, gameId, dispatch, solverReset, solverResultBehavior]);
+
+  useEffect(() => {
+    if (!solver.error) return;
+    if (solverResultBehavior !== 'preview-regenerate') return;
+    if (!pendingOptimizeOption) return;
+
+    const optionKey = getOptimizationOptionKey(pendingOptimizeOption.periodDivisions);
+    const timeoutId = setTimeout(() => {
+      setFailedOptimizeOptionKeys((prev) =>
+        prev.includes(optionKey) ? prev : [...prev, optionKey],
+      );
+      setOptimizeAttemptError(solver.error);
+      setPendingOptimizeOption(null);
+      setRegeneratePreviewBase(null);
+      setSolverResultBehavior('apply');
+      setOptimizeSheetOpen(true);
+      solverReset();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [solver.error, solverResultBehavior, pendingOptimizeOption, solverReset]);
 
   function runSolve(input: SolverInput, behavior: 'apply' | 'preview-regenerate' = 'apply') {
     setSolverResultBehavior(behavior);
@@ -389,10 +462,27 @@ export function useRotationGame(gameId: string | undefined) {
   }
 
   function handleOptimizeDivisions() {
-    if (!roster || !config || !game || !schedule || !optimizationSuggestion) return;
-    const suggestedDivisions = optimizationSuggestion.suggestedDivisions;
-    setPendingOptimizeDivisions(suggestedDivisions);
+    if (!optimizationSuggestion || optimizationSuggestion.options.length === 0) return;
+    setFailedOptimizeOptionKeys([]);
+    setSelectedOptimizeOptionKey(null);
+    setPendingOptimizeOption(null);
+    setOptimizeAttemptError(null);
+    setOptimizeSheetOpen(true);
+  }
+
+  function handleSelectOptimizeOption(optionKey: string) {
+    setSelectedOptimizeOptionKey(optionKey);
+    setOptimizeAttemptError(null);
+  }
+
+  function handleRunOptimizePreview() {
+    if (!roster || !config || !game || !schedule || !selectedOptimizationOption) return;
+
+    const selectedDivisions = selectedOptimizationOption.periodDivisions;
+    setPendingOptimizeOption(selectedOptimizationOption);
     setRegeneratePreviewBase(schedule);
+    setOptimizeSheetOpen(false);
+    setOptimizeAttemptError(null);
 
     if (isLive) {
       runSolve(
@@ -402,10 +492,11 @@ export function useRotationGame(gameId: string | undefined) {
           absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
           goalieAssignments: game.goalieAssignments,
           manualOverrides: [],
-          periodDivisions: suggestedDivisions,
+          periodDivisions: selectedDivisions,
           startFromRotation: game.currentRotationIndex,
           existingRotations: schedule.rotations,
           skipOptimizationCheck: true,
+          allowConstraintRelaxation: true,
         },
         'preview-regenerate',
       );
@@ -417,8 +508,9 @@ export function useRotationGame(gameId: string | undefined) {
           absentPlayerIds: game.absentPlayerIds,
           goalieAssignments: game.goalieAssignments,
           manualOverrides: [],
-          periodDivisions: suggestedDivisions,
+          periodDivisions: selectedDivisions,
           skipOptimizationCheck: true,
+          allowConstraintRelaxation: true,
         },
         'preview-regenerate',
       );
@@ -428,18 +520,20 @@ export function useRotationGame(gameId: string | undefined) {
   function handleApplyRegeneratePreview() {
     if (!gameId || !regeneratePreview) return;
 
-    if (pendingOptimizeDivisions) {
+    if (pendingOptimizeOption) {
       // Atomic apply: schedule + periodDivisions + clear future overrides
       dispatch({
         type: 'APPLY_OPTIMIZED_SCHEDULE',
         payload: {
           gameId,
           schedule: regeneratePreview,
-          periodDivisions: pendingOptimizeDivisions,
+          periodDivisions: pendingOptimizeOption.periodDivisions,
           clearFutureOverridesFrom: isLive ? currentRotationIndex : 0,
         },
       });
-      setPendingOptimizeDivisions(null);
+      setPendingOptimizeOption(null);
+      setFailedOptimizeOptionKeys([]);
+      setOptimizeAttemptError(null);
     } else {
       dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: regeneratePreview } });
     }
@@ -453,7 +547,33 @@ export function useRotationGame(gameId: string | undefined) {
     setSolverResultBehavior('apply');
     solverReset();
     setRegeneratePreviewBase(null);
-    setPendingOptimizeDivisions(null);
+    setPendingOptimizeOption(null);
+    setOptimizeAttemptError(null);
+  }
+
+  function handleResetDivisions() {
+    if (!gameId || !game || !config || !roster) return;
+    const defaultDivisions = Array(config.periods).fill(config.rotationsPerPeriod) as number[];
+    dispatch({
+      type: 'UPDATE_GAME',
+      payload: {
+        ...game,
+        periodDivisions: defaultDivisions,
+        manualOverrides: [],
+        optimizationSuggestion: undefined,
+      },
+    });
+    // Inline the solve with defaultDivisions — can't rely on handleRegenerate()
+    // because the periodDivisions memo still holds the old value in this render.
+    setRegeneratePreviewBase(null);
+    runSolve({
+      players: roster.players,
+      config,
+      absentPlayerIds: game.absentPlayerIds,
+      goalieAssignments: game.goalieAssignments,
+      manualOverrides: [],
+      periodDivisions: defaultDivisions,
+    });
   }
 
   function handleRegenerateWithSettings(
@@ -525,6 +645,7 @@ export function useRotationGame(gameId: string | undefined) {
     nextRotation,
     currentPeriodIndex,
     periodDivisions,
+    divisionsModified,
     // Derived
     periodGroups,
     changingPlayerIds,
@@ -546,6 +667,11 @@ export function useRotationGame(gameId: string | undefined) {
     optimizationSuggestion,
     optimizeBannerDismissed,
     setOptimizeBannerDismissed,
+    optimizeSheetOpen,
+    setOptimizeSheetOpen,
+    selectedOptimizeOptionKey: resolvedSelectedOptimizeOptionKey,
+    failedOptimizeOptionKeys,
+    optimizeAttemptError,
     // Swap state
     swapSource,
     pendingSwap,
@@ -582,9 +708,12 @@ export function useRotationGame(gameId: string | undefined) {
     handleOpenRegenerate,
     handleConfirmLiveRegenerate,
     handleRegenerate,
+    handleResetDivisions,
     handleRegenerateWithSettings,
     handleApplyRegeneratePreview,
     handleDismissRegeneratePreview,
     handleOptimizeDivisions,
+    handleSelectOptimizeOption,
+    handleRunOptimizePreview,
   };
 }

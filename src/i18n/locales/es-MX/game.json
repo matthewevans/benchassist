@@ -5,6 +5,7 @@
     "generating_patterns": "Generando patrones de banca válidos...",
     "searching": "Buscando {{combinations}} combinaciones...",
     "building_schedule": "Construyendo rotaciones...",
+    "checking_optimizations": "Verificando optimizaciones...",
     "complete": "Completado"
   },
   "setup": {
@@ -133,7 +134,12 @@
     "regenerate_preview_players_footer_one": "{{count}} jugador cambió",
     "regenerate_preview_players_footer_other": "{{count}} jugadores cambiaron",
     "regenerate_preview_grid_header": "Vista previa de cuadrícula",
-    "regenerate_preview_apply": "Aplicar regeneración"
+    "regenerate_preview_grid_legend": "Las celdas resaltadas cambiaron en esta previsualización.",
+    "regenerate_preview_grid_count": "Celdas con cambio: {{cells}} · Rotaciones impactadas: {{rotations}}",
+    "regenerate_preview_cell_changed": "Cambio en previsualización",
+    "regenerate_preview_cell_changed_aria": "cambio en previsualización",
+    "regenerate_preview_apply": "Aplicar regeneración",
+    "reset_rotations": "Restablecer rotaciones"
   },
   "swap": {
     "title": "Cambiar {{playerA}} y {{playerB}}",
@@ -204,12 +210,36 @@
   },
   "optimize": {
     "headline": "Tiempo de juego más equitativo",
-    "detail": "Hasta {{extraCount}} jugadores a ~{{maxPercent}}% en vez de {{currentExtra}} a {{currentMax}}%",
-    "action": "Optimizar rotaciones"
+    "detail_single": "Hasta {{extraCount}} jugadoras a ~{{maxPercent}}% en vez de {{currentExtra}} a {{currentMax}}%",
+    "detail_multi": "Hay {{optionCount}} opciones. Hasta {{extraCount}} jugadoras a ~{{maxPercent}}% en vez de {{currentExtra}} a {{currentMax}}%",
+    "action": "Optimizar rotaciones",
+    "sheet_title": "Optimizar rotaciones",
+    "sheet_desc": "Elige cuánto dividir los tiempos para la siguiente previsualización.",
+    "preview_option": "Previsualizar opción",
+    "recommended_title": "Recomendado: menor cambio primero",
+    "recommended_detail": "Agrega {{addedRotations}} rotación(es), cambia {{periodsChanged}} tiempo(s) y mejora la equidad en {{improvement}} pp.",
+    "recommended_badge": "Recomendado",
+    "current_label": "Actual",
+    "preview_label": "Previsualización",
+    "current_summary": "Brecha de {{gap}} pp, máximo en {{maxPercent}}%",
+    "current_summary_compact": "Brecha {{gap}} pp | Máx {{maxPercent}}%",
+    "preview_summary_compact": "Brecha {{gap}} pp | Máx {{maxPercent}}%",
+    "current_rotations": "{{count}} rotaciones",
+    "group_header": "Cambiar {{addedRotations}} rotaciones",
+    "change_split_one": "Dividir Tiempo {{period}}",
+    "change_split_multi": "Dividir Tiempos {{periods}} y {{last}}",
+    "option_rotations_added": "+{{count}} rotación",
+    "option_rotations_added_other": "+{{count}} rotaciones",
+    "option_summary": "Brecha {{gap}} pp · Máx {{maxPercent}}% · Mín {{minPercent}}%",
+    "option_failed": "Esta opción falló al previsualizarse. Prueba otra opción."
+  },
+  "empty": {
+    "title": "Sin Rotaciones Aún",
+    "description": "Genera un plan de rotaciones para equilibrar el tiempo de juego en tu equipo.",
+    "or_enter_plan": "O ingresa tu propio plan"
   },
   "error": {
     "not_found": "Partido o rotaciones no encontradas",
-    "no_schedule": "Este partido se guardó sin rotaciones. Genera rotaciones para continuar.",
     "back_to_teams": "Regresar a equipos"
   }
 }

@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
-import { EllipsisIcon } from 'lucide-react';
+import { EllipsisIcon, LayoutGridIcon } from 'lucide-react';
 import { useRotationGame } from '@/hooks/useRotationGame.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
@@ -17,6 +17,7 @@ import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { PeriodDivisionSheet } from '@/components/game/PeriodDivisionSheet.tsx';
 import { RegeneratePreviewSheet } from '@/components/game/RegeneratePreviewSheet.tsx';
 import { PlaytimeOptimizeBanner } from '@/components/game/PlaytimeOptimizeBanner.tsx';
+import { OptimizeDivisionsSheet } from '@/components/game/OptimizeDivisionsSheet.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
@@ -257,11 +258,21 @@ export function RotationGrid() {
                   >
                     {t('setup.enter_coach_plan')}
                   </button>
+                  {g.divisionsModified && (
+                    <button
+                      className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                      onClick={g.handleResetDivisions}
+                    >
+                      {t('live.reset_rotations')}
+                    </button>
+                  )}
                 </PopoverContent>
               </Popover>
-              <Button size="sm" className="h-10" onClick={g.handleStartGame}>
-                {t('live.start_game')}
-              </Button>
+              {g.schedule && (
+                <Button size="sm" className="h-10" onClick={g.handleStartGame}>
+                  {t('live.start_game')}
+                </Button>
+              )}
             </div>
           }
         />
@@ -319,18 +330,28 @@ export function RotationGrid() {
           </div>
         )}
 
-        {/* Draft game with no schedule yet */}
+        {/* Draft game with no schedule yet — centered empty state */}
         {!g.schedule && (
-          <div className="max-w-4xl mx-auto px-4">
-            <div className="space-y-3 rounded-[10px] bg-card p-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
-              <p className="text-ios-footnote text-muted-foreground">{t('error.no_schedule')}</p>
-              <Button size="sm" onClick={g.handleOpenRegenerate} disabled={g.solver.isRunning}>
-                {g.solver.isRunning ? t('setup.generating') : t('setup.generate_rotations')}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={handleOpenDirectEntry}>
-                {t('setup.enter_coach_plan')}
-              </Button>
+          <div className="flex flex-col items-center justify-center text-center px-6 pt-20 pb-12 max-w-sm mx-auto">
+            <div className="flex items-center justify-center size-14 rounded-2xl bg-muted/50 mb-4">
+              <LayoutGridIcon className="size-7 text-muted-foreground" />
             </div>
+            <h2 className="text-ios-title3 font-semibold mb-1.5">{t('empty.title')}</h2>
+            <p className="text-ios-callout text-muted-foreground mb-8">{t('empty.description')}</p>
+            <Button
+              className="w-full h-[50px] rounded-xl text-ios-body font-semibold"
+              onClick={g.handleOpenRegenerate}
+              disabled={g.solver.isRunning}
+            >
+              {g.solver.isRunning ? t('setup.generating') : t('setup.generate_rotations')}
+            </Button>
+            <button
+              type="button"
+              className="mt-3 min-h-11 text-ios-callout text-primary active:opacity-70 transition-opacity"
+              onClick={handleOpenDirectEntry}
+            >
+              {t('empty.or_enter_plan')}
+            </button>
           </div>
         )}
 
@@ -530,6 +551,19 @@ export function RotationGrid() {
           highPlayOutlierIds={previewHighPlayOutlierIds}
           onApply={g.handleApplyRegeneratePreview}
           onCancel={g.handleDismissRegeneratePreview}
+        />
+
+        <OptimizeDivisionsSheet
+          open={g.optimizeSheetOpen}
+          suggestion={g.optimizationSuggestion}
+          currentDivisions={g.periodDivisions}
+          selectedOptionKey={g.selectedOptimizeOptionKey}
+          failedOptionKeys={g.failedOptimizeOptionKeys}
+          optimizeError={g.optimizeAttemptError}
+          isRunning={g.solver.isRunning}
+          onOpenChange={g.setOptimizeSheetOpen}
+          onSelectOption={g.handleSelectOptimizeOption}
+          onConfirm={g.handleRunOptimizePreview}
         />
       </div>
     </div>

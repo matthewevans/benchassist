@@ -4,6 +4,7 @@ export type SolverMessageKey =
   | 'game:solver.calculating_goalie'
   | 'game:solver.generating_patterns'
   | 'game:solver.building_schedule'
+  | 'game:solver.checking_optimizations'
   | 'game:solver.complete';
 
 /** A progress message with an optional interpolation count for "searching N combinations". */
@@ -16,6 +17,7 @@ const SOLVER_MESSAGE_KEYS = new Set<string>([
   'game:solver.calculating_goalie',
   'game:solver.generating_patterns',
   'game:solver.building_schedule',
+  'game:solver.checking_optimizations',
   'game:solver.complete',
   'game:solver.searching',
 ]);

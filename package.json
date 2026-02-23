@@ -28,8 +28,10 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "highs": "^1.8.0",
     "i18next": "^25.8.11",
     "immer": "^11.1.4",
+    "lp-model": "^0.4.2",
     "lucide-react": "^0.564.0",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",

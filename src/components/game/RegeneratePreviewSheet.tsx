@@ -60,6 +60,46 @@ export function RegeneratePreviewSheet({
     () => percentRows.filter((row) => row.delta !== 0).length,
     [percentRows],
   );
+  const { previewChangedCellKeys, changedCellCount, changedRotationCount } = useMemo(() => {
+    if (!previewSchedule || !currentSchedule) {
+      return {
+        previewChangedCellKeys: new Set<string>(),
+        changedCellCount: 0,
+        changedRotationCount: 0,
+      };
+    }
+
+    const currentRotationByIndex = new Map(
+      currentSchedule.rotations.map((rotation) => [rotation.index, rotation]),
+    );
+    const keys = new Set<string>();
+    const changedRotations = new Set<number>();
+
+    for (const previewRotation of previewSchedule.rotations) {
+      if (previewRotation.index < currentRotationIndex) continue;
+      const currentRotation = currentRotationByIndex.get(previewRotation.index);
+      for (const player of players) {
+        const nextAssignment = previewRotation.assignments[player.id];
+        const currentAssignment = currentRotation?.assignments[player.id];
+        const nextFieldPosition = previewRotation.fieldPositions?.[player.id];
+        const currentFieldPosition = currentRotation?.fieldPositions?.[player.id];
+        if (
+          !currentRotation ||
+          nextAssignment !== currentAssignment ||
+          nextFieldPosition !== currentFieldPosition
+        ) {
+          keys.add(`${previewRotation.index}:${player.id}`);
+          changedRotations.add(previewRotation.index);
+        }
+      }
+    }
+
+    return {
+      previewChangedCellKeys: keys,
+      changedCellCount: keys.size,
+      changedRotationCount: changedRotations.size,
+    };
+  }, [currentRotationIndex, currentSchedule, players, previewSchedule]);
 
   if (!previewSchedule || !currentSchedule) return null;
 
@@ -124,6 +164,23 @@ export function RegeneratePreviewSheet({
           <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase px-4 pb-1.5">
             {t('live.regenerate_preview_grid_header')}
           </h3>
+          <div className="px-4 pb-2">
+            <div className="rounded-[10px] border border-primary/20 bg-primary/5 px-3 py-2">
+              <p className="flex items-center gap-2 text-ios-caption1 text-foreground">
+                <span
+                  aria-hidden="true"
+                  className="size-1.5 rounded-full bg-primary animate-pulse shrink-0"
+                />
+                {t('live.regenerate_preview_grid_legend')}
+              </p>
+              <p className="mt-1 text-ios-caption2 tabular-nums text-muted-foreground">
+                {t('live.regenerate_preview_grid_count', {
+                  cells: changedCellCount,
+                  rotations: changedRotationCount,
+                })}
+              </p>
+            </div>
+          </div>
           <div className="rounded-[10px] border border-border/50 bg-card overflow-hidden">
             <RotationTable
               periodGroups={periodGroups}
@@ -147,6 +204,7 @@ export function RegeneratePreviewSheet({
               onAddPlayerBack={() => {}}
               showPeriodActions={false}
               interactiveCells={false}
+              previewChangedCellKeys={previewChangedCellKeys}
             />
           </div>
         </section>

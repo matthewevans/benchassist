@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { execSync } from 'child_process';
 import path from 'path';
+import fs from 'fs';
 
 const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
 const commitCount = execSync('git rev-list --count HEAD').toString().trim();
@@ -20,6 +21,16 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    {
+      name: 'copy-highs-wasm',
+      buildStart() {
+        const src = path.resolve(__dirname, 'node_modules/highs/build/highs.wasm');
+        const dest = path.resolve(__dirname, 'public/highs.wasm');
+        if (fs.existsSync(src)) {
+          fs.copyFileSync(src, dest);
+        }
+      },
+    },
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
@@ -29,6 +40,7 @@ export default defineConfig({
         'pwa-512x512.png',
         'benchassist-logo-wordmark-light.png',
         'benchassist-logo-wordmark-dark.png',
+        'highs.wasm',
       ],
       manifest: {
         name: 'BenchAssist',

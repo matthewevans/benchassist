@@ -1,0 +1,2 @@
+patchedDependencies:
+  highs@1.8.0: patches/highs@1.8.0.patch

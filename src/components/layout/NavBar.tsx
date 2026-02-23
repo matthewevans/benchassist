@@ -56,10 +56,10 @@ export function NavBar({
         </div>
       ) : (
         <>
-          {/* Standard bar: 44px — three-column grid like iOS UINavigationBar */}
-          <div className="grid grid-cols-3 items-center h-12 px-4 max-w-5xl mx-auto">
+          {/* Standard bar: 44px — absolute-centered title like iOS UINavigationBar */}
+          <div className="relative flex items-center justify-between h-12 px-4 max-w-5xl mx-auto">
             {/* Leading: back button or custom leading content */}
-            <div className="flex items-center min-w-0">
+            <div className="relative z-10 flex items-center min-w-0 shrink-0">
               {backTo ? (
                 <Link
                   to={backTo}
@@ -74,15 +74,17 @@ export function NavBar({
               ) : null}
             </div>
 
-            {/* Center title (standard mode only) */}
-            {!largeTitle && title ? (
-              <h1 className="text-ios-headline text-center truncate">{title}</h1>
-            ) : (
-              <div />
+            {/* Absolute-centered title — spans full bar, clears leading/trailing via padding */}
+            {!largeTitle && title && (
+              <h1 className="absolute inset-x-4 text-ios-headline text-center truncate pointer-events-none px-16">
+                {title}
+              </h1>
             )}
 
             {/* Trailing actions */}
-            <div className="flex items-center justify-end gap-2">{trailing}</div>
+            <div className="relative z-10 flex items-center justify-end gap-2 shrink-0">
+              {trailing}
+            </div>
           </div>
 
           {/* Large title row */}

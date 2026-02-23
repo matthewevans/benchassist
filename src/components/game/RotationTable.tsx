@@ -117,6 +117,7 @@ interface RotationTableProps {
   onAddPlayerBack: (playerId: PlayerId) => void;
   showPeriodActions?: boolean;
   interactiveCells?: boolean;
+  previewChangedCellKeys?: Set<string>;
 }
 
 export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
@@ -143,6 +144,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
       onAddPlayerBack,
       showPeriodActions = true,
       interactiveCells = true,
+      previewChangedCellKeys,
     } = props;
 
     const { t } = useTranslation('game');
@@ -354,9 +356,16 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         swapSource.rotationIndex === rotation.index &&
                         !isPast &&
                         !isCompleted;
+                      const isPreviewChanged =
+                        previewChangedCellKeys?.has(`${rotation.index}:${player.id}`) ?? false;
                       const subTip = isChanging ? subTooltipMap.get(player.id) : undefined;
-                      const cellTitle =
+                      const baseCellTitle =
                         subTip ?? (fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined);
+                      const cellTitle = isPreviewChanged
+                        ? baseCellTitle
+                          ? `${t('live.regenerate_preview_cell_changed')} · ${baseCellTitle}`
+                          : t('live.regenerate_preview_cell_changed')
+                        : baseCellTitle;
                       const isInteractive = interactiveCells && !isPast && !isCompleted;
                       const isFirstInPeriod = rotIdx === 0 && group.periodIndex > 0;
                       return (
@@ -370,12 +379,19 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                             (isPast || isCompleted) && 'opacity-40 pointer-events-none',
                             isFirstInPeriod && !isCurrent && 'border-l-2 border-border',
                           )}
+                          {...(isPreviewChanged
+                            ? ({ 'data-preview-change': 'changed' } as const)
+                            : {})}
                           {...(isCurrent ? { 'data-current-rotation': '' } : {})}
                           {...(isInteractive
                             ? {
                                 role: 'button' as const,
                                 tabIndex: 0,
-                                'aria-label': `${player.name}: ${display.label}, rotation ${rotation.index + 1}`,
+                                'aria-label': `${player.name}: ${display.label}, rotation ${rotation.index + 1}${
+                                  isPreviewChanged
+                                    ? `, ${t('live.regenerate_preview_cell_changed_aria')}`
+                                    : ''
+                                }`,
                                 onKeyDown: (e) => {
                                   if (e.key === 'Enter' || e.key === ' ') {
                                     e.preventDefault();
@@ -388,12 +404,14 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         >
                           <span
                             className={cn(
-                              'inline-flex items-center justify-center w-8 h-7 rounded-md text-ios-footnote font-medium transition-all',
+                              'inline-flex items-center justify-center w-8 h-7 rounded-md text-ios-footnote font-medium transition-all relative',
                               display.className,
                               isSelected && 'ring-2 ring-primary ring-offset-1 animate-pulse',
                               isValidTarget &&
                                 'ring-1 ring-primary/50 hover:ring-2 hover:ring-primary',
                               isChanging && 'ring-2 ring-dashed ring-accent-foreground/40',
+                              isPreviewChanged &&
+                                'ring-2 ring-primary/45 bg-primary/10 shadow-[0_0_0_1px_hsl(var(--primary)/0.18)]',
                               !isPast && !isCompleted && 'cursor-pointer',
                               swapSource &&
                                 !isSelected &&
@@ -405,6 +423,12 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                             title={cellTitle}
                           >
                             {display.label}
+                            {isPreviewChanged && (
+                              <span
+                                aria-hidden="true"
+                                className="absolute -right-1 -top-1 size-1.5 rounded-full bg-primary animate-pulse"
+                              />
+                            )}
                           </span>
                         </td>
                       );

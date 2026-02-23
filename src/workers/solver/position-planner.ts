@@ -140,6 +140,7 @@ export function optimizePositionAssignments(
 
   while (improved && Date.now() < deadline) {
     improved = false;
+    let bestSwap: { r: number; a: PlayerId; b: PlayerId; score: number } | null = null;
 
     for (let r = 0; r < plan.length; r++) {
       const positions = plan[r];
@@ -152,8 +153,6 @@ export function optimizePositionAssignments(
       for (let i = 0; i < playerIds.length - 1; i++) {
         if (Date.now() >= deadline) break;
         for (let j = i + 1; j < playerIds.length; j++) {
-          if (Date.now() >= deadline) break;
-
           const a = playerIds[i];
           const b = playerIds[j];
           const posA = positions[a];
@@ -169,18 +168,24 @@ export function optimizePositionAssignments(
           positions[b] = posA;
 
           const nextScore = scorePlan(rotations, plan, playerMap);
-          if (nextScore < bestScore) {
-            bestScore = nextScore;
-            improved = true;
-            break;
+          if (nextScore < bestScore && (!bestSwap || nextScore < bestSwap.score)) {
+            bestSwap = { r, a, b, score: nextScore };
           }
 
           positions[a] = posA;
           positions[b] = posB;
         }
-        if (improved) break;
       }
-      if (improved) break;
+    }
+
+    if (bestSwap) {
+      const positions = plan[bestSwap.r]!;
+      const posA = positions[bestSwap.a];
+      const posB = positions[bestSwap.b];
+      positions[bestSwap.a] = posB;
+      positions[bestSwap.b] = posA;
+      bestScore = bestSwap.score;
+      improved = true;
     }
   }
 

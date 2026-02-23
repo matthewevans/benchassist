@@ -12,6 +12,12 @@ export interface SolverContext {
   benchSlotsPerRotation: number;
   onProgress: (percentage: number, message: string) => void;
   cancellation: { cancelled: boolean };
+  /** Override primary search timeout (default 12s) */
+  searchTimeoutMs?: number;
+  /** Override primary search node limit (exhaustive solver only) */
+  searchNodeLimit?: number;
+  /** Stop after finding any valid combination instead of optimizing */
+  feasibilityOnly?: boolean;
 }
 
 // A bench pattern is an array of rotation indices where a player sits out

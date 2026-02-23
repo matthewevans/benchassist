@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  highs@1.8.0:
+    hash: 0d9aa38ec7d6aa329423c2fdbec56a8b684402415f6a5972aa039052eb5ad695
+    path: patches/highs@1.8.0.patch
+
 importers:
 
   .:
@@ -14,12 +19,18 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      highs:
+        specifier: ^1.8.0
+        version: 1.8.0(patch_hash=0d9aa38ec7d6aa329423c2fdbec56a8b684402415f6a5972aa039052eb5ad695)
       i18next:
         specifier: ^25.8.11
         version: 25.8.11(typescript@5.9.3)
       immer:
         specifier: ^11.1.4
         version: 11.1.4
+      lp-model:
+        specifier: ^0.4.2
+        version: 0.4.2
       lucide-react:
         specifier: ^0.564.0
         version: 0.564.0(react@19.2.4)
@@ -3077,6 +3088,9 @@ packages:
   hermes-parser@0.25.1:
     resolution: {integrity: sha512-6pEjquH3rqaI6cYAXYPcz9MS4rY6R4ngRgrgfDshRptUZIc3lw0MCIJIGDj9++mfySOuPTHB4nrSW99BCvOPIA==}
 
+  highs@1.8.0:
+    resolution: {integrity: sha512-0QFXXjU/mxU1y3Ec44QpESq6STkPauNDfIPf0welcUGjilpVYnfH9RepBvr0t9YDQPUniIcZTX9xyxqxF668ag==}
+
   hono@4.11.9:
     resolution: {integrity: sha512-Eaw2YTGM6WOxA6CXbckaEvslr2Ne4NFsKrvc0v97JD5awbmeBLO5w9Ho9L9kmKonrwF9RJlW6BxT1PVv/agBHQ==}
     engines: {node: '>=16.9.0'}
@@ -3554,6 +3568,10 @@ packages:
   log-update@6.1.0:
     resolution: {integrity: sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==}
     engines: {node: '>=18'}
+
+  lp-model@0.4.2:
+    resolution: {integrity: sha512-DbYfQQXHNhVgsqamrbPOYTvGP+RS+l60WzIynuvLQT0LBH2e+7GwVqzWFMyd6vv8lgxNbALKFXTAVlM4C8mYgg==}
+    engines: {node: '>=16'}
 
   lru-cache@11.2.6:
     resolution: {integrity: sha512-ESL2CrkS/2wTPfuend7Zhkzo2u0daGJ/A2VucJOgQ/C48S/zB8MMeMHSGKYpXhIjbPxfuezITkaBH1wqv00DDQ==}
@@ -8028,6 +8046,8 @@ snapshots:
     dependencies:
       hermes-estree: 0.25.1
 
+  highs@1.8.0(patch_hash=0d9aa38ec7d6aa329423c2fdbec56a8b684402415f6a5972aa039052eb5ad695): {}
+
   hono@4.11.9: {}
 
   html-encoding-sniffer@6.0.0(@noble/hashes@1.8.0):
@@ -8452,6 +8472,8 @@ snapshots:
       slice-ansi: 7.1.2
       strip-ansi: 7.1.2
       wrap-ansi: 9.0.2
+
+  lp-model@0.4.2: {}
 
   lru-cache@11.2.6: {}
 

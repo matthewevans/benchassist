@@ -17,6 +17,9 @@ export function PlaytimeOptimizeBanner({
 }: PlaytimeOptimizeBannerProps) {
   const { t } = useTranslation('game');
   const { t: tCommon } = useTranslation('common');
+  const recommended = suggestion.options[0];
+
+  if (!recommended) return null;
 
   return (
     <div className="rounded-[10px] bg-primary/8 dark:bg-primary/12 px-4 py-3">
@@ -41,9 +44,10 @@ export function PlaytimeOptimizeBanner({
           </div>
 
           <p className="mt-0.5 text-ios-footnote text-muted-foreground">
-            {t('optimize.detail', {
-              extraCount: suggestion.suggestedExtraCount,
-              maxPercent: Math.round(suggestion.suggestedMaxPercent),
+            {t(suggestion.options.length > 1 ? 'optimize.detail_multi' : 'optimize.detail_single', {
+              optionCount: suggestion.options.length,
+              extraCount: recommended.expectedExtraCount,
+              maxPercent: Math.round(recommended.expectedMaxPercent),
               currentExtra: suggestion.currentExtraCount,
               currentMax: Math.round(suggestion.currentMaxPercent),
             })}

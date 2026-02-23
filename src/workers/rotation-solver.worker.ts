@@ -8,8 +8,9 @@ import type {
   ManualOverride,
   GameConfig,
 } from '@/types/domain.ts';
-import { exhaustiveSearch } from './solver/exhaustive.ts';
+import { mipSolve, initHiGHS } from './solver/mipSolver.ts';
 import { checkOptimizationFeasibility } from './solver/optimizationCheck.ts';
+import type { OptimizationSuggestion } from '@/utils/divisionOptimizer.ts';
 import {
   calculatePlayerStats,
   computeStrengthStats,
@@ -333,7 +334,10 @@ function buildScheduleFromRotations(rotations: Rotation[], players: Player[]): R
   };
 }
 
-self.onmessage = (e: MessageEvent<SolverRequest>) => {
+// Pre-initialize HiGHS WASM at worker startup to hide latency
+const highsReady = initHiGHS();
+
+self.onmessage = async (e: MessageEvent<SolverRequest>) => {
   const request = e.data;
 
   switch (request.type) {
@@ -343,6 +347,8 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
       currentCancellation = cancellation;
 
       try {
+        await highsReady;
+
         const {
           players,
           config,
@@ -384,7 +390,7 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
         const existingMidGameRotations = Array.isArray(existingRotations) ? existingRotations : [];
         const canMergeFromMidGame =
           requestedStartFromRotation > 0 && existingMidGameRotations.length > 0;
-        const solveForConfig = (attemptConfig: GameConfig): RotationSchedule => {
+        const solveForConfig = async (attemptConfig: GameConfig): Promise<RotationSchedule> => {
           const midGameWindow = canMergeFromMidGame
             ? buildMidGameSolveWindow({
                 config: attemptConfig,
@@ -428,7 +434,7 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
             throw new Error(goalieAssignmentErrors[0]);
           }
 
-          const newSchedule = exhaustiveSearch({
+          const newSchedule = await mipSolve({
             players: activePlayers,
             config: solveConfig,
             goalieAssignments: solveGoalieAssignments,
@@ -461,9 +467,16 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
         const relaxationCandidates: GameConfig[] = [];
         if (allowConstraintRelaxation === true) {
           if (config.noConsecutiveBench) {
+            relaxationCandidates.push({ ...config, noConsecutiveBench: false });
+          }
+          if (config.skillBalance) {
+            relaxationCandidates.push({ ...config, skillBalance: false });
+          }
+          if (config.noConsecutiveBench && config.skillBalance) {
             relaxationCandidates.push({
               ...config,
               noConsecutiveBench: false,
+              skillBalance: false,
             });
           }
         }
@@ -474,10 +487,14 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
 
         for (const attempt of attempts) {
           try {
-            schedule = solveForConfig(attempt);
+            schedule = await solveForConfig(attempt);
             break;
           } catch (error) {
             lastError = error;
+            // When relaxation is allowed, continue the cascade for ANY solver error.
+            // HiGHS WASM may abort (RuntimeError) instead of returning "Infeasible"
+            // for constraint combinations that are infeasible but not detected by presolve.
+            if (allowConstraintRelaxation && attempts.length > 1) continue;
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             if (!isInfeasibleScheduleError(errorMessage)) {
               throw error;
@@ -495,13 +512,11 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
           }
         }
 
-        // Post-solve: check if period division optimization can improve playtime equity
-        let optimizationSuggestion:
-          | import('@/utils/divisionOptimizer.ts').OptimizationSuggestion
-          | undefined;
+        // Post-solve: check if period division optimization can improve playtime equity.
+        // Each candidate is trial-solved with MIP to get actual optimal gap values.
+        let optimizationSuggestion: OptimizationSuggestion | undefined;
         if (!skipOptimizationCheck && schedule.playerStats) {
           try {
-            const requestedStartFromRotation = Math.max(0, Math.floor(startFromRotation ?? 0));
             const suggestion = checkOptimizationFeasibility({
               currentDivisions: basePeriodDivisions,
               players: activePlayers,
@@ -511,12 +526,154 @@ self.onmessage = (e: MessageEvent<SolverRequest>) => {
               currentRotationIndex:
                 requestedStartFromRotation > 0 ? requestedStartFromRotation : undefined,
             });
-            if (suggestion) optimizationSuggestion = suggestion;
+
+            if (suggestion) {
+              const trialConfig: GameConfig = {
+                ...config,
+                ...(config.noConsecutiveBench ? { noConsecutiveBench: false } : {}),
+                ...(config.skillBalance ? { skillBalance: false } : {}),
+              };
+
+              const validOptions: typeof suggestion.options = [];
+              const trialSolveLimit = 12;
+              const trialPhaseBudgetMs = 10_000;
+              const trialPhaseStart = Date.now();
+              const candidates = suggestion.options.slice(0, trialSolveLimit);
+              const totalCandidates = candidates.length;
+
+              for (let optIdx = 0; optIdx < candidates.length; optIdx++) {
+                const option = candidates[optIdx];
+                if (cancellation.cancelled) break;
+                if (Date.now() - trialPhaseStart > trialPhaseBudgetMs) break;
+                onProgress(
+                  50 + Math.floor((optIdx / totalCandidates) * 49),
+                  `game:solver.checking_optimizations`,
+                );
+                try {
+                  const trialDivisions = normalizePeriodDivisions(
+                    option.periodDivisions,
+                    config.periods,
+                    config.rotationsPerPeriod,
+                  );
+                  const trialTotalRotations = getTotalRotationsFromDivisions(trialDivisions);
+
+                  let trialSchedule: RotationSchedule;
+
+                  if (canMergeFromMidGame) {
+                    const trialWindow = buildMidGameSolveWindow({
+                      config: trialConfig,
+                      periodDivisions: trialDivisions,
+                      goalieAssignments,
+                      manualOverrides: [],
+                      startFromRotation: requestedStartFromRotation,
+                      existingRotations: existingMidGameRotations,
+                      players: activePlayers,
+                    });
+                    const trialWindowConfig = trialWindow?.config ?? trialConfig;
+                    const trialSolveDivisions = trialWindow?.periodDivisions ?? trialDivisions;
+                    const trialGA = trialWindow?.goalieAssignments ?? goalieAssignments;
+                    const trialOverrides = trialWindow?.manualOverrides ?? [];
+                    const trialSolveTotalRotations =
+                      getTotalRotationsFromDivisions(trialSolveDivisions);
+                    const trialMinPlay =
+                      trialWindow && trialConfig.enforceMinPlayTime
+                        ? buildMidGameMinPlayInputs({
+                            config: trialConfig,
+                            players: activePlayers,
+                            periodDivisions: trialDivisions,
+                            startFromRotation: trialWindow.startFromRotation,
+                            existingRotations: existingMidGameRotations,
+                          })
+                        : null;
+
+                    const windowSchedule = await mipSolve({
+                      players: activePlayers,
+                      config: trialWindowConfig,
+                      goalieAssignments: trialGA,
+                      manualOverrides: trialOverrides,
+                      periodDivisions: trialSolveDivisions,
+                      totalRotations: trialSolveTotalRotations,
+                      benchSlotsPerRotation,
+                      rotationWeights: trialMinPlay?.rotationWeights,
+                      maxBenchWeightByPlayer: trialMinPlay?.maxBenchWeightByPlayer,
+                      onProgress: () => {},
+                      cancellation,
+                      searchTimeoutMs: 5_000,
+                      feasibilityOnly: true,
+                    });
+                    trialSchedule = mergeSchedules(
+                      existingMidGameRotations,
+                      trialWindow
+                        ? remapWindowScheduleToGlobal(
+                            windowSchedule,
+                            trialWindow.startFromRotation,
+                            trialWindow.startPeriodIndex,
+                          )
+                        : windowSchedule,
+                      Math.min(
+                        trialWindow?.startFromRotation ?? requestedStartFromRotation,
+                        existingMidGameRotations.length,
+                      ),
+                      activePlayers,
+                    );
+                  } else {
+                    trialSchedule = await mipSolve({
+                      players: activePlayers,
+                      config: trialConfig,
+                      goalieAssignments,
+                      manualOverrides: [],
+                      periodDivisions: trialDivisions,
+                      totalRotations: trialTotalRotations,
+                      benchSlotsPerRotation,
+                      onProgress: () => {},
+                      cancellation,
+                      searchTimeoutMs: 5_000,
+                      feasibilityOnly: true,
+                    });
+                  }
+
+                  // Use actual solved stats instead of mathematical estimates
+                  const trialStats = Object.values(trialSchedule.playerStats);
+                  if (trialStats.length > 0) {
+                    const actualMax = Math.max(...trialStats.map((s) => s.playPercentage));
+                    const actualMin = Math.min(...trialStats.map((s) => s.playPercentage));
+                    const actualGap = Math.round((actualMax - actualMin) * 10) / 10;
+                    const actualExtraCount = trialStats.filter(
+                      (s) => s.playPercentage === actualMax,
+                    ).length;
+                    const actualImprovement =
+                      Math.round((suggestion.currentGap - actualGap) * 10) / 10;
+
+                    if (actualImprovement < 1) continue; // Not a meaningful improvement
+
+                    validOptions.push({
+                      ...option,
+                      expectedGap: actualGap,
+                      expectedMaxPercent: actualMax,
+                      expectedMinPercent: actualMin,
+                      expectedExtraCount: actualExtraCount,
+                      gapImprovement: actualImprovement,
+                    });
+                  } else {
+                    validOptions.push(option);
+                  }
+                } catch (trialErr) {
+                  if ((trialErr as Error).message === 'Cancelled') throw trialErr;
+                  // Infeasible or timed out — skip this option
+                }
+              }
+              if (validOptions.length > 0) {
+                optimizationSuggestion = { ...suggestion, options: validOptions };
+              }
+            }
           } catch (err) {
+            if ((err as Error).message === 'Cancelled') throw err;
             console.error('[worker] Optimization check error:', err);
             // Non-critical — don't block the success response
           }
         }
+
+        onProgress(100, 'game:solver.complete');
 
         const response: SolverResponse = {
           type: 'SUCCESS',
