@@ -88,6 +88,7 @@ const preparedConstraints: PreparedConstraints = {
   mustBench: new Map<string, Set<number>>(),
   hardFieldPositionLocksByRotation: new Map(),
   softFieldPositionPrefsByRotation: new Map(),
+  positionContinuityPlayerIdsByRotation: new Map(),
   softOverrides: [],
   maxBenchWeightByPlayer: new Map(),
   rotationWeights: [1],

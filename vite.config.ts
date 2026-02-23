@@ -18,6 +18,36 @@ export default defineConfig({
     __BUILD_HASH__: JSON.stringify(commitHash),
     __APP_VERSION__: JSON.stringify(appVersion),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return;
+          if (id.includes('/highs/')) return;
+          if (
+            id.includes('/react/') ||
+            id.includes('/react-dom/') ||
+            id.includes('/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+          if (id.includes('/react-router-dom/') || id.includes('/react-router/')) {
+            return 'vendor-router';
+          }
+          if (
+            id.includes('/i18next/') ||
+            id.includes('/react-i18next/') ||
+            id.includes('/intl-pluralrules/')
+          ) {
+            return 'vendor-i18n';
+          }
+          if (id.includes('/lucide-react/')) {
+            return 'vendor-icons';
+          }
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -40,12 +70,17 @@ export default defineConfig({
         'pwa-512x512.png',
         'benchassist-logo-wordmark-light.png',
         'benchassist-logo-wordmark-dark.png',
-        'highs.wasm',
       ],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        globIgnores: ['**/highs.wasm'],
+      },
       manifest: {
         name: 'BenchAssist',
         short_name: 'BenchAssist',
         description: 'Rotation management for team sports',
+        start_url: '/',
+        scope: '/',
         theme_color: '#16a34a',
         background_color: '#ffffff',
         display: 'standalone',

@@ -284,6 +284,13 @@ describe('buildMidGameSolveWindow', () => {
           lockMode: 'hard',
         },
       ],
+      positionContinuityPreferences: [
+        {
+          playerId: p2.id,
+          rotationIndex: 4,
+          fieldPosition: 'RB',
+        },
+      ],
       startFromRotation: 3,
       existingRotations,
       players: [p1, p2, p3],
@@ -294,6 +301,13 @@ describe('buildMidGameSolveWindow', () => {
     expect(window?.periodDivisions).toEqual([2]);
     expect(window?.config.periods).toBe(1);
     expect(window?.goalieAssignments).toEqual([{ periodIndex: 0, playerId: p1.id }]);
+    expect(window?.positionContinuityPreferences).toEqual([
+      {
+        playerId: p2.id,
+        rotationIndex: 1,
+        fieldPosition: 'RB',
+      },
+    ]);
     expect(window?.manualOverrides).toEqual(
       expect.arrayContaining([
         {

@@ -6,7 +6,11 @@ import type {
   ManualOverride,
   SubPosition,
 } from '@/types/domain.ts';
-import { normalizePeriodDivisions, getPeriodOffsets } from '@/utils/rotationLayout.ts';
+import {
+  normalizePeriodDivisions,
+  getPeriodOffsets,
+  getPeriodForRotation,
+} from '@/utils/rotationLayout.ts';
 import type { SolverContext } from './types.ts';
 
 /**
@@ -19,6 +23,7 @@ export interface PreparedConstraints {
   mustBench: Map<string, Set<number>>;
   hardFieldPositionLocksByRotation: Map<number, Map<PlayerId, SubPosition>>;
   softFieldPositionPrefsByRotation: Map<number, Map<PlayerId, SubPosition>>;
+  positionContinuityPlayerIdsByRotation: Map<number, Set<PlayerId>>;
   softOverrides: ManualOverride[];
   maxBenchWeightByPlayer: Map<string, number>;
   rotationWeights: number[];
@@ -85,8 +90,15 @@ export function resolveGoalieAssignments(
  * Shared by both the MIP solver and the exhaustive backtracking solver.
  */
 export function prepareConstraints(ctx: SolverContext): PreparedConstraints {
-  const { players, config, goalieAssignments, manualOverrides, periodDivisions, totalRotations } =
-    ctx;
+  const {
+    players,
+    config,
+    goalieAssignments,
+    manualOverrides,
+    positionContinuityPreferences = [],
+    periodDivisions,
+    totalRotations,
+  } = ctx;
 
   const normalizedPeriodDivisions = normalizePeriodDivisions(
     periodDivisions,
@@ -240,22 +252,49 @@ export function prepareConstraints(ctx: SolverContext): PreparedConstraints {
   }
 
   const hardGoalieByRotation = new Map<number, PlayerId>();
-  for (const override of hardGoalieOverrides) {
-    const existing = hardGoalieByRotation.get(override.rotationIndex);
-    if (existing && existing !== override.playerId) {
-      throw new Error(
-        `R${override.rotationIndex + 1} has multiple hard goalie locks. Only one goalie is allowed.`,
-      );
-    }
-    const player = playerById.get(override.playerId);
-    if (!player?.canPlayGoalie) {
-      throw new Error(`${player?.name ?? 'Player'} cannot be hard-locked as goalie.`);
-    }
-    hardGoalieByRotation.set(override.rotationIndex, override.playerId);
-  }
+  if (config.goaliePlayFullPeriod) {
+    const hardGoalieByPeriod = new Map<number, PlayerId>();
+    for (const override of hardGoalieOverrides) {
+      const player = playerById.get(override.playerId);
+      if (!player?.canPlayGoalie) {
+        throw new Error(`${player?.name ?? 'Player'} cannot be hard-locked as goalie.`);
+      }
 
-  for (const [rotIndex, playerId] of hardGoalieByRotation.entries()) {
-    goalieMap.set(rotIndex, playerId);
+      const periodIndex = getPeriodForRotation(normalizedPeriodDivisions, override.rotationIndex);
+      const existing = hardGoalieByPeriod.get(periodIndex);
+      if (existing && existing !== override.playerId) {
+        throw new Error(
+          `Period ${periodIndex + 1} has multiple hard goalie locks. Only one goalie is allowed.`,
+        );
+      }
+      hardGoalieByPeriod.set(periodIndex, override.playerId);
+    }
+
+    for (const [periodIndex, playerId] of hardGoalieByPeriod.entries()) {
+      const periodStart = periodOffsets[periodIndex] ?? 0;
+      const periodDivision = normalizedPeriodDivisions[periodIndex] ?? 1;
+      for (let rot = 0; rot < periodDivision; rot++) {
+        goalieMap.set(periodStart + rot, playerId);
+      }
+    }
+  } else {
+    for (const override of hardGoalieOverrides) {
+      const existing = hardGoalieByRotation.get(override.rotationIndex);
+      if (existing && existing !== override.playerId) {
+        throw new Error(
+          `R${override.rotationIndex + 1} has multiple hard goalie locks. Only one goalie is allowed.`,
+        );
+      }
+      const player = playerById.get(override.playerId);
+      if (!player?.canPlayGoalie) {
+        throw new Error(`${player?.name ?? 'Player'} cannot be hard-locked as goalie.`);
+      }
+      hardGoalieByRotation.set(override.rotationIndex, override.playerId);
+    }
+
+    for (const [rotIndex, playerId] of hardGoalieByRotation.entries()) {
+      goalieMap.set(rotIndex, playerId);
+    }
   }
 
   // --- Build cannotBench / mustBench ---
@@ -340,6 +379,22 @@ export function prepareConstraints(ctx: SolverContext): PreparedConstraints {
 
   // --- Soft field position prefs ---
   const softFieldPositionPrefsByRotation = new Map<number, Map<PlayerId, SubPosition>>();
+  const positionContinuityPlayerIdsByRotation = new Map<number, Set<PlayerId>>();
+  for (const preference of positionContinuityPreferences) {
+    if (!activePlayerIds.has(preference.playerId)) continue;
+    if (preference.rotationIndex < 0 || preference.rotationIndex >= totalRotations) continue;
+
+    const continuityPlayers =
+      positionContinuityPlayerIdsByRotation.get(preference.rotationIndex) ?? new Set<PlayerId>();
+    continuityPlayers.add(preference.playerId);
+    positionContinuityPlayerIdsByRotation.set(preference.rotationIndex, continuityPlayers);
+
+    const prefs =
+      softFieldPositionPrefsByRotation.get(preference.rotationIndex) ??
+      new Map<PlayerId, SubPosition>();
+    prefs.set(preference.playerId, preference.fieldPosition);
+    softFieldPositionPrefsByRotation.set(preference.rotationIndex, prefs);
+  }
   for (const override of softOverrides) {
     if (!override.fieldPosition || override.assignment !== RotationAssignment.Field) continue;
     const prefs =
@@ -364,6 +419,7 @@ export function prepareConstraints(ctx: SolverContext): PreparedConstraints {
     mustBench,
     hardFieldPositionLocksByRotation,
     softFieldPositionPrefsByRotation,
+    positionContinuityPlayerIdsByRotation,
     softOverrides,
     maxBenchWeightByPlayer,
     rotationWeights,

@@ -117,7 +117,7 @@ interface RotationTableProps {
   onAddPlayerBack: (playerId: PlayerId) => void;
   showPeriodActions?: boolean;
   interactiveCells?: boolean;
-  previewChangedCellKeys?: Set<string>;
+  previewCellChanges?: Map<string, { fromLabel: string; toLabel: string }>;
 }
 
 export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
@@ -144,7 +144,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
       onAddPlayerBack,
       showPeriodActions = true,
       interactiveCells = true,
-      previewChangedCellKeys,
+      previewCellChanges,
     } = props;
 
     const { t } = useTranslation('game');
@@ -356,15 +356,27 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         swapSource.rotationIndex === rotation.index &&
                         !isPast &&
                         !isCompleted;
-                      const isPreviewChanged =
-                        previewChangedCellKeys?.has(`${rotation.index}:${player.id}`) ?? false;
+                      const previewCellChange = previewCellChanges?.get(
+                        `${rotation.index}:${player.id}`,
+                      );
+                      const isPreviewChanged = previewCellChange != null;
+                      const previewChangeDetail = previewCellChange
+                        ? t('live.regenerate_preview_cell_changed_detail', {
+                            from: previewCellChange.fromLabel,
+                            to: previewCellChange.toLabel,
+                          })
+                        : null;
                       const subTip = isChanging ? subTooltipMap.get(player.id) : undefined;
                       const baseCellTitle =
                         subTip ?? (fieldPosition ? SUB_POSITION_LABELS[fieldPosition] : undefined);
                       const cellTitle = isPreviewChanged
-                        ? baseCellTitle
-                          ? `${t('live.regenerate_preview_cell_changed')} · ${baseCellTitle}`
-                          : t('live.regenerate_preview_cell_changed')
+                        ? [
+                            t('live.regenerate_preview_cell_changed'),
+                            previewChangeDetail,
+                            baseCellTitle,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')
                         : baseCellTitle;
                       const isInteractive = interactiveCells && !isPast && !isCompleted;
                       const isFirstInPeriod = rotIdx === 0 && group.periodIndex > 0;
@@ -389,7 +401,9 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                                 tabIndex: 0,
                                 'aria-label': `${player.name}: ${display.label}, rotation ${rotation.index + 1}${
                                   isPreviewChanged
-                                    ? `, ${t('live.regenerate_preview_cell_changed_aria')}`
+                                    ? `, ${t('live.regenerate_preview_cell_changed_aria', {
+                                        detail: previewChangeDetail,
+                                      })}`
                                     : ''
                                 }`,
                                 onKeyDown: (e) => {
@@ -404,8 +418,10 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         >
                           <span
                             className={cn(
-                              'inline-flex items-center justify-center w-8 h-7 rounded-md text-ios-footnote font-medium transition-all relative',
-                              display.className,
+                              'inline-flex items-center justify-center rounded-md text-ios-footnote font-medium transition-all relative',
+                              !isPreviewChanged && 'w-8 h-7',
+                              !isPreviewChanged && display.className,
+                              isPreviewChanged && 'h-8 min-w-12 gap-0.5 px-1 whitespace-nowrap',
                               isSelected && 'ring-2 ring-primary ring-offset-1 animate-pulse',
                               isValidTarget &&
                                 'ring-1 ring-primary/50 hover:ring-2 hover:ring-primary',
@@ -422,7 +438,24 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                             )}
                             title={cellTitle}
                           >
-                            {display.label}
+                            {previewCellChange ? (
+                              <>
+                                <span className="text-[10px] leading-none text-muted-foreground/80 line-through">
+                                  {previewCellChange.fromLabel}
+                                </span>
+                                <span
+                                  aria-hidden="true"
+                                  className="text-[10px] leading-none text-muted-foreground/80"
+                                >
+                                  →
+                                </span>
+                                <span className={cn('text-[10px] leading-none', display.className)}>
+                                  {previewCellChange.toLabel}
+                                </span>
+                              </>
+                            ) : (
+                              display.label
+                            )}
                             {isPreviewChanged && (
                               <span
                                 aria-hidden="true"

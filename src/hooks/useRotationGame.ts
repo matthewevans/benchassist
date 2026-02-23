@@ -3,16 +3,224 @@ import { useAppContext } from '@/hooks/useAppContext.ts';
 import { useSolver, type SolverInput } from '@/hooks/useSolver.ts';
 import { previewSwap, previewSwapRange } from '@/utils/stats.ts';
 import { redivideSchedulePeriod } from '@/utils/rotationDivision.ts';
-import { normalizePeriodDivisions, getPeriodRange } from '@/utils/rotationLayout.ts';
+import {
+  normalizePeriodDivisions,
+  getPeriodOffsets,
+  getPeriodRange,
+} from '@/utils/rotationLayout.ts';
 import {
   getOptimizationOptionKey,
   normalizeOptimizationSuggestion,
   type OptimizationOption,
 } from '@/utils/divisionOptimizer.ts';
+import type { PositionContinuityPreference } from '@/types/solver.ts';
 import { RotationAssignment } from '@/types/domain.ts';
-import type { PlayerId, Game, GoalieAssignment, RotationSchedule } from '@/types/domain.ts';
+import type {
+  PlayerId,
+  Game,
+  GoalieAssignment,
+  RotationSchedule,
+  ManualOverride,
+} from '@/types/domain.ts';
 
 export type LiveRegenerateLockPolicy = 'off' | 'hard-only' | 'hard+soft';
+
+function buildRotationSlotMaps(rotations: RotationSchedule['rotations']) {
+  const slotByIndex = new Map<number, string>();
+  const rotationBySlot = new Map<string, (typeof rotations)[number]>();
+  const rotationsByPeriod = new Map<number, (typeof rotations)[number][]>();
+  const periodOrdinals = new Map<number, number>();
+
+  for (const rotation of rotations) {
+    const ordinal = periodOrdinals.get(rotation.periodIndex) ?? 0;
+    const slotKey = `${rotation.periodIndex}:${ordinal}`;
+    periodOrdinals.set(rotation.periodIndex, ordinal + 1);
+    slotByIndex.set(rotation.index, slotKey);
+    rotationBySlot.set(slotKey, rotation);
+    const periodRotations = rotationsByPeriod.get(rotation.periodIndex) ?? [];
+    periodRotations.push(rotation);
+    rotationsByPeriod.set(rotation.periodIndex, periodRotations);
+  }
+
+  return { slotByIndex, rotationBySlot, rotationsByPeriod };
+}
+
+function parseSlotKey(slotKey: string): { periodIndex: number; ordinal: number } | null {
+  const [periodText, ordinalText] = slotKey.split(':');
+  const periodIndex = Number(periodText);
+  const ordinal = Number(ordinalText);
+  if (!Number.isInteger(periodIndex) || !Number.isInteger(ordinal) || ordinal < 0) return null;
+  return { periodIndex, ordinal };
+}
+
+function mapOrdinal(previewOrdinal: number, previewCount: number, currentCount: number): number {
+  if (currentCount <= 1 || previewCount <= 1) return 0;
+  const ratio = (previewOrdinal * (currentCount - 1)) / (previewCount - 1);
+  const mapped = Math.round(ratio);
+  return Math.max(0, Math.min(currentCount - 1, mapped));
+}
+
+function resolveComparableCurrentRotation(
+  slotKey: string,
+  current: {
+    rotationBySlot: Map<string, RotationSchedule['rotations'][number]>;
+    rotationsByPeriod: Map<number, RotationSchedule['rotations'][number][]>;
+  },
+  preview: { rotationsByPeriod: Map<number, RotationSchedule['rotations'][number][]> },
+): { rotation: RotationSchedule['rotations'][number]; ordinal: number } | null {
+  const direct = current.rotationBySlot.get(slotKey);
+  if (direct) {
+    const parsed = parseSlotKey(slotKey);
+    return parsed
+      ? { rotation: direct, ordinal: parsed.ordinal }
+      : { rotation: direct, ordinal: 0 };
+  }
+
+  const parsed = parseSlotKey(slotKey);
+  if (!parsed) return null;
+  const currentPeriodRotations = current.rotationsByPeriod.get(parsed.periodIndex);
+  const previewPeriodRotations = preview.rotationsByPeriod.get(parsed.periodIndex);
+  if (!currentPeriodRotations || currentPeriodRotations.length === 0) return null;
+  if (!previewPeriodRotations || previewPeriodRotations.length === 0) return null;
+
+  const mappedOrdinal = mapOrdinal(
+    parsed.ordinal,
+    previewPeriodRotations.length,
+    currentPeriodRotations.length,
+  );
+  const mappedRotation = currentPeriodRotations[mappedOrdinal];
+  if (!mappedRotation) return null;
+  return { rotation: mappedRotation, ordinal: mappedOrdinal };
+}
+
+function hasPreviewCellChanges(
+  currentSchedule: RotationSchedule,
+  previewSchedule: RotationSchedule,
+  startRotationIndex: number,
+  usePositions: boolean,
+): boolean {
+  const currentMaps = buildRotationSlotMaps(currentSchedule.rotations);
+  const previewMaps = buildRotationSlotMaps(previewSchedule.rotations);
+  const coveredCurrentOrdinalsByPeriod = new Map<number, Set<number>>();
+
+  for (const previewRotation of previewSchedule.rotations) {
+    if (previewRotation.index < startRotationIndex) continue;
+    const slotKey = previewMaps.slotByIndex.get(previewRotation.index);
+    if (!slotKey) return true;
+    const comparable = resolveComparableCurrentRotation(slotKey, currentMaps, previewMaps);
+    if (!comparable) return true;
+    const currentRotation = comparable.rotation;
+    const parsedSlot = parseSlotKey(slotKey);
+    if (parsedSlot) {
+      const coveredOrdinals =
+        coveredCurrentOrdinalsByPeriod.get(parsedSlot.periodIndex) ?? new Set();
+      coveredOrdinals.add(comparable.ordinal);
+      coveredCurrentOrdinalsByPeriod.set(parsedSlot.periodIndex, coveredOrdinals);
+    }
+
+    const playerIds = new Set([
+      ...Object.keys(previewRotation.assignments),
+      ...Object.keys(currentRotation.assignments),
+    ]);
+
+    for (const playerId of playerIds) {
+      const previewAssignment = previewRotation.assignments[playerId] ?? RotationAssignment.Bench;
+      const currentAssignment = currentRotation.assignments[playerId] ?? RotationAssignment.Bench;
+      if (previewAssignment !== currentAssignment) return true;
+      if (!usePositions) continue;
+      if (
+        previewAssignment !== RotationAssignment.Field ||
+        currentAssignment !== RotationAssignment.Field
+      ) {
+        continue;
+      }
+      const previewFieldPos = previewRotation.fieldPositions?.[playerId];
+      const currentFieldPos = currentRotation.fieldPositions?.[playerId];
+      if (previewFieldPos !== currentFieldPos) return true;
+    }
+  }
+
+  for (const [periodIndex, currentPeriodRotations] of currentMaps.rotationsByPeriod.entries()) {
+    const coveredOrdinals = coveredCurrentOrdinalsByPeriod.get(periodIndex) ?? new Set<number>();
+    for (let ordinal = 0; ordinal < currentPeriodRotations.length; ordinal++) {
+      const currentRotation = currentPeriodRotations[ordinal];
+      if (currentRotation.index < startRotationIndex) continue;
+      if (!coveredOrdinals.has(ordinal)) return true;
+    }
+  }
+
+  return false;
+}
+
+function remapOverridesForPeriodDivisions(
+  overrides: ManualOverride[],
+  currentSchedule: RotationSchedule,
+  targetPeriodDivisions: number[],
+): ManualOverride[] {
+  if (overrides.length === 0) return overrides;
+  const currentMaps = buildRotationSlotMaps(currentSchedule.rotations);
+  const targetOffsets = getPeriodOffsets(targetPeriodDivisions);
+
+  return overrides.map((override) => {
+    const slotKey = currentMaps.slotByIndex.get(override.rotationIndex);
+    if (!slotKey) return override;
+
+    const parsedSlot = parseSlotKey(slotKey);
+    if (!parsedSlot) return override;
+
+    const currentPeriodRotations = currentMaps.rotationsByPeriod.get(parsedSlot.periodIndex);
+    const currentCount = currentPeriodRotations?.length ?? 1;
+    const targetCount = Math.max(1, Math.floor(targetPeriodDivisions[parsedSlot.periodIndex] ?? 1));
+    const targetStart = targetOffsets[parsedSlot.periodIndex];
+    if (targetStart == null) return override;
+
+    return {
+      ...override,
+      rotationIndex: targetStart + mapOrdinal(parsedSlot.ordinal, currentCount, targetCount),
+    };
+  });
+}
+
+function buildPositionContinuityPreferencesForPeriodDivisions(
+  currentSchedule: RotationSchedule,
+  targetPeriodDivisions: number[],
+  startRotationIndex: number,
+): PositionContinuityPreference[] {
+  const currentMaps = buildRotationSlotMaps(currentSchedule.rotations);
+  const targetOffsets = getPeriodOffsets(targetPeriodDivisions);
+  const preferences = new Map<string, PositionContinuityPreference>();
+
+  for (let periodIndex = 0; periodIndex < targetPeriodDivisions.length; periodIndex++) {
+    const currentPeriodRotations = currentMaps.rotationsByPeriod.get(periodIndex);
+    if (!currentPeriodRotations || currentPeriodRotations.length === 0) continue;
+    const targetCount = Math.max(1, Math.floor(targetPeriodDivisions[periodIndex] ?? 1));
+    const targetStart = targetOffsets[periodIndex];
+    if (targetStart == null) continue;
+
+    for (let targetOrdinal = 0; targetOrdinal < targetCount; targetOrdinal++) {
+      const targetRotationIndex = targetStart + targetOrdinal;
+      if (targetRotationIndex < startRotationIndex) continue;
+      const sourceOrdinal = mapOrdinal(targetOrdinal, targetCount, currentPeriodRotations.length);
+      const sourceRotation = currentPeriodRotations[sourceOrdinal];
+      if (!sourceRotation) continue;
+
+      for (const [playerId, assignment] of Object.entries(sourceRotation.assignments)) {
+        if (assignment !== RotationAssignment.Field) continue;
+        const fieldPosition = sourceRotation.fieldPositions?.[playerId];
+        if (!fieldPosition) continue;
+        const key = `${playerId}:${targetRotationIndex}`;
+        if (preferences.has(key)) continue;
+        preferences.set(key, {
+          playerId,
+          rotationIndex: targetRotationIndex,
+          fieldPosition,
+        });
+      }
+    }
+  }
+
+  return [...preferences.values()];
+}
 
 export function useRotationGame(gameId: string | undefined) {
   const { state, dispatch } = useAppContext();
@@ -223,6 +431,52 @@ export function useRotationGame(gameId: string | undefined) {
   }, [solverResult, solverSuggestion, gameId, dispatch, solverReset, solverResultBehavior]);
 
   useEffect(() => {
+    if (!solverResult || !gameId) return;
+    if (solverResultBehavior !== 'preview-regenerate') return;
+    if (!regeneratePreviewBase) return;
+    if (
+      hasPreviewCellChanges(
+        regeneratePreviewBase,
+        solverResult,
+        currentRotationIndex,
+        config?.usePositions ?? false,
+      )
+    ) {
+      return;
+    }
+
+    if (pendingOptimizeOption) {
+      dispatch({
+        type: 'APPLY_OPTIMIZED_SCHEDULE',
+        payload: {
+          gameId,
+          schedule: solverResult,
+          periodDivisions: pendingOptimizeOption.periodDivisions,
+          clearFutureOverridesFrom: isLive ? currentRotationIndex : 0,
+        },
+      });
+      setPendingOptimizeOption(null);
+      setFailedOptimizeOptionKeys([]);
+      setOptimizeAttemptError(null);
+    }
+
+    setSolverResultBehavior('apply');
+    solverReset();
+    setRegeneratePreviewBase(null);
+  }, [
+    solverResult,
+    gameId,
+    solverResultBehavior,
+    regeneratePreviewBase,
+    currentRotationIndex,
+    config?.usePositions,
+    pendingOptimizeOption,
+    dispatch,
+    isLive,
+    solverReset,
+  ]);
+
+  useEffect(() => {
     if (!solver.error) return;
     if (solverResultBehavior !== 'preview-regenerate') return;
     if (!pendingOptimizeOption) return;
@@ -257,6 +511,11 @@ export function useRotationGame(gameId: string | undefined) {
       return game.manualOverrides.filter((override) => override.lockMode !== 'soft');
     }
     return game.manualOverrides;
+  }
+
+  function getHardManualOverrides() {
+    if (!game) return [];
+    return game.manualOverrides.filter((override) => override.lockMode === 'hard');
   }
 
   // --- Handlers ---
@@ -479,6 +738,19 @@ export function useRotationGame(gameId: string | undefined) {
     if (!roster || !config || !game || !schedule || !selectedOptimizationOption) return;
 
     const selectedDivisions = selectedOptimizationOption.periodDivisions;
+    const hardManualOverrides = getHardManualOverrides();
+    const positionContinuityPreferences = config.usePositions
+      ? buildPositionContinuityPreferencesForPeriodDivisions(
+          schedule,
+          selectedDivisions,
+          isLive ? currentRotationIndex : 0,
+        )
+      : [];
+    const remappedHardManualOverrides = remapOverridesForPeriodDivisions(
+      hardManualOverrides,
+      schedule,
+      selectedDivisions,
+    );
     setPendingOptimizeOption(selectedOptimizationOption);
     setRegeneratePreviewBase(schedule);
     setOptimizeSheetOpen(false);
@@ -491,7 +763,8 @@ export function useRotationGame(gameId: string | undefined) {
           config,
           absentPlayerIds: [...game.absentPlayerIds, ...game.removedPlayerIds],
           goalieAssignments: game.goalieAssignments,
-          manualOverrides: [],
+          manualOverrides: remappedHardManualOverrides,
+          positionContinuityPreferences,
           periodDivisions: selectedDivisions,
           startFromRotation: game.currentRotationIndex,
           existingRotations: schedule.rotations,
@@ -507,7 +780,8 @@ export function useRotationGame(gameId: string | undefined) {
           config,
           absentPlayerIds: game.absentPlayerIds,
           goalieAssignments: game.goalieAssignments,
-          manualOverrides: [],
+          manualOverrides: remappedHardManualOverrides,
+          positionContinuityPreferences,
           periodDivisions: selectedDivisions,
           skipOptimizationCheck: true,
           allowConstraintRelaxation: true,

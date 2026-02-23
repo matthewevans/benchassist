@@ -9,6 +9,7 @@ export interface OptimizationOption {
   expectedMaxPercent: number;
   expectedMinPercent: number;
   expectedExtraCount: number;
+  expectedStrengthRange?: number;
   gapImprovement: number;
 }
 
@@ -17,6 +18,7 @@ export interface OptimizationSuggestion {
   currentMaxPercent: number;
   currentMinPercent: number;
   currentExtraCount: number;
+  currentStrengthRange?: number;
   currentTotalRotations: number;
   options: OptimizationOption[];
 }
@@ -108,6 +110,8 @@ export function normalizeOptimizationSuggestion(
       ? toFiniteNumber(value.currentMinPercent)
       : currentMaxPercent - currentGap;
   const currentExtraCount = Math.max(0, Math.floor(toFiniteNumber(value.currentExtraCount)));
+  const currentStrengthRange =
+    value.currentStrengthRange != null ? toFiniteNumber(value.currentStrengthRange) : undefined;
   const explicitCurrentTotalRotations = Number(
     (value as Partial<OptimizationSuggestion>).currentTotalRotations,
   );
@@ -120,6 +124,10 @@ export function normalizeOptimizationSuggestion(
         const periodDivisions = sanitizePeriodDivisions(candidate.periodDivisions);
         if (periodDivisions.length === 0) return null;
         const expectedGap = toFiniteNumber(candidate.expectedGap);
+        const expectedStrengthRange =
+          candidate.expectedStrengthRange != null
+            ? toFiniteNumber(candidate.expectedStrengthRange)
+            : currentStrengthRange;
         const parsedTotalRotations = Number(candidate.totalRotations);
         const totalRotations = Number.isFinite(parsedTotalRotations)
           ? Math.max(1, Math.floor(parsedTotalRotations))
@@ -150,6 +158,7 @@ export function normalizeOptimizationSuggestion(
           expectedMaxPercent: toFiniteNumber(candidate.expectedMaxPercent),
           expectedMinPercent: toFiniteNumber(candidate.expectedMinPercent),
           expectedExtraCount: Math.max(0, Math.floor(toFiniteNumber(candidate.expectedExtraCount))),
+          ...(expectedStrengthRange != null ? { expectedStrengthRange } : {}),
           gapImprovement:
             candidate.gapImprovement != null
               ? toFiniteNumber(candidate.gapImprovement)
@@ -171,6 +180,7 @@ export function normalizeOptimizationSuggestion(
       currentMaxPercent,
       currentMinPercent,
       currentExtraCount,
+      ...(currentStrengthRange != null ? { currentStrengthRange } : {}),
       currentTotalRotations: inferredCurrentTotalRotations,
       options: sortOptimizationOptions(normalizedOptions),
     };
@@ -193,6 +203,7 @@ export function normalizeOptimizationSuggestion(
     currentMaxPercent,
     currentMinPercent,
     currentExtraCount,
+    ...(currentStrengthRange != null ? { currentStrengthRange } : {}),
     currentTotalRotations,
     options: [
       {
@@ -206,6 +217,7 @@ export function normalizeOptimizationSuggestion(
         expectedMaxPercent: toFiniteNumber(legacy.suggestedMaxPercent),
         expectedMinPercent: toFiniteNumber(legacy.suggestedMinPercent),
         expectedExtraCount: Math.max(0, Math.floor(toFiniteNumber(legacy.suggestedExtraCount))),
+        ...(currentStrengthRange != null ? { expectedStrengthRange: currentStrengthRange } : {}),
         gapImprovement: Math.round((currentGap - expectedGap) * 10) / 10,
       },
     ],

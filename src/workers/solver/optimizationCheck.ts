@@ -26,9 +26,10 @@ export function checkOptimizationFeasibility(params: {
   config: GameConfig;
   goalieAssignments: GoalieAssignment[];
   currentPlayerStats: Record<string, PlayerStats>;
+  currentStrengthRange?: number;
   currentRotationIndex?: number;
 }): OptimizationSuggestion | null {
-  const { currentDivisions, players, config, currentPlayerStats } = params;
+  const { currentDivisions, players, config, currentPlayerStats, currentStrengthRange } = params;
   const currentRotationIndex = params.currentRotationIndex ?? 0;
   const currentTotalRotations = getTotalRotationsFromDivisions(currentDivisions);
 
@@ -102,6 +103,7 @@ export function checkOptimizationFeasibility(params: {
         expectedMaxPercent: evaluation.maxPlayPercent,
         expectedMinPercent: evaluation.minPlayPercent,
         expectedExtraCount: evaluation.extraPlayerCount,
+        ...(currentStrengthRange != null ? { expectedStrengthRange: currentStrengthRange } : {}),
         gapImprovement: improvement,
       };
     },
@@ -124,6 +126,7 @@ export function checkOptimizationFeasibility(params: {
     currentMaxPercent,
     currentMinPercent,
     currentExtraCount,
+    ...(currentStrengthRange != null ? { currentStrengthRange } : {}),
     currentTotalRotations,
     options,
   };

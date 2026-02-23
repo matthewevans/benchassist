@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import type { SolverRequest, SolverResponse } from '@/types/solver.ts';
+import type {
+  SolverRequest,
+  SolverResponse,
+  PositionContinuityPreference,
+} from '@/types/solver.ts';
 import type {
   Player,
   GameConfig,
@@ -17,6 +21,7 @@ export interface SolverInput {
   absentPlayerIds: string[];
   goalieAssignments: GoalieAssignment[];
   manualOverrides: ManualOverride[];
+  positionContinuityPreferences?: PositionContinuityPreference[];
   periodDivisions?: number[];
   startFromRotation?: number;
   existingRotations?: Rotation[];

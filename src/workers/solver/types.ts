@@ -1,10 +1,12 @@
 import type { Player, GameConfig, GoalieAssignment, ManualOverride } from '@/types/domain.ts';
+import type { PositionContinuityPreference } from '@/types/solver.ts';
 
 export interface SolverContext {
   players: Player[];
   config: GameConfig;
   goalieAssignments: GoalieAssignment[];
   manualOverrides: ManualOverride[];
+  positionContinuityPreferences?: PositionContinuityPreference[];
   periodDivisions?: number[];
   rotationWeights?: number[];
   maxBenchWeightByPlayer?: Record<string, number>;

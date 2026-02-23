@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { RotationGrid } from './RotationGrid.tsx';
@@ -226,9 +226,9 @@ describe('RotationGrid', () => {
     it('shows overall stats cards', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
-      expect(screen.getByText('Avg Strength')).toBeInTheDocument();
-      expect(screen.getByText('Strength Range')).toBeInTheDocument();
-      expect(screen.getByText('Variance')).toBeInTheDocument();
+      expect(screen.getByText('Lineup balance')).toBeInTheDocument();
+      expect(screen.getByText('Strength spread')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /show details/i })).toBeInTheDocument();
     });
 
     it('flags high play-percentage outliers in the grid', () => {
@@ -346,14 +346,461 @@ describe('RotationGrid', () => {
       renderGrid(state, game.id);
 
       await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
-      expect(screen.getByText('Split Period 1')).toBeInTheDocument();
+      expect(screen.queryByText('Split Period 1')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /more options/i })).toBeInTheDocument();
+      const selectedSummary = screen.getByTestId('optimize-selected-summary');
+      expect(within(selectedSummary).getByText(/2-2/i)).toBeInTheDocument();
+      expect(within(selectedSummary).getByText(/4 rotations/i)).toBeInTheDocument();
 
+      await userEvent.click(screen.getByRole('button', { name: /more options/i }));
       await userEvent.click(screen.getByText('Split Period 1'));
-      await userEvent.click(screen.getByRole('button', { name: /preview option/i }));
+      expect(within(selectedSummary).getByText(/Split Period 1/i)).toBeInTheDocument();
+      expect(within(selectedSummary).getByText(/5 rotations/i)).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: /preview/i }));
 
       expect(mockSolver.solve).toHaveBeenCalledWith(
         expect.objectContaining({
           periodDivisions: [3, 2],
+          skipOptimizationCheck: true,
+        }),
+      );
+    });
+
+    it('hides larger optimization groups by default and reveals them on demand', async () => {
+      const { state, game } = buildTestState();
+      state.games[game.id] = {
+        ...game,
+        optimizationSuggestion: {
+          currentGap: 25,
+          currentMaxPercent: 75,
+          currentMinPercent: 50,
+          currentExtraCount: 2,
+          options: [
+            {
+              periodDivisions: [3, 2],
+              totalRotations: 5,
+              expectedGap: 20,
+              expectedMaxPercent: 60,
+              expectedMinPercent: 40,
+              expectedExtraCount: 3,
+              gapImprovement: 5,
+            },
+            {
+              periodDivisions: [3, 3],
+              totalRotations: 6,
+              expectedGap: 16,
+              expectedMaxPercent: 58,
+              expectedMinPercent: 42,
+              expectedExtraCount: 3,
+              gapImprovement: 9,
+            },
+            {
+              periodDivisions: [4, 3],
+              totalRotations: 7,
+              expectedGap: 14,
+              expectedMaxPercent: 57,
+              expectedMinPercent: 43,
+              expectedExtraCount: 4,
+              gapImprovement: 11,
+            },
+          ],
+        },
+      };
+
+      renderGrid(state, game.id);
+      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+
+      expect(screen.queryByText('Change +1 rotations')).not.toBeInTheDocument();
+      expect(screen.queryByText('Change +2 rotations')).not.toBeInTheDocument();
+      expect(screen.queryByText('Change +3 rotations')).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: /more options/i }));
+      expect(screen.getByText('Change +1 rotations')).toBeInTheDocument();
+      expect(screen.queryByText('Change +2 rotations')).not.toBeInTheDocument();
+      expect(screen.queryByText('Change +3 rotations')).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: /show more options/i }));
+      expect(screen.getByText('Change +2 rotations')).toBeInTheDocument();
+      expect(screen.getByText('Change +3 rotations')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /show fewer options/i })).toBeInTheDocument();
+    });
+
+    it('preserves hard goalie locks during optimize preview solve', async () => {
+      const { state, game, config } = buildTestState();
+      const goaliePlayerId = state.teams[game.teamId].rosters[0].players[0].id;
+      state.teams[game.teamId] = {
+        ...state.teams[game.teamId],
+        gameConfigs: state.teams[game.teamId].gameConfigs.map((existing) =>
+          existing.id === config.id ? { ...existing, useGoalie: true } : existing,
+        ),
+      };
+      state.games[game.id] = {
+        ...game,
+        goalieAssignments: [{ periodIndex: 0, playerId: goaliePlayerId }],
+        manualOverrides: [
+          {
+            playerId: goaliePlayerId,
+            rotationIndex: 0,
+            assignment: RotationAssignment.Goalie,
+            lockMode: 'hard',
+          },
+        ],
+        optimizationSuggestion: {
+          currentGap: 25,
+          currentMaxPercent: 75,
+          currentMinPercent: 50,
+          currentExtraCount: 2,
+          options: [
+            {
+              periodDivisions: [2, 2],
+              totalRotations: 4,
+              expectedGap: 25,
+              expectedMaxPercent: 75,
+              expectedMinPercent: 50,
+              expectedExtraCount: 2,
+              gapImprovement: 0,
+            },
+            {
+              periodDivisions: [3, 2],
+              totalRotations: 5,
+              expectedGap: 20,
+              expectedMaxPercent: 60,
+              expectedMinPercent: 40,
+              expectedExtraCount: 3,
+              gapImprovement: 5,
+            },
+          ],
+        },
+      };
+
+      renderGrid(state, game.id);
+
+      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /more options/i }));
+      await userEvent.click(screen.getByText('Split Period 1'));
+      await userEvent.click(screen.getByRole('button', { name: /preview/i }));
+
+      expect(mockSolver.solve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          goalieAssignments: [{ periodIndex: 0, playerId: goaliePlayerId }],
+          manualOverrides: [
+            expect.objectContaining({
+              playerId: goaliePlayerId,
+              assignment: RotationAssignment.Goalie,
+              lockMode: 'hard',
+            }),
+          ],
+          periodDivisions: [3, 2],
+          skipOptimizationCheck: true,
+        }),
+      );
+    });
+
+    it('remaps hard goalie locks to the selected optimize divisions', async () => {
+      const { state, game, config } = buildTestState();
+      const goaliePlayerId = state.teams[game.teamId].rosters[0].players[0].id;
+      state.teams[game.teamId] = {
+        ...state.teams[game.teamId],
+        gameConfigs: state.teams[game.teamId].gameConfigs.map((existing) =>
+          existing.id === config.id ? { ...existing, useGoalie: true } : existing,
+        ),
+      };
+      state.games[game.id] = {
+        ...game,
+        manualOverrides: [
+          {
+            playerId: goaliePlayerId,
+            rotationIndex: 2,
+            assignment: RotationAssignment.Goalie,
+            lockMode: 'hard',
+          },
+        ],
+        optimizationSuggestion: {
+          currentGap: 25,
+          currentMaxPercent: 75,
+          currentMinPercent: 50,
+          currentExtraCount: 2,
+          options: [
+            {
+              periodDivisions: [2, 2],
+              totalRotations: 4,
+              expectedGap: 25,
+              expectedMaxPercent: 75,
+              expectedMinPercent: 50,
+              expectedExtraCount: 2,
+              gapImprovement: 0,
+            },
+            {
+              periodDivisions: [3, 2],
+              totalRotations: 5,
+              expectedGap: 20,
+              expectedMaxPercent: 60,
+              expectedMinPercent: 40,
+              expectedExtraCount: 3,
+              gapImprovement: 5,
+            },
+          ],
+        },
+      };
+
+      renderGrid(state, game.id);
+
+      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /more options/i }));
+      await userEvent.click(screen.getByText('Split Period 1'));
+      await userEvent.click(screen.getByRole('button', { name: /preview/i }));
+
+      expect(mockSolver.solve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          manualOverrides: [
+            expect.objectContaining({
+              playerId: goaliePlayerId,
+              assignment: RotationAssignment.Goalie,
+              lockMode: 'hard',
+              rotationIndex: 3,
+            }),
+          ],
+          periodDivisions: [3, 2],
+          skipOptimizationCheck: true,
+        }),
+      );
+    });
+
+    it('sends mapped position continuity preferences for optimize preview', async () => {
+      const { state, game, config } = buildTestState();
+      const players = state.teams[game.teamId].rosters[0].players;
+      const continuityPlayerId = players[1].id;
+      const scheduleWithPositions = {
+        ...game.schedule!,
+        rotations: game.schedule!.rotations.map((rotation) =>
+          rotation.index === 2
+            ? {
+                ...rotation,
+                fieldPositions: {
+                  [players[1].id]: 'LB',
+                  [players[2].id]: 'CB',
+                  [players[3].id]: 'CM',
+                  [players[4].id]: 'ST',
+                },
+              }
+            : rotation,
+        ),
+      };
+
+      state.teams[game.teamId] = {
+        ...state.teams[game.teamId],
+        gameConfigs: state.teams[game.teamId].gameConfigs.map((existing) =>
+          existing.id === config.id
+            ? {
+                ...existing,
+                usePositions: true,
+                formation: [
+                  { position: 'DEF', count: 2 },
+                  { position: 'MID', count: 1 },
+                  { position: 'FWD', count: 1 },
+                ],
+              }
+            : existing,
+        ),
+      };
+      state.games[game.id] = {
+        ...game,
+        schedule: scheduleWithPositions,
+        optimizationSuggestion: {
+          currentGap: 25,
+          currentMaxPercent: 75,
+          currentMinPercent: 50,
+          currentExtraCount: 2,
+          options: [
+            {
+              periodDivisions: [2, 2],
+              totalRotations: 4,
+              expectedGap: 25,
+              expectedMaxPercent: 75,
+              expectedMinPercent: 50,
+              expectedExtraCount: 2,
+              gapImprovement: 0,
+            },
+            {
+              periodDivisions: [3, 2],
+              totalRotations: 5,
+              expectedGap: 20,
+              expectedMaxPercent: 60,
+              expectedMinPercent: 40,
+              expectedExtraCount: 3,
+              gapImprovement: 5,
+            },
+          ],
+        },
+      };
+
+      renderGrid(state, game.id);
+
+      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /more options/i }));
+      await userEvent.click(screen.getByText('Split Period 1'));
+      await userEvent.click(screen.getByRole('button', { name: /preview/i }));
+
+      expect(mockSolver.solve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          positionContinuityPreferences: expect.arrayContaining([
+            expect.objectContaining({
+              playerId: continuityPlayerId,
+              rotationIndex: 3,
+              fieldPosition: 'LB',
+            }),
+          ]),
+          periodDivisions: [3, 2],
+          skipOptimizationCheck: true,
+        }),
+      );
+    });
+
+    it('applies continuity preferences to all new rotations when a period is split', async () => {
+      const players = [
+        playerFactory.build({
+          name: 'A',
+          skillRanking: 5,
+          canPlayGoalie: false,
+          primaryPosition: null,
+        }),
+        playerFactory.build({
+          name: 'B',
+          skillRanking: 4,
+          canPlayGoalie: false,
+          primaryPosition: null,
+        }),
+        playerFactory.build({
+          name: 'C',
+          skillRanking: 3,
+          canPlayGoalie: false,
+          primaryPosition: null,
+        }),
+        playerFactory.build({
+          name: 'D',
+          skillRanking: 2,
+          canPlayGoalie: false,
+          primaryPosition: null,
+        }),
+        playerFactory.build({
+          name: 'E',
+          skillRanking: 1,
+          canPlayGoalie: false,
+          primaryPosition: null,
+        }),
+      ];
+      const config = gameConfigFactory.build({
+        fieldSize: 4,
+        periods: 2,
+        rotationsPerPeriod: 1,
+        useGoalie: false,
+        usePositions: true,
+        formation: [
+          { position: 'DEF', count: 2 },
+          { position: 'MID', count: 1 },
+          { position: 'FWD', count: 1 },
+        ],
+      });
+      const roster: Roster = rosterFactory.build({ players });
+      const team: Team = teamFactory.build({
+        rosters: [roster],
+        gameConfigs: [config],
+      });
+      const period0PlayerId = players[0].id;
+      const rotations = [
+        {
+          ...buildRotation(0, {
+            [players[0].id]: RotationAssignment.Field,
+            [players[1].id]: RotationAssignment.Field,
+            [players[2].id]: RotationAssignment.Field,
+            [players[3].id]: RotationAssignment.Field,
+            [players[4].id]: RotationAssignment.Bench,
+          }),
+          periodIndex: 0,
+          fieldPositions: {
+            [players[0].id]: 'LB',
+            [players[1].id]: 'RB',
+            [players[2].id]: 'CM',
+            [players[3].id]: 'ST',
+          },
+        },
+        {
+          ...buildRotation(1, {
+            [players[0].id]: RotationAssignment.Bench,
+            [players[1].id]: RotationAssignment.Field,
+            [players[2].id]: RotationAssignment.Field,
+            [players[3].id]: RotationAssignment.Field,
+            [players[4].id]: RotationAssignment.Field,
+          }),
+          periodIndex: 1,
+          fieldPositions: {
+            [players[1].id]: 'LB',
+            [players[2].id]: 'RB',
+            [players[3].id]: 'CM',
+            [players[4].id]: 'ST',
+          },
+        },
+      ];
+      const schedule = buildSchedule(rotations, players);
+      const game: Game = gameFactory.build({
+        teamId: team.id,
+        rosterId: roster.id,
+        gameConfigId: config.id,
+        status: 'setup',
+        schedule,
+        periodDivisions: [1, 1],
+        optimizationSuggestion: {
+          currentGap: 20,
+          currentMaxPercent: 60,
+          currentMinPercent: 40,
+          currentExtraCount: 1,
+          options: [
+            {
+              periodDivisions: [1, 1],
+              totalRotations: 2,
+              expectedGap: 20,
+              expectedMaxPercent: 60,
+              expectedMinPercent: 40,
+              expectedExtraCount: 1,
+              gapImprovement: 0,
+            },
+            {
+              periodDivisions: [2, 1],
+              totalRotations: 3,
+              expectedGap: 10,
+              expectedMaxPercent: 55,
+              expectedMinPercent: 45,
+              expectedExtraCount: 2,
+              gapImprovement: 10,
+            },
+          ],
+        },
+      });
+      const customState: AppState = {
+        teams: { [team.id]: team },
+        games: { [game.id]: game },
+      };
+
+      renderGrid(customState, game.id);
+      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /more options/i }));
+      await userEvent.click(screen.getByText('Split Period 1'));
+      await userEvent.click(screen.getByRole('button', { name: /preview/i }));
+
+      expect(mockSolver.solve).toHaveBeenCalledWith(
+        expect.objectContaining({
+          positionContinuityPreferences: expect.arrayContaining([
+            expect.objectContaining({
+              playerId: period0PlayerId,
+              rotationIndex: 0,
+              fieldPosition: 'LB',
+            }),
+            expect.objectContaining({
+              playerId: period0PlayerId,
+              rotationIndex: 1,
+              fieldPosition: 'LB',
+            }),
+          ]),
+          periodDivisions: [2, 1],
           skipOptimizationCheck: true,
         }),
       );
@@ -627,7 +1074,7 @@ describe('RotationGrid', () => {
       );
     });
 
-    it('shows a live regenerate preview instead of auto-applying solver output', async () => {
+    it('skips live regenerate preview when solver output has no modified cells', async () => {
       const { state, game } = buildLiveState();
       const { dispatch } = renderGrid(state, game.id);
       mockSolver.solve = vi.fn(() => {
@@ -641,12 +1088,192 @@ describe('RotationGrid', () => {
       });
       await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
 
-      expect(await screen.findByText('Review Regenerated Rotations')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByText('Review Regenerated Rotations')).not.toBeInTheDocument();
+      });
       expect(dispatch).not.toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'SET_GAME_SCHEDULE',
         }),
       );
+    });
+
+    it('does not treat bench field-position metadata as a preview diff', async () => {
+      const { state, game, team, config } = buildLiveState();
+      const { dispatch } = renderGrid(
+        {
+          ...state,
+          teams: {
+            ...state.teams,
+            [team.id]: {
+              ...team,
+              gameConfigs: team.gameConfigs.map((existing) =>
+                existing.id === config.id ? { ...existing, usePositions: true } : existing,
+              ),
+            },
+          },
+        },
+        game.id,
+      );
+      const schedule = game.schedule!;
+      const targetRotation = schedule.rotations[game.currentRotationIndex];
+      const benchPlayerId = Object.entries(targetRotation.assignments).find(
+        ([, assignment]) => assignment === RotationAssignment.Bench,
+      )?.[0];
+      if (!benchPlayerId) throw new Error('Expected a benched player in current rotation');
+
+      const metadataOnlySchedule = {
+        ...schedule,
+        rotations: schedule.rotations.map((rotation) =>
+          rotation.index === targetRotation.index
+            ? {
+                ...rotation,
+                fieldPositions: {
+                  ...(rotation.fieldPositions ?? {}),
+                  [benchPlayerId]: 'CM',
+                },
+              }
+            : rotation,
+        ),
+      };
+
+      mockSolver.solve = vi.fn(() => {
+        mockSolver.result = metadataOnlySchedule;
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Review Regenerated Rotations')).not.toBeInTheDocument();
+      });
+      expect(dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'SET_GAME_SCHEDULE',
+        }),
+      );
+    });
+
+    it('does not treat missing bench assignment keys as a preview diff', async () => {
+      const { state, game } = buildLiveState();
+      const { dispatch } = renderGrid(state, game.id);
+      const schedule = game.schedule!;
+      const targetRotation = schedule.rotations[game.currentRotationIndex];
+      const benchPlayerId = Object.entries(targetRotation.assignments).find(
+        ([, assignment]) => assignment === RotationAssignment.Bench,
+      )?.[0];
+      if (!benchPlayerId) throw new Error('Expected a benched player in current rotation');
+
+      const normalizedSchedule = {
+        ...schedule,
+        rotations: schedule.rotations.map((rotation) => {
+          if (rotation.index !== targetRotation.index) return rotation;
+          const assignments = { ...rotation.assignments };
+          delete assignments[benchPlayerId];
+          return { ...rotation, assignments };
+        }),
+      };
+
+      mockSolver.solve = vi.fn(() => {
+        mockSolver.result = normalizedSchedule;
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Review Regenerated Rotations')).not.toBeInTheDocument();
+      });
+      expect(dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'SET_GAME_SCHEDULE',
+        }),
+      );
+    });
+
+    it('skips preview when added rotations match prior period values', async () => {
+      const { state, game } = buildLiveState();
+      const { dispatch } = renderGrid(state, game.id);
+      const schedule = game.schedule!;
+      const newRotationAssignments = {
+        ...schedule.rotations[schedule.rotations.length - 1].assignments,
+      };
+      const newRotation = buildRotation(schedule.rotations.length, newRotationAssignments);
+      newRotation.periodIndex = schedule.rotations[schedule.rotations.length - 1].periodIndex;
+      const previewWithExtraRotation = {
+        ...schedule,
+        rotations: [...schedule.rotations, newRotation],
+      };
+
+      mockSolver.solve = vi.fn(() => {
+        mockSolver.result = previewWithExtraRotation;
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
+
+      await waitFor(() => {
+        expect(screen.queryByText('Review Regenerated Rotations')).not.toBeInTheDocument();
+      });
+      expect(dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'SET_GAME_SCHEDULE',
+        }),
+      );
+    });
+
+    it('compares added split cells against prior period values (no dash baseline)', async () => {
+      const { state, game } = buildLiveState();
+      renderGrid(state, game.id);
+      const schedule = game.schedule!;
+      const baseRotation = schedule.rotations[schedule.rotations.length - 1];
+      const fieldPlayerId = Object.entries(baseRotation.assignments).find(
+        ([, assignment]) => assignment === RotationAssignment.Field,
+      )?.[0];
+      const benchPlayerId = Object.entries(baseRotation.assignments).find(
+        ([, assignment]) => assignment === RotationAssignment.Bench,
+      )?.[0];
+      if (!fieldPlayerId || !benchPlayerId) throw new Error('Expected field and bench players');
+      const newRotation = buildRotation(schedule.rotations.length, {
+        ...baseRotation.assignments,
+        [fieldPlayerId]: RotationAssignment.Bench,
+        [benchPlayerId]: RotationAssignment.Field,
+      });
+      newRotation.periodIndex = baseRotation.periodIndex;
+      const previewSchedule = {
+        ...schedule,
+        rotations: [...schedule.rotations, newRotation],
+      };
+
+      mockSolver.solve = vi.fn(() => {
+        mockSolver.result = previewSchedule;
+      });
+
+      await userEvent.click(screen.getByRole('button', { name: /game actions/i }));
+      await userEvent.click(screen.getByRole('button', { name: /regenerate/i }));
+      const policyDialog = await screen.findByRole('dialog', {
+        name: /live regenerate lock policy/i,
+      });
+      await userEvent.click(within(policyDialog).getByRole('button', { name: /^regenerate$/i }));
+
+      const previewDialog = await screen.findByRole('dialog', {
+        name: /review regenerated rotations/i,
+      });
+      expect(previewDialog).not.toHaveTextContent(/-\s*→/);
+      expect(previewDialog).toHaveTextContent(/●\s*→\s*○/);
+      expect(previewDialog).toHaveTextContent(/○\s*→\s*●/);
     });
 
     it('highlights changed cells in regenerate preview grid', async () => {
@@ -697,16 +1324,47 @@ describe('RotationGrid', () => {
         name: /review regenerated rotations/i,
       });
       expect(
-        within(previewDialog).getByText(/Highlighted cells changed in this preview\./i),
+        within(previewDialog).getByText(
+          /Highlighted cells show before → after changes in this preview\./i,
+        ),
       ).toBeInTheDocument();
       expect(previewDialog.querySelectorAll('[data-preview-change="changed"]').length).toBe(2);
+      expect(previewDialog).toHaveTextContent(/●\s*→\s*○/);
+      expect(previewDialog).toHaveTextContent(/○\s*→\s*●/);
     });
 
     it('applies the live regenerate preview when confirmed', async () => {
       const { state, game } = buildLiveState();
       const { dispatch } = renderGrid(state, game.id);
+      const schedule = game.schedule!;
+      const targetRotationIndex = game.currentRotationIndex;
+      const targetRotation = schedule.rotations[targetRotationIndex];
+      const fieldEntry = Object.entries(targetRotation.assignments).find(
+        ([, assignment]) => assignment === RotationAssignment.Field,
+      );
+      const benchEntry = Object.entries(targetRotation.assignments).find(
+        ([, assignment]) => assignment === RotationAssignment.Bench,
+      );
+      if (!fieldEntry || !benchEntry) throw new Error('Expected both field and bench assignments');
+      const [fieldPlayerId] = fieldEntry;
+      const [benchPlayerId] = benchEntry;
+      const changedSchedule = {
+        ...schedule,
+        rotations: schedule.rotations.map((rotation) =>
+          rotation.index === targetRotationIndex
+            ? {
+                ...rotation,
+                assignments: {
+                  ...rotation.assignments,
+                  [fieldPlayerId]: RotationAssignment.Bench,
+                  [benchPlayerId]: RotationAssignment.Field,
+                },
+              }
+            : rotation,
+        ),
+      };
       mockSolver.solve = vi.fn(() => {
-        mockSolver.result = game.schedule;
+        mockSolver.result = changedSchedule;
       });
 
       await userEvent.click(screen.getByRole('button', { name: /game actions/i }));

@@ -3,10 +3,18 @@ import type {
   GameConfig,
   GoalieAssignment,
   ManualOverride,
+  PlayerId,
   Rotation,
   RotationSchedule,
+  SubPosition,
 } from './domain.ts';
 import type { OptimizationSuggestion } from '@/utils/divisionOptimizer.ts';
+
+export interface PositionContinuityPreference {
+  rotationIndex: number;
+  playerId: PlayerId;
+  fieldPosition: SubPosition;
+}
 
 export type SolverRequest =
   | {
@@ -18,6 +26,7 @@ export type SolverRequest =
         absentPlayerIds: string[];
         goalieAssignments: GoalieAssignment[];
         manualOverrides: ManualOverride[];
+        positionContinuityPreferences?: PositionContinuityPreference[];
         periodDivisions?: number[]; // per-period rotation counts (defaults from config)
         startFromRotation?: number; // for mid-game re-solve
         existingRotations?: Rotation[]; // played rotations to preserve

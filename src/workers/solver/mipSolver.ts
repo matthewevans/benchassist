@@ -23,7 +23,7 @@ export function initHiGHS(): Promise<Highs> {
   if (_highs) return Promise.resolve(_highs);
   if (_highsPromise) return _highsPromise;
   _highsPromise = highsLoader({
-    locateFile: (file: string) => `/${file}`,
+    locateFile: (file: string) => `${import.meta.env.BASE_URL}${file}`,
   }).then((instance) => {
     _highs = instance;
     return instance;
@@ -137,6 +137,7 @@ function buildScheduleFromSolution(
     constraints.goalieMap,
     constraints.hardFieldPositionLocksByRotation,
     constraints.softFieldPositionPrefsByRotation,
+    constraints.positionContinuityPlayerIdsByRotation,
     ctx.players,
     {
       ...ctx.config,

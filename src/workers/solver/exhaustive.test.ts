@@ -327,6 +327,47 @@ describe('exhaustiveSearch', () => {
     }
   });
 
+  it('applies a hard goalie lock to every rotation in the period when full-period goalie is enabled', () => {
+    const players = buildRoster(9, { goalieCount: 3 });
+    const config = gameConfigFactory.build({
+      fieldSize: 7,
+      periods: 2,
+      rotationsPerPeriod: 2,
+      useGoalie: true,
+      goaliePlayFullPeriod: true,
+      goalieRestAfterPeriod: false,
+      noConsecutiveBench: false,
+      enforceMinPlayTime: false,
+      skillBalance: false,
+    });
+    const totalRotations = config.periods * config.rotationsPerPeriod;
+    const lockedGoalie = players[1];
+
+    const schedule = exhaustiveSearch({
+      players,
+      config,
+      goalieAssignments: [],
+      manualOverrides: [
+        {
+          playerId: lockedGoalie.id,
+          rotationIndex: 1,
+          assignment: RotationAssignment.Goalie,
+          lockMode: 'hard',
+        },
+      ],
+      totalRotations,
+      benchSlotsPerRotation: players.length - config.fieldSize,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    const period1Rotations = schedule.rotations.filter((r) => r.periodIndex === 0);
+    expect(period1Rotations).toHaveLength(2);
+    for (const rotation of period1Rotations) {
+      expect(rotation.assignments[lockedGoalie.id]).toBe(RotationAssignment.Goalie);
+    }
+  });
+
   it('solves 13-player 7v7 with 1 rotation per period and explicit goalies', () => {
     const players = buildRoster(13, { goalieCount: 4 });
     const config = gameConfigFactory.build({
@@ -467,6 +508,88 @@ describe('exhaustiveSearch', () => {
     });
 
     expect(schedule.rotations[0].fieldPositions?.[players[0].id]).toBe('CB');
+  });
+
+  it('applies position continuity preferences without forcing bench/field assignment', () => {
+    const players = [
+      playerFactory.build({ name: 'A', canPlayGoalie: false, primaryPosition: null }),
+      playerFactory.build({ name: 'B', canPlayGoalie: false, primaryPosition: null }),
+    ];
+    const config = gameConfigFactory.build({
+      fieldSize: 2,
+      periods: 1,
+      rotationsPerPeriod: 1,
+      useGoalie: false,
+      usePositions: true,
+      formation: [{ position: 'DEF', count: 2 }],
+      noConsecutiveBench: false,
+      enforceMinPlayTime: false,
+      skillBalance: false,
+    });
+
+    const schedule = exhaustiveSearch({
+      players,
+      config,
+      goalieAssignments: [],
+      manualOverrides: [],
+      positionContinuityPreferences: [
+        {
+          playerId: players[0].id,
+          rotationIndex: 0,
+          fieldPosition: 'RB',
+        },
+      ],
+      totalRotations: 1,
+      benchSlotsPerRotation: 0,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    expect(schedule.rotations[0].fieldPositions?.[players[0].id]).toBe('RB');
+  });
+
+  it('keeps continuity-preferred players pinned through post-assignment diversity swaps', () => {
+    const players = [
+      playerFactory.build({ name: 'A', canPlayGoalie: false, primaryPosition: null }),
+      playerFactory.build({ name: 'B', canPlayGoalie: false, primaryPosition: null }),
+    ];
+    const config = gameConfigFactory.build({
+      fieldSize: 2,
+      periods: 1,
+      rotationsPerPeriod: 2,
+      useGoalie: false,
+      usePositions: true,
+      formation: [{ position: 'DEF', count: 2 }],
+      noConsecutiveBench: false,
+      enforceMinPlayTime: false,
+      skillBalance: false,
+    });
+
+    const schedule = exhaustiveSearch({
+      players,
+      config,
+      goalieAssignments: [],
+      manualOverrides: [],
+      positionContinuityPreferences: [
+        {
+          playerId: players[0].id,
+          rotationIndex: 0,
+          fieldPosition: 'LB',
+        },
+        {
+          playerId: players[0].id,
+          rotationIndex: 1,
+          fieldPosition: 'LB',
+        },
+      ],
+      totalRotations: 2,
+      benchSlotsPerRotation: 0,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    expect(schedule.rotations[0].fieldPositions?.[players[0].id]).toBe('LB');
+    expect(schedule.rotations[1].fieldPositions?.[players[0].id]).toBe('LB');
   });
 
   it('does not auto-assign goalie to players hard-locked as field in goalie rotations', () => {

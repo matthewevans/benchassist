@@ -1,4 +1,8 @@
-import type { SolverRequest, SolverResponse } from '@/types/solver.ts';
+import type {
+  SolverRequest,
+  SolverResponse,
+  PositionContinuityPreference,
+} from '@/types/solver.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type {
   Rotation,
@@ -68,6 +72,7 @@ interface MidGameSolveWindow {
   periodDivisions: number[];
   goalieAssignments: GoalieAssignment[];
   manualOverrides: ManualOverride[];
+  positionContinuityPreferences: PositionContinuityPreference[];
   startFromRotation: number;
   startPeriodIndex: number;
 }
@@ -156,6 +161,7 @@ export function buildMidGameSolveWindow(params: {
   periodDivisions: number[];
   goalieAssignments: GoalieAssignment[];
   manualOverrides: ManualOverride[];
+  positionContinuityPreferences?: PositionContinuityPreference[];
   startFromRotation: number;
   existingRotations: Rotation[];
   players: Player[];
@@ -165,6 +171,7 @@ export function buildMidGameSolveWindow(params: {
     periodDivisions,
     goalieAssignments,
     manualOverrides,
+    positionContinuityPreferences = [],
     startFromRotation,
     existingRotations,
     players,
@@ -233,6 +240,12 @@ export function buildMidGameSolveWindow(params: {
       ...override,
       rotationIndex: override.rotationIndex - safeStart,
     }));
+  const nextPositionContinuityPreferences = positionContinuityPreferences
+    .filter((preference) => preference.rotationIndex >= safeStart)
+    .map((preference) => ({
+      ...preference,
+      rotationIndex: preference.rotationIndex - safeStart,
+    }));
 
   if (config.noConsecutiveBench && config.maxConsecutiveBench > 0) {
     for (const player of players) {
@@ -280,6 +293,7 @@ export function buildMidGameSolveWindow(params: {
     periodDivisions: remainingPeriodDivisions,
     goalieAssignments: windowGoalieAssignments,
     manualOverrides: [...overrideByKey.values()],
+    positionContinuityPreferences: nextPositionContinuityPreferences,
     startFromRotation: safeStart,
     startPeriodIndex,
   };
@@ -355,6 +369,7 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
           absentPlayerIds,
           goalieAssignments,
           manualOverrides,
+          positionContinuityPreferences = [],
           periodDivisions,
           startFromRotation,
           existingRotations,
@@ -397,6 +412,7 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                 periodDivisions: basePeriodDivisions,
                 goalieAssignments,
                 manualOverrides,
+                positionContinuityPreferences,
                 startFromRotation: requestedStartFromRotation,
                 existingRotations: existingMidGameRotations,
                 players: activePlayers,
@@ -407,6 +423,8 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
           const solvePeriodDivisions = midGameWindow?.periodDivisions ?? basePeriodDivisions;
           const solveGoalieAssignments = midGameWindow?.goalieAssignments ?? goalieAssignments;
           const solveManualOverrides = midGameWindow?.manualOverrides ?? manualOverrides;
+          const solvePositionContinuityPreferences =
+            midGameWindow?.positionContinuityPreferences ?? positionContinuityPreferences;
           const mergeStartFrom = midGameWindow?.startFromRotation ?? requestedStartFromRotation;
           const solveTotalRotations = getTotalRotationsFromDivisions(solvePeriodDivisions);
           const midGameMinPlay =
@@ -439,6 +457,7 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
             config: solveConfig,
             goalieAssignments: solveGoalieAssignments,
             manualOverrides: solveManualOverrides,
+            positionContinuityPreferences: solvePositionContinuityPreferences,
             periodDivisions: solvePeriodDivisions,
             rotationWeights: solveRotationWeights,
             maxBenchWeightByPlayer: midGameMinPlay?.maxBenchWeightByPlayer,
@@ -517,12 +536,18 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
         let optimizationSuggestion: OptimizationSuggestion | undefined;
         if (!skipOptimizationCheck && schedule.playerStats) {
           try {
+            const currentStrengthRangeRaw =
+              schedule.overallStats.maxStrength - schedule.overallStats.minStrength;
+            const currentStrengthRange = Number.isFinite(currentStrengthRangeRaw)
+              ? Math.max(0, Math.round(currentStrengthRangeRaw * 10) / 10)
+              : 0;
             const suggestion = checkOptimizationFeasibility({
               currentDivisions: basePeriodDivisions,
               players: activePlayers,
               config,
               goalieAssignments,
               currentPlayerStats: schedule.playerStats,
+              currentStrengthRange,
               currentRotationIndex:
                 requestedStartFromRotation > 0 ? requestedStartFromRotation : undefined,
             });
@@ -641,6 +666,11 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                     const actualExtraCount = trialStats.filter(
                       (s) => s.playPercentage === actualMax,
                     ).length;
+                    const actualStrengthRangeRaw =
+                      trialSchedule.overallStats.maxStrength - trialSchedule.overallStats.minStrength;
+                    const actualStrengthRange = Number.isFinite(actualStrengthRangeRaw)
+                      ? Math.max(0, Math.round(actualStrengthRangeRaw * 10) / 10)
+                      : 0;
                     const actualImprovement =
                       Math.round((suggestion.currentGap - actualGap) * 10) / 10;
 
@@ -652,6 +682,7 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                       expectedMaxPercent: actualMax,
                       expectedMinPercent: actualMin,
                       expectedExtraCount: actualExtraCount,
+                      expectedStrengthRange: actualStrengthRange,
                       gapImprovement: actualImprovement,
                     });
                   } else {

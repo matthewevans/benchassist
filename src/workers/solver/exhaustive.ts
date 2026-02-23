@@ -305,6 +305,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     mustBench: mustBenchMap,
     hardFieldPositionLocksByRotation,
     softFieldPositionPrefsByRotation,
+    positionContinuityPlayerIdsByRotation,
     softOverrides,
     maxBenchWeightByPlayer,
     rotationWeights,
@@ -673,6 +674,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
         goalieMap,
         hardFieldPositionLocksByRotation,
         softFieldPositionPrefsByRotation,
+        positionContinuityPlayerIdsByRotation,
         players,
         {
           ...config,
@@ -711,6 +713,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
     goalieMap,
     hardFieldPositionLocksByRotation,
     softFieldPositionPrefsByRotation,
+    positionContinuityPlayerIdsByRotation,
     players,
     {
       ...config,
@@ -890,6 +893,7 @@ export function buildSchedule(
   goalieMap: Map<number, string>,
   hardFieldPositionLocksByRotation: Map<number, Map<PlayerId, SubPosition>>,
   softFieldPositionPrefsByRotation: Map<number, Map<PlayerId, SubPosition>>,
+  positionContinuityPlayerIdsByRotation: Map<number, Set<PlayerId>>,
   allPlayers: Player[],
   config: {
     periods: number;
@@ -904,6 +908,10 @@ export function buildSchedule(
   const positionHistory = config.usePositions
     ? new Map<string, Map<SubPosition, number>>()
     : undefined;
+  const plannerLocksByRotation = new Map<number, Map<PlayerId, SubPosition>>();
+  for (const [rotationIndex, locks] of hardFieldPositionLocksByRotation.entries()) {
+    plannerLocksByRotation.set(rotationIndex, new Map(locks));
+  }
 
   const benchSetLookups = benchSets.map((pattern) => new Set(pattern));
 
@@ -976,6 +984,15 @@ export function buildSchedule(
             : undefined,
         },
       );
+      const continuityPlayers = positionContinuityPlayerIdsByRotation.get(r);
+      if (continuityPlayers && continuityPlayers.size > 0) {
+        const plannerLocks = plannerLocksByRotation.get(r) ?? new Map<PlayerId, SubPosition>();
+        for (const playerId of continuityPlayers) {
+          const assignedSubPosition = rotation.fieldPositions[playerId];
+          if (assignedSubPosition) plannerLocks.set(playerId, assignedSubPosition);
+        }
+        if (plannerLocks.size > 0) plannerLocksByRotation.set(r, plannerLocks);
+      }
       if (hardLocksForRotation) {
         for (const [playerId, subPos] of hardLocksForRotation.entries()) {
           if (rotation.fieldPositions[playerId] !== subPos) {
@@ -1000,7 +1017,7 @@ export function buildSchedule(
   // Improve position diversity across the full schedule after initial seeding.
   if (config.usePositions && config.formation.length > 0 && playerMap) {
     optimizePositionAssignments(rotations, playerMap, {
-      lockedPositionsByRotation: hardFieldPositionLocksByRotation,
+      lockedPositionsByRotation: plannerLocksByRotation,
     });
   }
 

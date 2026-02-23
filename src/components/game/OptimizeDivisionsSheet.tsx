@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
-import { CheckIcon, ChartNoAxesColumnIncreasingIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { CheckIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { cn } from '@/lib/utils.ts';
 import {
   getOptimizationOptionKey,
   type OptimizationSuggestion,
@@ -57,8 +58,38 @@ export function OptimizeDivisionsSheet({
 }: OptimizeDivisionsSheetProps) {
   const { t } = useTranslation('game');
   const { t: tCommon } = useTranslation('common');
+  const [showCompareOptions, setShowCompareOptions] = useState(false);
+  const [showAllOptionGroups, setShowAllOptionGroups] = useState(false);
 
   const recommendedOption = suggestion?.options[0] ?? null;
+  const selectedOption = useMemo(() => {
+    if (!suggestion || suggestion.options.length === 0) return null;
+    if (!selectedOptionKey) return suggestion.options[0] ?? null;
+    return (
+      suggestion.options.find(
+        (option) => getOptimizationOptionKey(option.periodDivisions) === selectedOptionKey,
+      ) ?? suggestion.options[0] ?? null
+    );
+  }, [suggestion, selectedOptionKey]);
+  const selectedOptionKeyResolved = useMemo(
+    () => getOptimizationOptionKey(selectedOption?.periodDivisions ?? []),
+    [selectedOption],
+  );
+  const recommendedOptionKey = useMemo(
+    () => getOptimizationOptionKey(recommendedOption?.periodDivisions ?? []),
+    [recommendedOption],
+  );
+  const summaryOption = showCompareOptions ? selectedOption : recommendedOption;
+  const summaryOptionKey = showCompareOptions ? selectedOptionKeyResolved : recommendedOptionKey;
+  const summaryIsRecommended = summaryOptionKey === recommendedOptionKey;
+  const formatOptionChangeLabel = (periodDivisions: number[]) => {
+    const changed = getChangedPeriods(periodDivisions, currentDivisions);
+    if (changed.length === 0) return periodDivisions.map((d) => `${d}`).join('-');
+    if (changed.length === 1) return t('optimize.change_split_one', { period: changed[0] });
+    const last = changed[changed.length - 1];
+    const rest = changed.slice(0, -1).join(', ');
+    return t('optimize.change_split_multi', { periods: rest, last });
+  };
   const groupedOptions = useMemo(() => {
     if (!suggestion) return [];
     const groups = new Map<number, OptimizationSuggestion['options']>();
@@ -71,15 +102,30 @@ export function OptimizeDivisionsSheet({
 
     return [...groups.entries()].sort((a, b) => a[0] - b[0]);
   }, [suggestion]);
+  const visibleOptionGroups = useMemo(() => {
+    if (showAllOptionGroups) return groupedOptions;
+    const primaryGroups = groupedOptions.filter(([addedRotations]) => addedRotations <= 1);
+    if (primaryGroups.length > 0) return primaryGroups;
+    return groupedOptions.slice(0, 1);
+  }, [groupedOptions, showAllOptionGroups]);
+  const hiddenOptionGroupCount = Math.max(0, groupedOptions.length - visibleOptionGroups.length);
 
-  if (!suggestion || !recommendedOption) return null;
+  if (!suggestion || !recommendedOption || !selectedOption) return null;
+  const safeSummaryOption = summaryOption ?? recommendedOption;
+  const selectedChangeLabel = formatOptionChangeLabel(safeSummaryOption.periodDivisions);
 
   const failedKeys = new Set(failedOptionKeys);
 
   return (
     <BottomSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          setShowCompareOptions(false);
+          setShowAllOptionGroups(false);
+        }
+        onOpenChange(nextOpen);
+      }}
       title={t('optimize.sheet_title')}
       description={t('optimize.sheet_desc')}
       footer={
@@ -88,58 +134,82 @@ export function OptimizeDivisionsSheet({
             {tCommon('actions.cancel')}
           </Button>
           <Button onClick={onConfirm} disabled={!selectedOptionKey || isRunning}>
-            {isRunning ? t('live.solving') : t('optimize.preview_option')}
+            {isRunning
+              ? t('live.solving')
+              : showCompareOptions
+                ? t('optimize.preview_selected')
+                : t('optimize.preview_recommended')}
           </Button>
         </div>
       }
     >
       <div className="space-y-4 pb-2">
-        <div className="rounded-[10px] bg-primary/8 px-4 py-3">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15">
-              <ChartNoAxesColumnIncreasingIcon className="size-3.5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-ios-subheadline font-semibold text-foreground">
-                {t('optimize.recommended_title')}
-              </p>
-              <p className="text-ios-footnote text-muted-foreground">
-                {t('optimize.recommended_detail', {
-                  addedRotations: recommendedOption.addedRotations,
-                  periodsChanged: recommendedOption.periodsChanged,
-                  improvement: formatNumber(recommendedOption.gapImprovement),
-                })}
-              </p>
-            </div>
-          </div>
+        <div
+          data-testid="optimize-selected-summary"
+          className="rounded-[10px] border border-primary/25 bg-primary/5 px-4 py-3"
+        >
+          <p className="text-ios-caption1 text-muted-foreground">
+            {summaryIsRecommended
+              ? t('optimize.selected_recommended_title')
+              : t('optimize.selected_title')}
+          </p>
+          <p className="mt-0.5 text-ios-title3 font-semibold tabular-nums text-foreground">
+            {t('optimize.selected_improvement', {
+              improvement: formatNumber(safeSummaryOption.gapImprovement),
+            })}
+          </p>
+          <p className="mt-1 text-ios-caption1 text-muted-foreground">
+            {t('optimize.selected_detail', {
+              change: selectedChangeLabel,
+              count: safeSummaryOption.totalRotations,
+            })}
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-[10px] border border-border/50 bg-card px-3 py-2">
-            <p className="text-ios-caption1 text-muted-foreground">{t('optimize.current_label')}</p>
-            <p className="text-ios-subheadline tabular-nums text-foreground">
-              {t('optimize.current_summary_compact', {
-                gap: formatNumber(suggestion.currentGap),
-                maxPercent: formatNumber(suggestion.currentMaxPercent),
-              })}
-            </p>
-            <p className="text-ios-caption2 text-muted-foreground">
-              {t('optimize.current_rotations', { count: suggestion.currentTotalRotations })}
-            </p>
-          </div>
-          <div className="rounded-[10px] border border-primary/25 bg-primary/5 px-3 py-2">
-            <p className="text-ios-caption1 text-muted-foreground">{t('optimize.preview_label')}</p>
-            <p className="text-ios-subheadline tabular-nums text-foreground">
-              {t('optimize.preview_summary_compact', {
-                gap: formatNumber(recommendedOption.expectedGap),
-                maxPercent: formatNumber(recommendedOption.expectedMaxPercent),
-              })}
-            </p>
-            <p className="text-ios-caption2 text-muted-foreground">
-              {t('optimize.current_rotations', { count: recommendedOption.totalRotations })}
-            </p>
-          </div>
-        </div>
+        {!showCompareOptions && (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-[10px] border border-border/50 bg-card px-3 py-2">
+                <p className="text-ios-caption1 text-muted-foreground">{t('optimize.current_label')}</p>
+                <p className="text-ios-subheadline tabular-nums text-foreground">
+                  {t('optimize.gap_metric', {
+                    gap: formatNumber(suggestion.currentGap),
+                  })}
+                </p>
+                <p className="mt-0.5 text-ios-caption1 tabular-nums text-muted-foreground">
+                  {t('optimize.skill_range_metric', {
+                    range: formatNumber(suggestion.currentStrengthRange ?? 0),
+                  })}
+                </p>
+                <p className="text-ios-caption2 text-muted-foreground">
+                  {t('optimize.current_rotations', { count: suggestion.currentTotalRotations })}
+                </p>
+              </div>
+              <div className="rounded-[10px] border border-primary/25 bg-primary/5 px-3 py-2">
+                <p className="text-ios-caption1 text-muted-foreground">{t('optimize.preview_label')}</p>
+                <p className="text-ios-subheadline tabular-nums text-foreground">
+                  {t('optimize.gap_metric', {
+                    gap: formatNumber(recommendedOption.expectedGap),
+                  })}
+                </p>
+                <p className="mt-0.5 text-ios-caption1 tabular-nums text-muted-foreground">
+                  {t('optimize.skill_range_metric', {
+                    range: formatNumber(recommendedOption.expectedStrengthRange ?? 0),
+                  })}
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="plain"
+              size="sm"
+              className="w-full"
+              onClick={() => setShowCompareOptions(true)}
+            >
+              {t('optimize.show_compare_options')}
+            </Button>
+          </>
+        )}
 
         {optimizeError && (
           <div className="rounded-[10px] bg-destructive/10 px-3 py-2">
@@ -147,7 +217,8 @@ export function OptimizeDivisionsSheet({
           </div>
         )}
 
-        {groupedOptions.map(([addedRotations, options]) => (
+        {showCompareOptions &&
+          visibleOptionGroups.map(([addedRotations, options]) => (
           <GroupedList
             key={addedRotations}
             header={t('optimize.group_header', {
@@ -158,44 +229,31 @@ export function OptimizeDivisionsSheet({
               const optionKey = getOptimizationOptionKey(option.periodDivisions);
               const selected = optionKey === selectedOptionKey;
               const failed = failedKeys.has(optionKey);
-              const isRecommended =
-                optionKey === getOptimizationOptionKey(recommendedOption.periodDivisions);
+              const optionChangeLabel = formatOptionChangeLabel(option.periodDivisions);
 
               return (
                 <GroupedListRow
                   key={optionKey}
                   last={index === options.length - 1}
                   onClick={() => onSelectOption(optionKey)}
-                  trailing={selected ? <CheckIcon className="size-4 text-primary" /> : undefined}
+                  className={cn(selected && 'bg-primary/5')}
+                  trailing={
+                    <div className="ml-2 flex items-center gap-2">
+                      <span className="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] leading-[13px] tracking-[0.07px] tabular-nums text-primary">
+                        {t('optimize.option_gap_chip', {
+                          improvement: formatNumber(option.gapImprovement),
+                        })}
+                      </span>
+                      {selected ? <CheckIcon className="size-4 text-primary" /> : null}
+                    </div>
+                  }
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-ios-subheadline text-foreground">
-                        {(() => {
-                          const changed = getChangedPeriods(
-                            option.periodDivisions,
-                            currentDivisions,
-                          );
-                          if (changed.length === 0)
-                            return option.periodDivisions.map((d) => `${d}`).join('-');
-                          if (changed.length === 1)
-                            return t('optimize.change_split_one', { period: changed[0] });
-                          const last = changed[changed.length - 1];
-                          const rest = changed.slice(0, -1).join(', ');
-                          return t('optimize.change_split_multi', { periods: rest, last });
-                        })()}
-                      </p>
-                      {isRecommended && (
-                        <span className="shrink-0 rounded-full bg-primary/12 px-2 py-0.5 text-[11px] leading-[13px] tracking-[0.07px] text-primary">
-                          {t('optimize.recommended_badge')}
-                        </span>
-                      )}
-                    </div>
+                    <p className="truncate text-ios-subheadline text-foreground">{optionChangeLabel}</p>
                     <p className="mt-0.5 text-ios-caption1 tabular-nums text-muted-foreground">
-                      {t('optimize.option_summary', {
-                        gap: formatNumber(option.expectedGap),
-                        maxPercent: formatNumber(option.expectedMaxPercent),
-                        minPercent: formatNumber(option.expectedMinPercent),
+                      {t('optimize.option_meta', {
+                        count: option.totalRotations,
+                        range: formatNumber(option.expectedStrengthRange ?? 0),
                       })}
                     </p>
                     {failed && (
@@ -209,6 +267,46 @@ export function OptimizeDivisionsSheet({
             })}
           </GroupedList>
         ))}
+        {showCompareOptions && hiddenOptionGroupCount > 0 && !showAllOptionGroups && (
+          <Button
+            type="button"
+            variant="plain"
+            size="sm"
+            className="w-full"
+            onClick={() => setShowAllOptionGroups(true)}
+          >
+            {t('optimize.show_more_groups')}
+          </Button>
+        )}
+        {showCompareOptions &&
+          hiddenOptionGroupCount === 0 &&
+          showAllOptionGroups &&
+          groupedOptions.length > 1 && (
+            <Button
+              type="button"
+              variant="plain"
+              size="sm"
+              className="w-full"
+              onClick={() => setShowAllOptionGroups(false)}
+            >
+              {t('optimize.show_less_groups')}
+            </Button>
+          )}
+        {showCompareOptions && (
+          <Button
+            type="button"
+            variant="plain"
+            size="sm"
+            className="w-full"
+            onClick={() => {
+              setShowCompareOptions(false);
+              setShowAllOptionGroups(false);
+              onSelectOption(recommendedOptionKey);
+            }}
+          >
+            {t('optimize.show_recommended')}
+          </Button>
+        )}
       </div>
     </BottomSheet>
   );
