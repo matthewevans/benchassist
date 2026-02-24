@@ -7,6 +7,7 @@ import { buildSchedule } from './exhaustive.ts';
 import { prepareConstraints } from './constraintPreparation.ts';
 import type { Player, GameConfig } from '@/types/domain.ts';
 import type { SolverContext } from './types.ts';
+import { playerFactory, gameConfigFactory } from '@/test/factories.ts';
 
 type Highs = Awaited<ReturnType<typeof highsLoader>>;
 
@@ -373,5 +374,77 @@ describe('optimization trial-solves (feasibilityOnly)', () => {
       Math.min(...stats8.map((s) => s.playPercentage));
 
     expect(gap8).toBeLessThanOrEqual(baseGap);
+  });
+});
+
+/**
+ * Regression test for WASM crash when solving [1,1,1,2] divisions
+ * with 9 players, fieldSize 5, full constraints (noConsecutiveBench + skillBalance).
+ * Reproduces: "Unable to solve the problem. HiGHS error RuntimeError: Aborted()"
+ *
+ * Root cause: HiGHS WASM instance gets corrupted after certain solves, causing
+ * subsequent solves on the same instance to crash with Emscripten abort().
+ */
+describe('9-player 5v5 with [1,1,1,2] divisions (WASM crash regression)', () => {
+  const smallPlayers = playerFactory.buildList(9, {}, { transient: {} });
+  const smallConfig = gameConfigFactory.build({
+    fieldSize: 5,
+    periods: 4,
+    rotationsPerPeriod: 1,
+    useGoalie: false,
+    goaliePlayFullPeriod: false,
+    goalieRestAfterPeriod: false,
+  });
+
+  function makeSmallCtx(overrides?: Partial<SolverContext>): SolverContext {
+    return {
+      players: smallPlayers,
+      config: smallConfig,
+      goalieAssignments: [],
+      manualOverrides: [],
+      periodDivisions: [1, 1, 1, 2],
+      totalRotations: 5,
+      benchSlotsPerRotation: 4,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+      ...overrides,
+    };
+  }
+
+  it('builds a valid LP model for [1,1,1,2]', () => {
+    const ctx = makeSmallCtx();
+    const constraints = prepareConstraints(ctx);
+    const model = buildPhase1Model(ctx, constraints);
+    expect(model.lpString).toContain('Minimize');
+    expect(model.lpString).toContain('End');
+  });
+
+  it('solves [1,1,1,2] with full constraints on fresh instance', { timeout: 30_000 }, async () => {
+    const freshHighs = await highsLoader();
+    const schedule = solveModel(freshHighs, makeSmallCtx());
+    expect(schedule.rotations).toHaveLength(5);
+    expect(Object.keys(schedule.playerStats)).toHaveLength(9);
+  });
+
+  it('solves [1,1,1,1] on fresh instance', { timeout: 30_000 }, async () => {
+    const freshHighs = await highsLoader();
+    const schedule = solveModel(
+      freshHighs,
+      makeSmallCtx({ periodDivisions: [1, 1, 1, 1], totalRotations: 4 }),
+    );
+    expect(schedule.rotations).toHaveLength(4);
+  });
+
+  it('sequential solves on fresh instances both succeed', { timeout: 30_000 }, async () => {
+    const highs1 = await highsLoader();
+    const schedule1 = solveModel(highs1, makeSmallCtx());
+    expect(schedule1.rotations).toHaveLength(5);
+
+    const highs2 = await highsLoader();
+    const schedule2 = solveModel(
+      highs2,
+      makeSmallCtx({ periodDivisions: [1, 1, 1, 1], totalRotations: 4 }),
+    );
+    expect(schedule2.rotations).toHaveLength(4);
   });
 });

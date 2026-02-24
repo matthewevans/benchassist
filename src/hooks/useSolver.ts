@@ -78,6 +78,12 @@ export function useSolver(): UseSolverReturn {
             setSuggestion(response.payload.optimizationSuggestion ?? null);
             setIsRunning(false);
             requestIdRef.current = null;
+            // Terminate worker to guarantee clean WASM state for the next solve.
+            // HiGHS optimization trials can silently corrupt the Emscripten heap;
+            // a fresh worker is the only reliable recovery. Browser caches compiled
+            // WASM so re-creation cost is negligible.
+            workerRef.current?.terminate();
+            workerRef.current = null;
           }
           break;
         case 'ERROR':
@@ -85,6 +91,8 @@ export function useSolver(): UseSolverReturn {
             setError(response.payload.error);
             setIsRunning(false);
             requestIdRef.current = null;
+            workerRef.current?.terminate();
+            workerRef.current = null;
           }
           break;
       }
@@ -96,14 +104,13 @@ export function useSolver(): UseSolverReturn {
 
   useEffect(() => {
     isMountedRef.current = true;
-    setupWorker();
 
     return () => {
       isMountedRef.current = false;
       workerRef.current?.terminate();
       workerRef.current = null;
     };
-  }, [setupWorker]);
+  }, []);
 
   const solve = useCallback(
     (input: SolverInput) => {

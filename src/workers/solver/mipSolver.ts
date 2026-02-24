@@ -1,7 +1,7 @@
 import highsLoader from 'highs';
 import type { HighsSolution } from 'highs';
 import type { RotationSchedule } from '@/types/domain.ts';
-import { buildSchedule } from './exhaustive.ts';
+import { buildSchedule, exhaustiveSearch } from './exhaustive.ts';
 import type { SolverContext } from './types.ts';
 import { prepareConstraints } from './constraintPreparation.ts';
 import type { PreparedConstraints } from './constraintPreparation.ts';
@@ -39,24 +39,38 @@ function resetHiGHS(): void {
 
 /**
  * Wrapper around highs.solve() that catches WASM RuntimeErrors (e.g. Aborted())
- * and converts them to a proper Error. Resets the HiGHS singleton on WASM crash
- * so subsequent calls reload a fresh instance.
+ * and converts them to a proper Error. On crash, reloads a fresh HiGHS instance
+ * and retries once — certain models trigger Emscripten abort() in the browser
+ * WASM runtime on first attempt but succeed on a clean instance.
  */
-function safeSolve(
+async function safeSolve(
   highs: Highs,
   lpString: string,
   options: Record<string, unknown>,
-): HighsSolution {
+): Promise<HighsSolution> {
   try {
     return highs.solve(lpString, options);
-  } catch (error) {
-    if (error instanceof Error && !(error instanceof RangeError) && !(error instanceof TypeError)) {
-      // WASM RuntimeError (Aborted, memory access, etc.) — reset the singleton
-      resetHiGHS();
+  } catch (firstError) {
+    if (
+      !(firstError instanceof Error) ||
+      firstError instanceof RangeError ||
+      firstError instanceof TypeError
+    ) {
+      throw new Error(
+        `No valid rotation schedule found. Solver crashed: ${firstError instanceof Error ? firstError.message : String(firstError)}`,
+      );
     }
-    throw new Error(
-      `No valid rotation schedule found. Solver crashed: ${error instanceof Error ? error.message : String(error)}`,
-    );
+    // WASM RuntimeError (Aborted, memory access, etc.) — reload a fresh instance and retry once
+    resetHiGHS();
+    try {
+      const freshHighs = await initHiGHS();
+      return freshHighs.solve(lpString, options);
+    } catch (retryError) {
+      resetHiGHS();
+      throw new Error(
+        `No valid rotation schedule found. Solver crashed: ${retryError instanceof Error ? retryError.message : String(retryError)}`,
+      );
+    }
   }
 }
 
@@ -106,10 +120,19 @@ export async function mipSolve(ctx: SolverContext): Promise<RotationSchedule> {
   // wrapper (v1.8.0) captures stdout to parse solutions, so suppressing output
   // causes "Unable to parse solution. Too few lines." Worker console output is
   // invisible to the user.
-  const solution = safeSolve(highs, model.lpString, {
-    time_limit: timeLimitSeconds,
-    mip_rel_gap: ctx.feasibilityOnly ? 1e30 : 0,
-  });
+  const solveOptions: Record<string, unknown> = { time_limit: timeLimitSeconds };
+  if (ctx.feasibilityOnly) solveOptions.mip_rel_gap = 1e30;
+
+  let solution: Awaited<ReturnType<typeof safeSolve>>;
+  try {
+    solution = await safeSolve(highs, model.lpString, solveOptions);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Solver crashed')) {
+      // HiGHS WASM crash — fall back to exhaustive backtracking search
+      return exhaustiveSearch(ctx);
+    }
+    throw error;
+  }
 
   if (cancellation.cancelled) throw new Error('Cancelled');
 

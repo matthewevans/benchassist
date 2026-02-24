@@ -553,12 +553,9 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
             });
 
             if (suggestion) {
-              const trialConfig: GameConfig = {
-                ...config,
-                ...(config.noConsecutiveBench ? { noConsecutiveBench: false } : {}),
-                ...(config.skillBalance ? { skillBalance: false } : {}),
-              };
-
+              // Trial-solve with the full game config (same constraints and
+              // optimization objectives as the final solve) so the promised stats
+              // accurately reflect what the user will get after accepting.
               const validOptions: typeof suggestion.options = [];
               const trialSolveLimit = 12;
               const trialPhaseBudgetMs = 10_000;
@@ -586,7 +583,7 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
 
                   if (canMergeFromMidGame) {
                     const trialWindow = buildMidGameSolveWindow({
-                      config: trialConfig,
+                      config,
                       periodDivisions: trialDivisions,
                       goalieAssignments,
                       manualOverrides: [],
@@ -594,16 +591,16 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                       existingRotations: existingMidGameRotations,
                       players: activePlayers,
                     });
-                    const trialWindowConfig = trialWindow?.config ?? trialConfig;
+                    const trialWindowConfig = trialWindow?.config ?? config;
                     const trialSolveDivisions = trialWindow?.periodDivisions ?? trialDivisions;
                     const trialGA = trialWindow?.goalieAssignments ?? goalieAssignments;
                     const trialOverrides = trialWindow?.manualOverrides ?? [];
                     const trialSolveTotalRotations =
                       getTotalRotationsFromDivisions(trialSolveDivisions);
                     const trialMinPlay =
-                      trialWindow && trialConfig.enforceMinPlayTime
+                      trialWindow && config.enforceMinPlayTime
                         ? buildMidGameMinPlayInputs({
-                            config: trialConfig,
+                            config,
                             players: activePlayers,
                             periodDivisions: trialDivisions,
                             startFromRotation: trialWindow.startFromRotation,
@@ -623,8 +620,7 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                       maxBenchWeightByPlayer: trialMinPlay?.maxBenchWeightByPlayer,
                       onProgress: () => {},
                       cancellation,
-                      searchTimeoutMs: 5_000,
-                      feasibilityOnly: true,
+                      searchTimeoutMs: 3_000,
                     });
                     trialSchedule = mergeSchedules(
                       existingMidGameRotations,
@@ -644,7 +640,7 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                   } else {
                     trialSchedule = await mipSolve({
                       players: activePlayers,
-                      config: trialConfig,
+                      config,
                       goalieAssignments,
                       manualOverrides: [],
                       periodDivisions: trialDivisions,
@@ -652,8 +648,7 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                       benchSlotsPerRotation,
                       onProgress: () => {},
                       cancellation,
-                      searchTimeoutMs: 5_000,
-                      feasibilityOnly: true,
+                      searchTimeoutMs: 3_000,
                     });
                   }
 
@@ -667,7 +662,8 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                       (s) => s.playPercentage === actualMax,
                     ).length;
                     const actualStrengthRangeRaw =
-                      trialSchedule.overallStats.maxStrength - trialSchedule.overallStats.minStrength;
+                      trialSchedule.overallStats.maxStrength -
+                      trialSchedule.overallStats.minStrength;
                     const actualStrengthRange = Number.isFinite(actualStrengthRangeRaw)
                       ? Math.max(0, Math.round(actualStrengthRangeRaw * 10) / 10)
                       : 0;
@@ -690,6 +686,8 @@ self.onmessage = async (e: MessageEvent<SolverRequest>) => {
                   }
                 } catch (trialErr) {
                   if ((trialErr as Error).message === 'Cancelled') throw trialErr;
+                  // WASM crash — stop trials, further solves in this worker will also fail
+                  if ((trialErr as Error).message?.includes('Solver crashed')) break;
                   // Infeasible or timed out — skip this option
                 }
               }

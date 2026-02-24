@@ -156,7 +156,6 @@ describe('mipSolve control flow', () => {
     expect(mocks.solve).toHaveBeenCalledTimes(1);
     expect(mocks.solve).toHaveBeenCalledWith('PHASE_1_LP', {
       time_limit: 12,
-      mip_rel_gap: 0,
     });
     expect(mocks.extractBenchSets).toHaveBeenCalledWith(solution, phase1Model, 1);
   });

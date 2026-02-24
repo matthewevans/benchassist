@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { exhaustiveSearch } from './exhaustive.ts';
+import { exhaustiveSearch, generateBenchPatterns } from './exhaustive.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import { buildRoster, gameConfigFactory, playerFactory } from '@/test/factories.ts';
 
@@ -752,5 +752,118 @@ describe('exhaustiveSearch', () => {
 
     expect(schedule.rotations).toHaveLength(1);
     expect(schedule.rotations[0].assignments[players[0].id]).toBe(RotationAssignment.Field);
+  });
+
+  it('allows consecutive bench within a split period (period-aware slack)', () => {
+    const players = playerFactory.buildList(9, {}, { transient: {} });
+    const config = gameConfigFactory.build({
+      fieldSize: 5,
+      periods: 4,
+      rotationsPerPeriod: 1,
+      useGoalie: false,
+      goaliePlayFullPeriod: false,
+      goalieRestAfterPeriod: false,
+      noConsecutiveBench: true,
+      maxConsecutiveBench: 1,
+      enforceMinPlayTime: true,
+      minPlayPercentage: 50,
+      skillBalance: false,
+    });
+
+    // [1,2,1,1] = 5 total rotations; period 2 is split into 2 sub-rotations
+    const schedule = exhaustiveSearch({
+      players,
+      config,
+      goalieAssignments: [],
+      manualOverrides: [],
+      periodDivisions: [1, 2, 1, 1],
+      totalRotations: 5,
+      benchSlotsPerRotation: 4,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    expect(schedule.rotations).toHaveLength(5);
+    expect(Object.keys(schedule.playerStats)).toHaveLength(9);
+
+    // Every player should meet the 50% min play threshold
+    for (const stats of Object.values(schedule.playerStats)) {
+      expect(stats.playPercentage).toBeGreaterThanOrEqual(50);
+    }
+  });
+});
+
+describe('generateBenchPatterns period-aware consecutive bench', () => {
+  it('blocks consecutive bench across different periods', () => {
+    // 5 rotations: [P0, P1, P1, P2, P3] (period 2 is split)
+    const patterns = generateBenchPatterns(
+      5,
+      2,
+      new Set(),
+      new Set(),
+      1, // maxConsecutive = 1
+      undefined,
+      undefined,
+      [0, 1, 1, 2, 3],
+    );
+
+    // R0+R1 should be blocked (different periods, consecutive)
+    expect(patterns.some((p) => p.includes(0) && p.includes(1))).toBe(false);
+    // R2+R3 should be blocked (different periods, consecutive)
+    expect(patterns.some((p) => p.includes(2) && p.includes(3))).toBe(false);
+    // R3+R4 should be blocked (different periods, consecutive)
+    expect(patterns.some((p) => p.includes(3) && p.includes(4))).toBe(false);
+  });
+
+  it('allows consecutive bench within the same period', () => {
+    // 5 rotations: [P0, P1, P1, P2, P3]
+    const patterns = generateBenchPatterns(
+      5,
+      2,
+      new Set(),
+      new Set(),
+      1,
+      undefined,
+      undefined,
+      [0, 1, 1, 2, 3],
+    );
+
+    // R1+R2 should be allowed (same period P1)
+    expect(patterns.some((p) => p.includes(1) && p.includes(2))).toBe(true);
+  });
+
+  it('generates no patterns without period awareness for tight configs', () => {
+    // Without period info, 3-bench with maxConsecutive=1 requires non-consecutive
+    // Only pattern: {0,2,4} — but with weight constraint it may be blocked
+    const patterns = generateBenchPatterns(
+      5,
+      3,
+      new Set(),
+      new Set(),
+      1,
+      [1, 0.5, 0.5, 1, 1],
+      2, // maxBenchWeight = 2
+      // no periodForRotation → strict consecutive check
+    );
+
+    // {0,2,4} has weight 1+0.5+1=2.5 > 2 → blocked. No valid patterns.
+    expect(patterns).toHaveLength(0);
+  });
+
+  it('generates 3-bench patterns with period awareness for same config', () => {
+    const patterns = generateBenchPatterns(
+      5,
+      3,
+      new Set(),
+      new Set(),
+      1,
+      [1, 0.5, 0.5, 1, 1],
+      2, // maxBenchWeight = 2
+      [0, 1, 1, 2, 3], // R1+R2 are same period
+    );
+
+    // {1,2,4} has weight 0.5+0.5+1=2 ≤ 2, and R1+R2 same period → allowed
+    expect(patterns.length).toBeGreaterThan(0);
+    expect(patterns.some((p) => p.includes(1) && p.includes(2) && p.includes(4))).toBe(true);
   });
 });

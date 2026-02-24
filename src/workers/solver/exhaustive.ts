@@ -54,9 +54,17 @@ function describePlayerPatternFailure(params: {
   targetBenchCount: number;
   totalRotations: number;
   maxConsecutive: number;
+  periodForRotation?: number[];
 }): string {
-  const { playerName, cannotBench, mustBench, targetBenchCount, totalRotations, maxConsecutive } =
-    params;
+  const {
+    playerName,
+    cannotBench,
+    mustBench,
+    targetBenchCount,
+    totalRotations,
+    maxConsecutive,
+    periodForRotation,
+  } = params;
 
   const overlap = [...mustBench].filter((idx) => cannotBench.has(idx));
   if (overlap.length > 0) {
@@ -74,6 +82,9 @@ function describePlayerPatternFailure(params: {
     cannotBench,
     mustBench,
     maxConsecutive,
+    undefined,
+    undefined,
+    periodForRotation,
   );
   if (patternAtMustOnly.length === 0) {
     return `${playerName}: required bench rotations (${oneBasedRotations([...mustBench])}) violate current constraints.`;
@@ -128,6 +139,7 @@ function generatePatternPoolForPlayer(params: {
   enforceMinPlayTime: boolean;
   rotationWeights: number[];
   maxBenchWeight: number;
+  periodForRotation?: number[];
 }): BenchPattern[] {
   const {
     constraints,
@@ -136,6 +148,7 @@ function generatePatternPoolForPlayer(params: {
     enforceMinPlayTime,
     rotationWeights,
     maxBenchWeight,
+    periodForRotation,
   } = params;
 
   const minBench = constraints.mustBench.size;
@@ -153,6 +166,7 @@ function generatePatternPoolForPlayer(params: {
         maxConsecutive,
         rotationWeights,
         enforceMinPlayTime ? maxBenchWeight : undefined,
+        periodForRotation,
       ),
     );
   }
@@ -168,6 +182,7 @@ function findFallbackFeasibleBenchSets(params: {
   rotationWeights: number[];
   defaultMaxBenchWeight: number;
   maxBenchWeightByPlayer?: Record<string, number>;
+  periodForRotation?: number[];
   cancellation: { cancelled: boolean };
   onProgress: (percentage: number, message: string) => void;
 }): { orderedPlayers: Player[]; benchSets: BenchPattern[] } | null {
@@ -180,6 +195,7 @@ function findFallbackFeasibleBenchSets(params: {
     rotationWeights,
     defaultMaxBenchWeight,
     maxBenchWeightByPlayer,
+    periodForRotation,
     cancellation,
     onProgress,
   } = params;
@@ -194,6 +210,7 @@ function findFallbackFeasibleBenchSets(params: {
         enforceMinPlayTime,
         rotationWeights,
         maxBenchWeight: maxBenchWeightByPlayer?.[constraints.player.id] ?? defaultMaxBenchWeight,
+        periodForRotation,
       }),
     }))
     .sort((a, b) => a.patterns.length - b.patterns.length);
@@ -352,6 +369,15 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
   // Build per-player constraint maps
   const maxConsecutive = config.noConsecutiveBench ? config.maxConsecutiveBench : totalRotations;
 
+  // Period-for-rotation map: allows consecutive bench within split periods
+  // (matches the MIP model builder's slack logic for intra-period sub-rotations)
+  const periodForRotation: number[] = [];
+  for (let p = 0; p < normalizedPeriodDivisions.length; p++) {
+    for (let d = 0; d < normalizedPeriodDivisions[p]; d++) {
+      periodForRotation.push(p);
+    }
+  }
+
   const constraintsPerPlayer: PlayerConstraints[] = players.map((player) => ({
     player,
     cannotBench: cannotBenchMap.get(player.id) ?? new Set<number>(),
@@ -376,6 +402,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       maxConsecutive,
       rotationWeights,
       config.enforceMinPlayTime ? getPlayerMaxBenchWeight(player.id) : undefined,
+      periodForRotation,
     );
 
     while (patterns.length === 0 && targetBenchCount > mustBench.size) {
@@ -388,6 +415,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
         maxConsecutive,
         rotationWeights,
         config.enforceMinPlayTime ? getPlayerMaxBenchWeight(player.id) : undefined,
+        periodForRotation,
       );
     }
 
@@ -409,6 +437,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
           targetBenchCount: benchCount,
           totalRotations,
           maxConsecutive,
+          periodForRotation,
         }),
       );
     }
@@ -454,6 +483,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
             maxConsecutive,
             rotationWeights,
             config.enforceMinPlayTime ? getPlayerMaxBenchWeight(constraints.player.id) : undefined,
+            periodForRotation,
           );
           if (patterns.length > 0) {
             benchCounts.set(constraints.player.id, newCount);
@@ -660,6 +690,7 @@ export function exhaustiveSearch(ctx: SolverContext): RotationSchedule {
       rotationWeights,
       defaultMaxBenchWeight,
       maxBenchWeightByPlayer: ctx.maxBenchWeightByPlayer,
+      periodForRotation,
       cancellation,
       onProgress: ctx.onProgress,
     });
@@ -795,6 +826,7 @@ export function generateBenchPatterns(
   maxConsecutive: number,
   rotationWeights?: number[],
   maxBenchWeight?: number,
+  periodForRotation?: number[],
 ): BenchPattern[] {
   if (mustBench.size > benchCount) return [];
   for (const idx of mustBench) {
@@ -826,21 +858,48 @@ export function generateBenchPatterns(
   const benchedAt = new Array<boolean>(totalRotations).fill(false);
   for (const idx of mustBenchArr) benchedAt[idx] = true;
 
-  // Check if adding slot would create a consecutive run > maxConsecutive
+  // Period-aware consecutive bench check. Matches the MIP model builder's slack
+  // logic: consecutive rotations within the same period don't count toward the
+  // consecutive bench limit (sub-rotations of a split period are a single unit).
   function wouldExceedConsecutive(slot: number): boolean {
-    // Count consecutive benched neighbors before and after this slot
-    let run = 1;
-    for (let s = slot - 1; s >= 0 && benchedAt[s]; s--) run++;
-    for (let s = slot + 1; s < totalRotations && benchedAt[s]; s++) run++;
-    return run > maxConsecutive;
+    const K = maxConsecutive;
+    const maxStart = Math.min(slot, totalRotations - K - 1);
+    for (let winStart = Math.max(0, slot - K); winStart <= maxStart; winStart++) {
+      let benchedCount = 0;
+      let slack = 0;
+      for (let k = 0; k <= K; k++) {
+        const r = winStart + k;
+        if (r === slot || benchedAt[r]) benchedCount++;
+        if (
+          k < K &&
+          periodForRotation &&
+          periodForRotation[winStart + k] === periodForRotation[winStart + k + 1]
+        ) {
+          slack++;
+        }
+      }
+      if (benchedCount > K + slack) return true;
+    }
+    return false;
   }
 
   // Validate mustBench slots don't already violate consecutive constraint
   if (checkConsecutive) {
-    let consecutive = 0;
-    for (let i = 0; i < totalRotations; i++) {
-      consecutive = benchedAt[i] ? consecutive + 1 : 0;
-      if (consecutive > maxConsecutive) return [];
+    const K = maxConsecutive;
+    for (let winStart = 0; winStart <= totalRotations - K - 1; winStart++) {
+      let benchedCount = 0;
+      let slack = 0;
+      for (let k = 0; k <= K; k++) {
+        if (benchedAt[winStart + k]) benchedCount++;
+        if (
+          k < K &&
+          periodForRotation &&
+          periodForRotation[winStart + k] === periodForRotation[winStart + k + 1]
+        ) {
+          slack++;
+        }
+      }
+      if (benchedCount > K + slack) return [];
     }
   }
 
