@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
@@ -109,48 +109,26 @@ export function DirectEntry() {
     navigate(`/games/${gameId}/rotations`, { replace: true });
   }, [solver, solver.result, gameId, state.games, dispatch, navigate]);
 
-  if (!game || !team || !roster || !config) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-sm text-muted-foreground">{t('error.not_found')}</p>
-        <Link to="/games" className="text-primary underline mt-2 inline-block">
-          {t('error.back_to_games')}
-        </Link>
-      </div>
-    );
-  }
-
-  if (game.status !== 'setup') {
-    return (
-      <div className="text-center py-12">
-        <p className="text-sm text-muted-foreground">{t('direct_entry.setup_only')}</p>
-        <Link
-          to={`/games/${game.id}/rotations`}
-          className="text-primary underline mt-2 inline-block"
-        >
-          {t('live.grid_view')}
-        </Link>
-      </div>
-    );
-  }
-
-  function upsertCell(rotationIndex: number, slotId: string, playerId: PlayerId | null) {
-    const key = makeDirectEntryCellKey(rotationIndex, slotId);
-    setDraft((prev) => {
-      const next = { ...prev };
-      if (!playerId) {
-        delete next[key];
+  const upsertCell = useCallback(
+    (rotationIndex: number, slotId: string, playerId: PlayerId | null) => {
+      const key = makeDirectEntryCellKey(rotationIndex, slotId);
+      setDraft((prev) => {
+        const next = { ...prev };
+        if (!playerId) {
+          delete next[key];
+          return next;
+        }
+        next[key] = {
+          playerId,
+          lockMode: prev[key]?.lockMode ?? 'hard',
+        };
         return next;
-      }
-      next[key] = {
-        playerId,
-        lockMode: prev[key]?.lockMode ?? 'hard',
-      };
-      return next;
-    });
-  }
+      });
+    },
+    [],
+  );
 
-  function handleToggleCellLock(rotationIndex: number, slotId: string) {
+  const handleToggleCellLock = useCallback((rotationIndex: number, slotId: string) => {
     const key = makeDirectEntryCellKey(rotationIndex, slotId);
     setDraft((prev) => {
       const existing = prev[key];
@@ -163,7 +141,11 @@ export function DirectEntry() {
         },
       };
     });
-  }
+  }, []);
+
+  const handleSelectCell = useCallback((rotationIndex: number, slot: DirectEntrySlot) => {
+    setPickerTarget({ rotationIndex, slot });
+  }, []);
 
   function handleLockAll(mode: 'hard' | 'soft') {
     setDraft((prev) => {
@@ -231,6 +213,31 @@ export function DirectEntry() {
     });
   }
 
+  if (!game || !team || !roster || !config) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-sm text-muted-foreground">{t('error.not_found')}</p>
+        <Link to="/games" className="text-primary underline mt-2 inline-block">
+          {t('error.back_to_games')}
+        </Link>
+      </div>
+    );
+  }
+
+  if (game.status !== 'setup') {
+    return (
+      <div className="text-center py-12">
+        <p className="text-sm text-muted-foreground">{t('direct_entry.setup_only')}</p>
+        <Link
+          to={`/games/${game.id}/rotations`}
+          className="text-primary underline mt-2 inline-block"
+        >
+          {t('live.grid_view')}
+        </Link>
+      </div>
+    );
+  }
+
   const selectedCell = pickerTarget
     ? draft[makeDirectEntryCellKey(pickerTarget.rotationIndex, pickerTarget.slot.id)]
     : undefined;
@@ -287,6 +294,7 @@ export function DirectEntry() {
           <Button
             variant="secondary"
             size="sm"
+            className="lg:hidden"
             onClick={() => handleClearRotation(currentRotationIndex)}
           >
             {t('direct_entry.clear_rotation')}
@@ -294,6 +302,7 @@ export function DirectEntry() {
           <Button
             variant="secondary"
             size="sm"
+            className="lg:hidden"
             disabled={currentRotationIndex === 0}
             onClick={() => handleCopyPreviousRotation(currentRotationIndex)}
           >
@@ -310,7 +319,7 @@ export function DirectEntry() {
           playerNameById={playerNameById}
           currentRotationIndex={currentRotationIndex}
           onChangeRotation={setCurrentRotationIndex}
-          onSelectCell={(rotationIndex, slot) => setPickerTarget({ rotationIndex, slot })}
+          onSelectCell={handleSelectCell}
           onToggleCellLock={handleToggleCellLock}
         />
 
