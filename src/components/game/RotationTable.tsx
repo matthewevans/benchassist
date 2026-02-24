@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useMemo } from 'react';
 import { ChevronRightIcon, ChevronDownIcon, EllipsisIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
@@ -149,6 +149,34 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
 
     const { t } = useTranslation('game');
 
+    const strengthColors = useMemo(() => {
+      const allRotations = periodGroups.flatMap((g) => g.rotations);
+      if (allRotations.length === 0) return new Map<number, { dot: string; text: string }>();
+      const mean = allRotations.reduce((sum, r) => sum + r.teamStrength, 0) / allRotations.length;
+      const map = new Map<number, { dot: string; text: string }>();
+      for (const r of allRotations) {
+        const dev = Math.abs(r.teamStrength - mean);
+        const dot =
+          dev <= 1
+            ? 'bg-emerald-500'
+            : dev <= 2
+              ? 'bg-teal-500'
+              : dev <= 3
+                ? 'bg-amber-500'
+                : 'bg-rose-500';
+        const text =
+          dev <= 1
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : dev <= 2
+              ? 'text-teal-600 dark:text-teal-400'
+              : dev <= 3
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-rose-600 dark:text-rose-400';
+        map.set(r.index, { dot, text });
+      }
+      return map;
+    }, [periodGroups]);
+
     return (
       <div className="overflow-x-auto px-4" ref={ref}>
         <table className="w-full text-sm">
@@ -207,7 +235,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       )}
                       {...(isCurrent ? { 'data-current-rotation': '' } : {})}
                     >
-                      <div className="flex items-center justify-center">
+                      <div className="flex items-center justify-center gap-1">
                         <span
                           className={cn(
                             'text-ios-caption1 text-foreground',
@@ -217,6 +245,13 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         >
                           R{r.index + 1}
                         </span>
+                        <span
+                          className={cn(
+                            'size-1.5 rounded-full shrink-0',
+                            isPast && 'opacity-40',
+                            strengthColors.get(r.index)?.dot,
+                          )}
+                        />
                       </div>
                       {(isCurrent || isNext) && (
                         <span
@@ -231,8 +266,13 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       )}
                       <div className="mt-1 min-h-11 text-ios-caption1 text-muted-foreground font-normal flex items-center justify-center">
                         {i === 0 ? (
-                          <div className="flex items-center justify-center gap-1">
-                            {isLive ? (
+                          isLive ? (
+                            <div
+                              className={cn(
+                                'flex items-center justify-center',
+                                group.rotations.length === 1 ? 'flex-col' : 'gap-1',
+                              )}
+                            >
                               <button
                                 type="button"
                                 className="inline-flex items-center justify-center gap-0.5 min-h-11 min-w-11 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -243,19 +283,32 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                                 </span>
                                 <ChevronDownIcon className="size-3" />
                               </button>
-                            ) : (
-                              <span className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center">
-                                P{r.periodIndex + 1}
-                              </span>
-                            )}
-                            {showPeriodActions && (
-                              <PeriodActionButton
-                                periodIndex={group.periodIndex}
-                                disabled={!canEditPeriodDivision(group.periodIndex)}
-                                onClick={() => onPeriodActionsClick(group.periodIndex)}
-                              />
-                            )}
-                          </div>
+                              {showPeriodActions && (
+                                <PeriodActionButton
+                                  periodIndex={group.periodIndex}
+                                  disabled={!canEditPeriodDivision(group.periodIndex)}
+                                  onClick={() => onPeriodActionsClick(group.periodIndex)}
+                                />
+                              )}
+                            </div>
+                          ) : showPeriodActions ? (
+                            <button
+                              type="button"
+                              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-0.5 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40 disabled:pointer-events-none outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                              disabled={!canEditPeriodDivision(group.periodIndex)}
+                              onClick={() => onPeriodActionsClick(group.periodIndex)}
+                              aria-label={t('rotation_table.period_actions', {
+                                number: group.periodIndex + 1,
+                              })}
+                            >
+                              P{r.periodIndex + 1}
+                              <ChevronDownIcon className="size-2.5 text-muted-foreground" />
+                            </button>
+                          ) : (
+                            <span className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center">
+                              P{r.periodIndex + 1}
+                            </span>
+                          )
                         ) : (
                           <>
                             {isLive ? (
@@ -501,7 +554,11 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         isFirstInPeriod && !isCurrent && 'border-l-2 border-border',
                       )}
                     >
-                      {rotation.teamStrength}
+                      <span
+                        className={cn('tabular-nums', strengthColors.get(rotation.index)?.text)}
+                      >
+                        {rotation.teamStrength}
+                      </span>
                     </td>
                   );
                 });

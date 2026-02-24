@@ -227,8 +227,8 @@ describe('RotationGrid', () => {
     it('shows overall stats cards', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
-      expect(screen.getByText('Lineup balance')).toBeInTheDocument();
-      expect(screen.getByText('Strength spread')).toBeInTheDocument();
+      expect(screen.getByText('Schedule Overview')).toBeInTheDocument();
+      expect(screen.getByText(/Spread/)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /show details/i })).toBeInTheDocument();
     });
 
@@ -346,7 +346,7 @@ describe('RotationGrid', () => {
 
       renderGrid(state, game.id);
 
-      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /^review$/i }));
       expect(screen.queryByText('Split Period 1')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /more options/i })).toBeInTheDocument();
       const selectedSummary = screen.getByTestId('optimize-selected-summary');
@@ -409,7 +409,7 @@ describe('RotationGrid', () => {
       };
 
       renderGrid(state, game.id);
-      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /^review$/i }));
 
       expect(screen.queryByText('Change +1 rotations')).not.toBeInTheDocument();
       expect(screen.queryByText('Change +2 rotations')).not.toBeInTheDocument();
@@ -475,7 +475,7 @@ describe('RotationGrid', () => {
 
       renderGrid(state, game.id);
 
-      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /^review$/i }));
       await userEvent.click(screen.getByRole('button', { name: /more options/i }));
       await userEvent.click(screen.getByText('Split Period 1'));
       await userEvent.click(screen.getByRole('button', { name: /preview/i }));
@@ -545,7 +545,7 @@ describe('RotationGrid', () => {
 
       renderGrid(state, game.id);
 
-      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /^review$/i }));
       await userEvent.click(screen.getByRole('button', { name: /more options/i }));
       await userEvent.click(screen.getByText('Split Period 1'));
       await userEvent.click(screen.getByRole('button', { name: /preview/i }));
@@ -636,7 +636,7 @@ describe('RotationGrid', () => {
 
       renderGrid(state, game.id);
 
-      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /^review$/i }));
       await userEvent.click(screen.getByRole('button', { name: /more options/i }));
       await userEvent.click(screen.getByText('Split Period 1'));
       await userEvent.click(screen.getByRole('button', { name: /preview/i }));
@@ -782,7 +782,7 @@ describe('RotationGrid', () => {
       };
 
       renderGrid(customState, game.id);
-      await userEvent.click(screen.getByRole('button', { name: /^optimize rotations$/i }));
+      await userEvent.click(screen.getByRole('button', { name: /^review$/i }));
       await userEvent.click(screen.getByRole('button', { name: /more options/i }));
       await userEvent.click(screen.getByText('Split Period 1'));
       await userEvent.click(screen.getByRole('button', { name: /preview/i }));
@@ -1492,29 +1492,29 @@ describe('RotationGrid', () => {
   });
 
   describe('swap interaction', () => {
-    it('shows swap instruction after clicking a cell', async () => {
+    it('selects a cell for swap on click', async () => {
       const { state, game } = buildTestState();
-      renderGrid(state, game.id);
+      const { container } = renderGrid(state, game.id);
 
       // Labels are "●" (field) and "○" (bench) when usePositions is false
       const fieldBadges = screen.getAllByText('●');
       await userEvent.click(fieldBadges[0]);
 
-      expect(screen.getByText(/Selected .+ in R1/)).toBeInTheDocument();
-      expect(screen.getByText(/Tap another player/)).toBeInTheDocument();
+      // Selected cell gets pulse animation
+      expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
     it('deselects when same cell is clicked again', async () => {
       const { state, game } = buildTestState();
-      renderGrid(state, game.id);
+      const { container } = renderGrid(state, game.id);
 
       const fieldBadges = screen.getAllByText('●');
       await userEvent.click(fieldBadges[0]);
-      expect(screen.getByText(/Selected/)).toBeInTheDocument();
+      expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
 
       // Click same badge again to deselect
       await userEvent.click(fieldBadges[0]);
-      expect(screen.queryByText(/Selected/)).not.toBeInTheDocument();
+      expect(container.querySelector('.animate-pulse')).not.toBeInTheDocument();
     });
 
     it('shows swap scope dialog and dispatches on "Just This Rotation"', async () => {

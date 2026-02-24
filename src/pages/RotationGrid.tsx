@@ -325,20 +325,6 @@ export function RotationGrid() {
           </div>
         )}
 
-        {/* Swap hint/instruction — stable slot in setup mode to avoid layout shift */}
-        {!g.isLive && !g.isCompleted && g.schedule && (
-          <div className="max-w-4xl mx-auto px-4">
-            <p className="min-h-[56px] flex items-center text-ios-footnote text-muted-foreground bg-card rounded-[10px] py-3 px-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
-              {g.swapSource
-                ? t('live.swap_hint_selected', {
-                    name: g.playerMap.get(g.swapSource.playerId)?.name,
-                    rotation: g.swapSource.rotationIndex + 1,
-                  })
-                : t('live.swap_hint_default')}
-            </p>
-          </div>
-        )}
-
         {/* Draft game with no schedule yet — centered empty state */}
         {!g.schedule && (
           <div className="flex flex-col items-center justify-center text-center px-6 pt-20 pb-12 max-w-sm mx-auto">

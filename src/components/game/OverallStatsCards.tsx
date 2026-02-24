@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CircleHelpIcon } from 'lucide-react';
+import { ChevronDownIcon, ChevronUpIcon, CircleHelpIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 import {
@@ -10,7 +10,6 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@/components/ui/popover.tsx';
-import { Button } from '@/components/ui/button.tsx';
 import type { RotationSchedule } from '@/types/domain.ts';
 
 interface OverallStatsCardsProps {
@@ -44,47 +43,25 @@ export function OverallStatsCards({ stats }: OverallStatsCardsProps) {
         : spread <= 6
           ? 'text-amber-700 dark:text-amber-300'
           : 'text-rose-700 dark:text-rose-300';
-  const balanceTipKey =
-    spread <= 2
-      ? 'balance_tip_very_steady'
-      : spread <= 4
-        ? 'balance_tip_steady'
-        : spread <= 6
-          ? 'balance_tip_mixed'
-          : 'balance_tip_uneven';
 
   return (
     <section>
       <h3 className="text-ios-footnote font-normal text-muted-foreground uppercase pb-1.5">
         {t('schedule.overview')}
       </h3>
-      <div className="rounded-[10px] border border-border/50 bg-card px-4 py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-ios-caption1 text-muted-foreground">{t('schedule.balance_label')}</p>
-            <p className={cn('text-ios-title3 font-semibold', balanceClass)}>
-              {t(`schedule.${balanceKey}`)}
-            </p>
-            <p className="mt-0.5 text-ios-caption1 text-muted-foreground">
-              {t(`schedule.${balanceTipKey}`)}
-            </p>
-          </div>
-          <Button
-            type="button"
-            variant="plain"
-            size="xs"
-            className="px-2 text-ios-caption1 text-primary"
-            onClick={() => setShowDetails((prev) => !prev)}
-          >
-            {showDetails ? t('schedule.hide_details') : t('schedule.show_details')}
-          </Button>
-        </div>
-
-        <div className="mt-3 rounded-[10px] bg-muted/40 px-3 py-2">
-          <div className="flex items-center gap-1.5">
-            <p className="text-ios-caption1 text-muted-foreground">
-              {t('schedule.strength_range')}
-            </p>
+      <div className="rounded-[10px] bg-card px-4 py-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <p className={cn('text-ios-headline font-semibold', balanceClass)}>
+            {t(`schedule.${balanceKey}`)}
+          </p>
+          <div className="flex items-center gap-1">
+            <span className="text-ios-footnote tabular-nums text-muted-foreground">
+              {t('schedule.spread_inline', {
+                value: formatValue(spread),
+                min: formatValue(stats.minStrength),
+                max: formatValue(stats.maxStrength),
+              })}
+            </span>
             <Popover>
               <PopoverTrigger asChild>
                 <button
@@ -95,7 +72,7 @@ export function OverallStatsCards({ stats }: OverallStatsCardsProps) {
                   <CircleHelpIcon className="size-3.5" />
                 </button>
               </PopoverTrigger>
-              <PopoverContent align="start" className="w-64 p-3">
+              <PopoverContent align="end" className="w-64 p-3">
                 <PopoverHeader>
                   <PopoverTitle className="text-ios-subheadline">
                     {t('schedule.strength_range')}
@@ -106,37 +83,27 @@ export function OverallStatsCards({ stats }: OverallStatsCardsProps) {
                 </PopoverHeader>
               </PopoverContent>
             </Popover>
+            <button
+              type="button"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground active:bg-accent/60"
+              onClick={() => setShowDetails((prev) => !prev)}
+              aria-label={showDetails ? t('schedule.hide_details') : t('schedule.show_details')}
+            >
+              {showDetails ? (
+                <ChevronUpIcon className="size-4" />
+              ) : (
+                <ChevronDownIcon className="size-4" />
+              )}
+            </button>
           </div>
-          <p className="text-ios-title3 font-semibold tabular-nums text-foreground">
-            {formatValue(spread)}
-          </p>
-          <p className="text-ios-caption2 tabular-nums text-muted-foreground">
-            {t('schedule.min_max_inline', {
-              min: formatValue(stats.minStrength),
-              max: formatValue(stats.maxStrength),
+        </div>
+        {showDetails && (
+          <p className="mt-1 text-ios-caption1 text-muted-foreground">
+            {t('schedule.details_inline', {
+              avg: formatValue(stats.avgStrength),
+              consistency: formatValue(stats.strengthVariance),
             })}
           </p>
-        </div>
-
-        {showDetails && (
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <div className="rounded-[10px] bg-muted/40 px-3 py-2">
-              <p className="text-ios-caption1 text-muted-foreground">
-                {t('schedule.avg_strength')}
-              </p>
-              <p className="text-ios-subheadline tabular-nums text-foreground">
-                {formatValue(stats.avgStrength)}
-              </p>
-            </div>
-            <div className="rounded-[10px] bg-muted/40 px-3 py-2">
-              <p className="text-ios-caption1 text-muted-foreground">
-                {t('schedule.consistency_label')}
-              </p>
-              <p className="text-ios-subheadline tabular-nums text-foreground">
-                {formatValue(stats.strengthVariance)}
-              </p>
-            </div>
-          </div>
         )}
       </div>
     </section>
