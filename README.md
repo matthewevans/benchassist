@@ -42,15 +42,21 @@
 
 ## Features
 
-**Smart Rotation Solver** — Generates balanced schedules in a Web Worker. Respects constraints: no consecutive bench, minimum play time, goalie rest, and skill-balance priority.
+**Smart Rotation Solver** — Two-tier solver runs in a Web Worker: MIP solver (HiGHS WASM) for bench assignment, then exhaustive search for position optimization. Respects constraints: no consecutive bench, minimum play time, goalie rest, and skill balance.
 
-**Live Game Mode** — Period timers, audio substitution alerts, Now/Next focus view. Add or remove players mid-game with automatic re-solving.
+**Coach Plan** — Manually build rotation plans with a direct-entry matrix. Lock cells as hard (must satisfy) or soft (preferred, relaxable) constraints that the solver honors.
+
+**Playtime Optimization** — Post-solve analysis detects when adjusting period divisions could improve play-time balance by 5%+ and suggests optimized configurations.
+
+**Live Game Mode** — Period timers, audio substitution alerts, Now/Next focus view. Add or remove players mid-game with automatic re-solving. Regenerate with lock policy control and preview before applying.
 
 **Position-Aware Scheduling** — 14 sub-positions across 4 position groups. Players auto-assign to formation slots based on their preferences.
 
-**Practice Planner** — ~100 curated drills filtered by age bracket (U6–U18). Generate plans by category, duration, and player count.
+**Practice Planner** — ~100 curated drills filtered by age bracket (U6–U18). Generate plans by category, duration, and player count. Swap drills and save favorites.
 
 **Team & Roster Management** — Bulk-import players, track skill rankings, goalie eligibility, and preferred positions.
+
+**Bilingual** — Full English and Spanish (es-MX) localization.
 
 **Data Portability** — Selective export/import, schema migrations, and 8-second undo on all destructive actions. All data stays on your device.
 
@@ -95,16 +101,17 @@ Open [localhost:5173](http://localhost:5173/) in your browser.
 | Styling   | Tailwind CSS v4, shadcn/ui (New York), Radix UI                    |
 | State     | `useReducer` + Immer (single context, discriminated-union actions) |
 | Routing   | React Router v7                                                    |
-| Solver    | Web Worker with exhaustive search + pruning                        |
+| Solver    | Web Worker — MIP (HiGHS WASM) + exhaustive search                  |
+| i18n      | i18next + react-i18next (en, es-MX)                                |
 | Testing   | Vitest, Testing Library, fishery factories                         |
 | PWA       | vite-plugin-pwa, auto-update, standalone display                   |
 | Quality   | ESLint, Prettier, Husky + lint-staged                              |
 
 ## Under the Hood
 
-All app state flows through a single `useReducer` in `AppContext` with Immer for immutable updates. The reducer uses a discriminated union of 40+ action types with an exhaustive `never` check. State auto-persists to localStorage with a 500ms debounce.
+All app state flows through a single `useReducer` in `AppContext` with Immer for immutable updates. The reducer uses a discriminated union of action types with an exhaustive `never` check. State auto-persists to localStorage with a 500ms debounce.
 
-The rotation solver runs in a Web Worker to keep the UI responsive. It uses exhaustive search with pruning — generating valid bench patterns per player, searching all combinations, and scoring by team-strength variance. Mid-game re-solves preserve existing rotations.
+The rotation solver runs in a Web Worker using a two-tier approach: a MIP solver (HiGHS WASM) determines bench assignments, then exhaustive search refines position placement and scores by team-strength variance. After solving, an optimization check evaluates whether adjusting period divisions could improve play-time balance. Mid-game re-solves preserve existing rotations and support constraint relaxation fallback.
 
 The undo system wraps the reducer with Immer's `produceWithPatches`, capturing inverse patches for destructive actions (delete, import, merge). A ref-based stack holds up to 30 undo entries.
 
@@ -120,11 +127,12 @@ src/
 ├── context/           # AppContext (single reducer + Immer)
 ├── data/              # Drill library (~100 entries)
 ├── hooks/             # Custom hooks (solver, timer, undo, etc.)
-├── pages/             # Route-level page components
+├── i18n/              # i18next config + locale JSON files
+├── pages/             # Route-level page components (lazy-loaded)
 ├── storage/           # localStorage persistence & export/import
 ├── types/             # Domain model, solver messages, drill types
-├── utils/             # Stats, validation, positions, practice generation
-└── workers/           # Web Worker for rotation solver
+├── utils/             # Stats, validation, positions, optimization, etc.
+└── workers/           # Web Worker + solver modules (MIP, exhaustive)
 ```
 
 </details>
