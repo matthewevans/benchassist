@@ -85,7 +85,9 @@
     "players": "{{count}} players",
     "delete_title": "Delete game?",
     "delete_message": "This will permanently remove this game and its rotation schedule.",
-    "create_new_aria": "Create new game"
+    "create_new_aria": "Create new game",
+    "duplicate": "Duplicate",
+    "duplicate_suffix": "(Copy)"
   },
   "live": {
     "now": "Now",
