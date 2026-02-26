@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Label } from '@/components/ui/label.tsx';
 import { cn } from '@/lib/utils.ts';
 import { EllipsisIcon, LayoutGridIcon } from 'lucide-react';
 import { cloneGame } from '@/utils/gameClone.ts';
@@ -86,6 +89,8 @@ export function RotationGrid() {
   const { t: tCommon } = useTranslation('common');
   const g = useRotationGame(gameId);
   const [periodActionPeriodIndex, setPeriodActionPeriodIndex] = useState<number | null>(null);
+  const [renamingOpen, setRenamingOpen] = useState(false);
+  const [editName, setEditName] = useState('');
 
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -190,6 +195,18 @@ export function RotationGrid() {
     navigate(`/games/${newGame.id}/rotations`);
   }
 
+  function handleStartRename() {
+    if (!g.game) return;
+    setEditName(g.game.name);
+    setRenamingOpen(true);
+  }
+
+  function handleRenameGame() {
+    if (!g.game || !editName.trim()) return;
+    g.dispatch({ type: 'UPDATE_GAME', payload: { ...g.game, name: editName.trim() } });
+    setRenamingOpen(false);
+  }
+
   return (
     <div>
       {/* NavBar — adapts to game state */}
@@ -206,6 +223,12 @@ export function RotationGrid() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-48 p-1.5">
+                <button
+                  className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                  onClick={handleStartRename}
+                >
+                  {t('history.rename')}
+                </button>
                 <button
                   className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
                   onClick={handleDuplicate}
@@ -228,6 +251,12 @@ export function RotationGrid() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-48 p-1.5">
+                <button
+                  className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                  onClick={handleStartRename}
+                >
+                  {t('history.rename')}
+                </button>
                 <button
                   className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
                   onClick={g.handleOpenRegenerate}
@@ -263,6 +292,12 @@ export function RotationGrid() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-52 p-1.5">
+                  <button
+                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                    onClick={handleStartRename}
+                  >
+                    {t('history.rename')}
+                  </button>
                   <button
                     className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
                     onClick={() => {
@@ -583,6 +618,32 @@ export function RotationGrid() {
           onApply={g.handleApplyRegeneratePreview}
           onCancel={g.handleDismissRegeneratePreview}
         />
+
+        <BottomSheet
+          open={renamingOpen}
+          onOpenChange={setRenamingOpen}
+          title={t('history.rename_title')}
+        >
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="game-name">{t('history.game_name_label')}</Label>
+              <Input
+                id="game-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameGame();
+                  if (e.key === 'Escape') setRenamingOpen(false);
+                }}
+                aria-label={t('history.game_name_label')}
+                autoFocus
+              />
+            </div>
+            <Button onClick={handleRenameGame} size="lg" disabled={!editName.trim()}>
+              {tCommon('actions.save')}
+            </Button>
+          </div>
+        </BottomSheet>
 
         <OptimizeDivisionsSheet
           open={g.optimizeSheetOpen}
