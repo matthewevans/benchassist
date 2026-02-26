@@ -85,7 +85,9 @@
     "players": "{{count}} jugadores",
     "delete_title": "¿Eliminar partido?",
     "delete_message": "Esto eliminará permanentemente este partido y su historial de rotaciones.",
-    "create_new_aria": "Crear nuevo partido"
+    "create_new_aria": "Crear nuevo partido",
+    "duplicate": "Duplicar",
+    "duplicate_suffix": "(Copia)"
   },
   "live": {
     "now": "Ahora",

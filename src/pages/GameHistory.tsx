@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui';
 import { ChevronRight, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -12,10 +12,12 @@ import { GroupedList, GroupedListRow } from '@/components/ui/grouped-list.tsx';
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwipeableRow } from '@/components/ui/swipeable-row.tsx';
 import { GAME_STATUS_STYLES, TEAM_GENDER_DOT_COLORS } from '@/types/domain.ts';
+import { cloneGame } from '@/utils/gameClone.ts';
 
 export function GameHistory() {
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const dispatchWithUndo = useUndoToast();
+  const navigate = useNavigate();
   const { t } = useTranslation('game');
   const { t: tCommon } = useTranslation('common');
   const [deletingGameId, setDeletingGameId] = useState<string | null>(null);
@@ -26,6 +28,15 @@ export function GameHistory() {
     if (!deletingGameId) return;
     dispatchWithUndo({ type: 'DELETE_GAME', payload: deletingGameId });
     setDeletingGameId(null);
+  }
+
+  function handleDuplicateGame(gameId: string) {
+    const source = state.games[gameId];
+    if (!source) return;
+    const name = `${source.name} ${t('history.duplicate_suffix')}`;
+    const newGame = cloneGame(source, name);
+    dispatch({ type: 'CREATE_GAME', payload: newGame });
+    navigate(`/games/${newGame.id}/rotations`);
   }
 
   return (
@@ -102,6 +113,12 @@ export function GameHistory() {
                     </ContextMenuPrimitive.Trigger>
                     <ContextMenuPrimitive.Portal>
                       <ContextMenuPrimitive.Content className="bg-popover text-popover-foreground z-50 min-w-[160px] overflow-hidden rounded-xl border p-1 shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
+                        <ContextMenuPrimitive.Item
+                          className="flex items-center rounded-lg px-3 py-2 text-ios-subheadline outline-hidden select-none data-[highlighted]:bg-accent cursor-default"
+                          onSelect={() => handleDuplicateGame(game.id)}
+                        >
+                          {t('history.duplicate')}
+                        </ContextMenuPrimitive.Item>
                         <ContextMenuPrimitive.Item
                           className="flex items-center rounded-lg px-3 py-2 text-ios-subheadline text-destructive outline-hidden select-none data-[highlighted]:bg-accent cursor-default"
                           onSelect={() => setDeletingGameId(game.id)}

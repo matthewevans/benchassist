@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 import { EllipsisIcon, LayoutGridIcon } from 'lucide-react';
+import { cloneGame } from '@/utils/gameClone.ts';
 import { useRotationGame } from '@/hooks/useRotationGame.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
@@ -181,11 +182,40 @@ export function RotationGrid() {
     navigate(`/games/${g.game.id}/direct-entry`);
   }
 
+  function handleDuplicate() {
+    if (!g.game) return;
+    const name = `${g.game.name} ${t('history.duplicate_suffix')}`;
+    const newGame = cloneGame(g.game, name);
+    g.dispatch({ type: 'CREATE_GAME', payload: newGame });
+    navigate(`/games/${newGame.id}/rotations`);
+  }
+
   return (
     <div>
       {/* NavBar — adapts to game state */}
       {g.isCompleted ? (
-        <NavBar title={g.game.name} backTo="/games" backLabel={tCommon('nav.games')} />
+        <NavBar
+          title={g.game.name}
+          backTo="/games"
+          backLabel={tCommon('nav.games')}
+          trailing={
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="plain" size="icon-sm" aria-label={t('live.game_actions_aria')}>
+                  <EllipsisIcon className="size-5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-48 p-1.5">
+                <button
+                  className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                  onClick={handleDuplicate}
+                >
+                  {t('history.duplicate')}
+                </button>
+              </PopoverContent>
+            </Popover>
+          }
+        />
       ) : g.isLive ? (
         <NavBar
           compact
@@ -257,6 +287,12 @@ export function RotationGrid() {
                     onClick={handleOpenDirectEntry}
                   >
                     {t('setup.enter_coach_plan')}
+                  </button>
+                  <button
+                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
+                    onClick={handleDuplicate}
+                  >
+                    {t('history.duplicate')}
                   </button>
                   {g.divisionsModified && (
                     <button
