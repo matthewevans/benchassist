@@ -87,7 +87,10 @@
     "delete_message": "Esto eliminará permanentemente este partido y su historial de rotaciones.",
     "create_new_aria": "Crear nuevo partido",
     "duplicate": "Duplicar",
-    "duplicate_suffix": "(Copia)"
+    "duplicate_suffix": "(Copia)",
+    "rename": "Renombrar",
+    "rename_title": "Renombrar partido",
+    "game_name_label": "Nombre del partido"
   },
   "live": {
     "now": "Ahora",

@@ -87,7 +87,10 @@
     "delete_message": "This will permanently remove this game and its rotation schedule.",
     "create_new_aria": "Create new game",
     "duplicate": "Duplicate",
-    "duplicate_suffix": "(Copy)"
+    "duplicate_suffix": "(Copy)",
+    "rename": "Rename",
+    "rename_title": "Rename Game",
+    "game_name_label": "Game name"
   },
   "live": {
     "now": "Now",
