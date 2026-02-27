@@ -120,7 +120,12 @@ export function RotationGrid() {
 
   const isGridActive = g.viewMode === 'grid' || (!g.isLive && g.viewMode === 'focus');
   const hasSolverStatus = g.solver.isRunning || Boolean(g.solver.error);
-  const showSetupOverview = Boolean(g.schedule && !g.isLive && !g.isCompleted);
+  const isSetupMode = !g.isLive && !g.isCompleted;
+  const showSetupOverview = Boolean(g.schedule && isSetupMode);
+  const isSetupFieldView = isSetupMode && g.viewMode === 'field';
+  const showRailPeriodIndicator = !isSetupMode;
+  const hasRailSummary = showSetupOverview && g.schedule;
+  const railHasDualContent = showRailPeriodIndicator && hasRailSummary;
   const setupSpread = g.schedule
     ? Math.max(0, g.schedule.overallStats.maxStrength - g.schedule.overallStats.minStrength)
     : 0;
@@ -340,14 +345,16 @@ export function RotationGrid() {
               <div
                 className={cn(
                   'flex flex-wrap items-center gap-3',
-                  showSetupOverview ? 'justify-between' : 'justify-center',
+                  railHasDualContent ? 'justify-between' : 'justify-center',
                 )}
               >
-                <PeriodRotationIndicator
-                  periodGroups={g.periodGroups}
-                  currentRotationIndex={g.currentRotationIndex}
-                />
-                {showSetupOverview && g.schedule && (
+                {showRailPeriodIndicator && (
+                  <PeriodRotationIndicator
+                    periodGroups={g.periodGroups}
+                    currentRotationIndex={g.currentRotationIndex}
+                  />
+                )}
+                {hasRailSummary && (
                   <div className="flex items-center gap-1">
                     <span
                       className={cn(
@@ -505,7 +512,8 @@ export function RotationGrid() {
               usePositions={g.config.usePositions}
               useGoalie={g.config.useGoalie}
               isLive={g.isLive}
-              periodDivisions={g.periodDivisions}
+              periodGroups={g.periodGroups}
+              showPeriodStatusIndicator={isSetupFieldView}
             />
           </div>
         )}

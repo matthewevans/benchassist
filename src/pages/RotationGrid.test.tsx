@@ -191,7 +191,7 @@ describe('RotationGrid', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
       expect(screen.getByRole('heading', { name: 'Game' })).toBeInTheDocument();
-      expect(screen.getByTitle(/Rotation 1 of 4/)).toBeInTheDocument();
+      expect(screen.queryByTitle(/Rotation 1 of 4/)).not.toBeInTheDocument();
       const backLink = screen.getByRole('link', { name: 'Back to Games' });
       expect(backLink).toHaveAttribute('href', '/games');
     });
@@ -230,6 +230,20 @@ describe('RotationGrid', () => {
       expect(screen.getByText(/Very steady|Steady|Mixed|Uneven/)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /what is strength spread/i })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /show details/i })).not.toBeInTheDocument();
+    });
+
+    it('shows a single period indicator in setup field tab and updates it with chevrons', async () => {
+      const { state, game } = buildTestState();
+      renderGrid(state, game.id);
+
+      expect(screen.queryByTitle(/Rotation 1 of 4 — Period 1/)).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('tab', { name: /field/i }));
+
+      expect(screen.getAllByTitle(/Rotation 1 of 4 — Period 1/)).toHaveLength(1);
+
+      await userEvent.click(screen.getByRole('button', { name: /next rotation/i }));
+      expect(screen.getByTitle(/Rotation 2 of 4 — Period 1/)).toBeInTheDocument();
     });
 
     it('flags high play-percentage outliers in the grid', () => {

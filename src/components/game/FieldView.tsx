@@ -9,10 +9,11 @@ import {
   ChevronRightIcon,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch.tsx';
+import { PeriodRotationIndicator } from '@/components/game/PeriodRotationIndicator.tsx';
+import type { PeriodRotationGroup } from '@/components/game/PeriodRotationIndicator.tsx';
 import { cn } from '@/lib/utils.ts';
 import type { PlayerId, Player, Rotation } from '@/types/domain.ts';
 import type { RotationTransitionKind } from '@/utils/rotationTransitions.ts';
-import { getPeriodRange } from '@/utils/rotationLayout.ts';
 import {
   buildNextPreview,
   buildPlacements,
@@ -374,22 +375,24 @@ function TransitionSection({ title, tone, icon, placements }: TransitionSectionP
 
 interface Props {
   rotations: Rotation[];
+  periodGroups: PeriodRotationGroup[];
   initialRotationIndex: number;
   playerMap: Map<PlayerId, Player>;
   usePositions: boolean;
   useGoalie: boolean;
   isLive: boolean;
-  periodDivisions: number[];
+  showPeriodStatusIndicator?: boolean;
 }
 
 export function FieldView({
   rotations,
+  periodGroups,
   initialRotationIndex,
   playerMap,
   usePositions,
   useGoalie,
   isLive,
-  periodDivisions,
+  showPeriodStatusIndicator = false,
 }: Props) {
   const { t } = useTranslation('game');
   const maxRotationIndex = Math.max(rotations.length - 1, 0);
@@ -459,18 +462,23 @@ export function FieldView({
       : null;
 
   const displayedRotation = preview && nextRotation ? nextRotation : rotation;
-  const periodRange = getPeriodRange(periodDivisions, displayedRotation.periodIndex);
-  const rotationWithinPeriod = periodRange ? displayedRotation.index - periodRange.start + 1 : 1;
-  const totalInPeriod = periodRange ? periodRange.endExclusive - periodRange.start : 1;
+  const displayedPeriodGroup =
+    periodGroups.find((group) => group.periodIndex === displayedRotation.periodIndex) ?? null;
+  const displayedRotationOffset =
+    displayedPeriodGroup?.rotations.findIndex(
+      (periodRotation) => periodRotation.index === displayedRotation.index,
+    ) ?? -1;
+  const rotationWithinPeriod = displayedRotationOffset >= 0 ? displayedRotationOffset + 1 : 1;
+  const totalInPeriod = displayedPeriodGroup?.rotations.length ?? 1;
 
   return (
     <div className="space-y-3">
       {!isLive && (
-        <div className="flex items-center justify-center gap-1">
+        <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center">
           <button
             type="button"
             className={cn(
-              'flex items-center justify-center size-11 rounded-lg transition-colors',
+              'flex h-11 w-11 items-center justify-center rounded-lg transition-colors',
               hasPrev ? 'active:bg-secondary/80 text-foreground' : 'text-muted-foreground/30',
             )}
             disabled={!hasPrev}
@@ -491,29 +499,36 @@ export function FieldView({
             <ChevronLeftIcon className="size-5" />
           </button>
 
-          <div className="flex items-baseline gap-1.5 min-w-[170px] justify-center">
-            <span className="text-ios-footnote font-medium text-muted-foreground uppercase tracking-wide">
-              {t('field.period_label', { period: displayedRotation.periodIndex + 1 })}
-            </span>
-            <span className="text-ios-footnote text-muted-foreground/60">·</span>
-            <span className="text-ios-footnote text-muted-foreground">
-              {t('field.rotation_of', {
-                current: rotationWithinPeriod,
-                total: totalInPeriod,
-              })}
-            </span>
+          <div className="min-w-0 flex items-center justify-center gap-2">
+            {showPeriodStatusIndicator ? (
+              <PeriodRotationIndicator
+                periodGroups={periodGroups}
+                currentRotationIndex={displayedRotation.index}
+                className="justify-center"
+              />
+            ) : (
+              <div className="flex items-baseline gap-1.5 min-w-[170px] justify-center">
+                <span className="text-ios-footnote font-medium text-muted-foreground uppercase tracking-wide">
+                  {t('field.period_label', { period: displayedRotation.periodIndex + 1 })}
+                </span>
+                <span className="text-ios-footnote text-muted-foreground/60">·</span>
+                <span className="text-ios-footnote text-muted-foreground">
+                  {t('field.rotation_of', {
+                    current: rotationWithinPeriod,
+                    total: totalInPeriod,
+                  })}
+                </span>
+              </div>
+            )}
             {preview && (
-              <>
-                <span className="text-ios-caption1 text-muted-foreground/50">·</span>
-                <span className="text-ios-caption1 text-primary">{t('field.preview_badge')}</span>
-              </>
+              <span className="text-ios-caption1 text-primary">{t('field.preview_badge')}</span>
             )}
           </div>
 
           <button
             type="button"
             className={cn(
-              'flex items-center justify-center size-11 rounded-lg transition-colors',
+              'flex h-11 w-11 items-center justify-center rounded-lg transition-colors justify-self-end',
               hasNext ? 'active:bg-secondary/80 text-foreground' : 'text-muted-foreground/30',
             )}
             disabled={!hasNext}

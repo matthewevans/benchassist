@@ -4,6 +4,20 @@ import { FieldView } from './FieldView.tsx';
 import { buildRotation, playerFactory } from '@/test/factories.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { Player, PlayerId, Rotation } from '@/types/domain.ts';
+import type { PeriodRotationGroup } from '@/components/game/PeriodRotationIndicator.tsx';
+
+function buildPeriodGroups(rotations: Rotation[]): PeriodRotationGroup[] {
+  const groups: PeriodRotationGroup[] = [];
+  for (const rotation of rotations) {
+    const existing = groups.find((group) => group.periodIndex === rotation.periodIndex);
+    if (existing) {
+      existing.rotations.push({ index: rotation.index });
+    } else {
+      groups.push({ periodIndex: rotation.periodIndex, rotations: [{ index: rotation.index }] });
+    }
+  }
+  return groups;
+}
 
 function buildFieldState(): {
   players: Player[];
@@ -56,7 +70,6 @@ function buildFieldState(): {
 const defaultProps = {
   usePositions: false,
   useGoalie: false,
-  periodDivisions: [2, 2],
 };
 
 describe('FieldView', () => {
@@ -65,6 +78,7 @@ describe('FieldView', () => {
     render(
       <FieldView
         rotations={rotations}
+        periodGroups={buildPeriodGroups(rotations)}
         initialRotationIndex={0}
         playerMap={playerMap}
         isLive={false}
@@ -84,30 +98,28 @@ describe('FieldView', () => {
     render(
       <FieldView
         rotations={rotations}
+        periodGroups={buildPeriodGroups(rotations)}
         initialRotationIndex={0}
         playerMap={playerMap}
         isLive={false}
+        showPeriodStatusIndicator={true}
         {...defaultProps}
       />,
     );
 
-    // Should start at P1 R1 of 2
-    expect(screen.getByText('P1')).toBeInTheDocument();
-    expect(screen.getByText('R1 of 2')).toBeInTheDocument();
+    expect(screen.getByTitle('Rotation 1 of 4 — Period 1')).toBeInTheDocument();
 
     // Click next to go to R2
     await userEvent.click(screen.getByRole('button', { name: /next rotation/i }));
-    expect(screen.getByText('R2 of 2')).toBeInTheDocument();
+    expect(screen.getByTitle('Rotation 2 of 4 — Period 1')).toBeInTheDocument();
 
     // Click next again to cross into P2
     await userEvent.click(screen.getByRole('button', { name: /next rotation/i }));
-    expect(screen.getByText('P2')).toBeInTheDocument();
-    expect(screen.getByText('R1 of 2')).toBeInTheDocument();
+    expect(screen.getByTitle('Rotation 3 of 4 — Period 2')).toBeInTheDocument();
 
     // Click previous to go back
     await userEvent.click(screen.getByRole('button', { name: /previous rotation/i }));
-    expect(screen.getByText('P1')).toBeInTheDocument();
-    expect(screen.getByText('R2 of 2')).toBeInTheDocument();
+    expect(screen.getByTitle('Rotation 2 of 4 — Period 1')).toBeInTheDocument();
   });
 
   it('hides preview controls when viewing the last rotation', () => {
@@ -115,6 +127,7 @@ describe('FieldView', () => {
     render(
       <FieldView
         rotations={rotations}
+        periodGroups={buildPeriodGroups(rotations)}
         initialRotationIndex={3}
         playerMap={playerMap}
         isLive={true}
@@ -131,6 +144,7 @@ describe('FieldView', () => {
     render(
       <FieldView
         rotations={rotations}
+        periodGroups={buildPeriodGroups(rotations)}
         initialRotationIndex={0}
         playerMap={playerMap}
         isLive={true}
@@ -152,6 +166,7 @@ describe('FieldView', () => {
     const { rerender } = render(
       <FieldView
         rotations={rotations}
+        periodGroups={buildPeriodGroups(rotations)}
         initialRotationIndex={0}
         playerMap={playerMap}
         isLive={true}
@@ -166,6 +181,7 @@ describe('FieldView', () => {
     rerender(
       <FieldView
         rotations={rotations}
+        periodGroups={buildPeriodGroups(rotations)}
         initialRotationIndex={1}
         playerMap={playerMap}
         isLive={true}
@@ -179,6 +195,7 @@ describe('FieldView', () => {
     rerender(
       <FieldView
         rotations={rotations}
+        periodGroups={buildPeriodGroups(rotations)}
         initialRotationIndex={0}
         playerMap={playerMap}
         isLive={true}
