@@ -99,10 +99,12 @@
     "last_rotation": "Última rotación",
     "focus_view": "Enfoque",
     "grid_view": "Cuadrícula",
+    "field_view": "Campo",
     "start_game": "Iniciar partido",
     "end_game": "Terminar partido",
     "regenerate": "Regenerar",
     "solving": "Calculando...",
+    "details": "Detalles",
     "settings": "Ajustes",
     "substitutions": "Sustituciones",
     "upcoming_changes": "Cambios próximos",
@@ -146,6 +148,19 @@
     "regenerate_preview_cell_changed_aria": "cambio en previsualización: {{detail}}",
     "regenerate_preview_apply": "Aplicar regeneración",
     "reset_rotations": "Restablecer rotaciones"
+  },
+  "field": {
+    "period_label": "T{{period}}",
+    "rotation_of": "R{{current}} de {{total}}",
+    "show_changes": "Vista previa",
+    "hide_changes": "Volver a actual",
+    "preview_badge": "Vista previa",
+    "preview_hint": "Mostrar sustituciones para R{{rotation}}",
+    "no_changes": "No hay cambios de alineación en la siguiente rotación.",
+    "no_outgoing_pair": "Sin salida emparejada",
+    "no_incoming_pair": "Sin entrada emparejada",
+    "position_only_changes": "No hay sustituciones; solo cambios de posición.",
+    "no_goalie": "No hay portero asignado en R{{rotation}}."
   },
   "swap": {
     "title": "Cambiar {{playerA}} y {{playerB}}",

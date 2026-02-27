@@ -1,7 +1,12 @@
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button.tsx';
+import {
+  PeriodRotationIndicator,
+  type PeriodRotationGroup,
+} from '@/components/game/PeriodRotationIndicator.tsx';
+import { cn } from '@/lib/utils.ts';
 import type { DirectEntryCell, DirectEntryDraft, DirectEntrySlot } from '@/utils/directEntry.ts';
 import { makeDirectEntryCellKey } from '@/utils/directEntry.ts';
 
@@ -17,6 +22,7 @@ function getIsDesktopViewport(): boolean {
 interface DirectEntryMatrixProps {
   slots: DirectEntrySlot[];
   totalRotations: number;
+  periodGroups: PeriodRotationGroup[];
   draft: DirectEntryDraft;
   playerNameById: Map<string, string>;
   currentRotationIndex: number;
@@ -107,6 +113,7 @@ const MatrixCell = memo(function MatrixCell({
 export function DirectEntryMatrix({
   slots,
   totalRotations,
+  periodGroups,
   draft,
   playerNameById,
   currentRotationIndex,
@@ -135,6 +142,14 @@ export function DirectEntryMatrix({
 
   const hardLockLabel = t('direct_entry.lock_state_hard');
   const softLockLabel = t('direct_entry.lock_state_soft');
+  const periodStartRotationIndexes = useMemo(() => {
+    const starts = new Set<number>();
+    for (const group of periodGroups) {
+      const firstRotation = group.rotations[0];
+      if (firstRotation) starts.add(firstRotation.index);
+    }
+    return starts;
+  }, [periodGroups]);
 
   return (
     <div className="space-y-4">
@@ -143,13 +158,39 @@ export function DirectEntryMatrix({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/40">
-                <th className="text-left px-3 py-2 text-ios-footnote uppercase tracking-wide text-muted-foreground sticky left-0 bg-card z-10">
+                <th
+                  rowSpan={2}
+                  className="text-left px-3 py-2 text-ios-footnote uppercase tracking-wide text-muted-foreground sticky left-0 bg-card z-10"
+                >
                   {t('direct_entry.slot')}
                 </th>
+                {periodGroups.map((group) => {
+                  const periodRotationCount = Math.max(group.rotations.length, 1);
+                  return (
+                    <th
+                      key={`period-${group.periodIndex}`}
+                      colSpan={periodRotationCount}
+                      className={cn(
+                        'px-2 py-1.5 text-center text-ios-caption2 font-semibold tracking-wide text-muted-foreground',
+                        group.periodIndex % 2 === 0 ? 'bg-secondary/20' : 'bg-secondary/30',
+                        group.periodIndex > 0 && 'border-l border-border/55',
+                      )}
+                    >
+                      {t('field.period_label', { period: group.periodIndex + 1 })}
+                    </th>
+                  );
+                })}
+              </tr>
+              <tr className="border-b border-border/40">
                 {Array.from({ length: totalRotations }, (_, rotationIndex) => (
                   <th
                     key={rotationIndex}
-                    className="text-center px-2 py-2 text-ios-footnote uppercase tracking-wide text-muted-foreground min-w-44"
+                    className={cn(
+                      'text-center px-2 py-2 text-ios-footnote uppercase tracking-wide text-muted-foreground min-w-44',
+                      periodStartRotationIndexes.has(rotationIndex) &&
+                        rotationIndex > 0 &&
+                        'border-l border-border/55',
+                    )}
                   >
                     {t('live.rotation', { index: rotationIndex + 1 })}
                   </th>
@@ -169,7 +210,15 @@ export function DirectEntryMatrix({
                     const key = makeDirectEntryCellKey(rotationIndex, slot.id);
                     const cell = draft[key];
                     return (
-                      <td key={rotationIndex} className="px-2 py-2 align-top">
+                      <td
+                        key={rotationIndex}
+                        className={cn(
+                          'px-2 py-2 align-top',
+                          periodStartRotationIndexes.has(rotationIndex) &&
+                            rotationIndex > 0 &&
+                            'border-l border-border/45',
+                        )}
+                      >
                         <MatrixCell
                           slot={slot}
                           rotationIndex={rotationIndex}
@@ -190,6 +239,14 @@ export function DirectEntryMatrix({
         </div>
       ) : (
         <>
+          {periodGroups.length > 0 && (
+            <PeriodRotationIndicator
+              periodGroups={periodGroups}
+              currentRotationIndex={currentRotationIndex}
+              className="justify-center"
+            />
+          )}
+
           <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
             <Button
               variant="secondary"

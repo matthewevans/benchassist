@@ -185,14 +185,6 @@ export function buildMidGameSolveWindow(params: {
   const startRange = getPeriodRange(periodDivisions, startPeriodIndex);
   if (!startRange) return null;
 
-  const startWithinPeriod = safeStart - startRange.start;
-
-  // If goalie is only forced on the first rotation of each period, a mid-period
-  // solve window would incorrectly force a goalie for the already-started period.
-  if (config.useGoalie && !config.goaliePlayFullPeriod && startWithinPeriod > 0) {
-    return null;
-  }
-
   const firstPeriodRemaining = startRange.endExclusive - safeStart;
   if (firstPeriodRemaining <= 0) return null;
   const remainingPeriodDivisions = [

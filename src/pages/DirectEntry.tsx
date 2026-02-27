@@ -12,6 +12,7 @@ import { useSolver } from '@/hooks/useSolver.ts';
 import {
   normalizePeriodDivisions,
   getTotalRotationsFromDivisions,
+  getPeriodOffsets,
 } from '@/utils/rotationLayout.ts';
 import {
   buildDirectEntrySlots,
@@ -78,6 +79,19 @@ export function DirectEntry() {
     () => getTotalRotationsFromDivisions(periodDivisions),
     [periodDivisions],
   );
+  const periodGroups = useMemo(() => {
+    const offsets = getPeriodOffsets(periodDivisions);
+    return periodDivisions.map((division, periodIndex) => {
+      const periodRotationCount = Math.max(1, Math.floor(division) || 1);
+      const start = offsets[periodIndex] ?? 0;
+      return {
+        periodIndex,
+        rotations: Array.from({ length: periodRotationCount }, (_, withinPeriodIndex) => ({
+          index: start + withinPeriodIndex,
+        })),
+      };
+    });
+  }, [periodDivisions]);
 
   const slots = useMemo(() => {
     if (!config) return [];
@@ -315,6 +329,7 @@ export function DirectEntry() {
         <DirectEntryMatrix
           slots={slots}
           totalRotations={totalRotations}
+          periodGroups={periodGroups}
           draft={draft}
           playerNameById={playerNameById}
           currentRotationIndex={currentRotationIndex}

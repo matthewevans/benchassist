@@ -99,10 +99,12 @@
     "last_rotation": "Last rotation",
     "focus_view": "Focus",
     "grid_view": "Grid",
+    "field_view": "Field",
     "start_game": "Start Game",
     "end_game": "End Game",
     "regenerate": "Regenerate",
     "solving": "Solving...",
+    "details": "Details",
     "settings": "Settings",
     "substitutions": "Substitutions",
     "upcoming_changes": "Upcoming changes",
@@ -146,6 +148,19 @@
     "regenerate_preview_cell_changed_aria": "changed in preview: {{detail}}",
     "regenerate_preview_apply": "Apply Regenerate",
     "reset_rotations": "Reset Rotations"
+  },
+  "field": {
+    "period_label": "P{{period}}",
+    "rotation_of": "R{{current}} of {{total}}",
+    "show_changes": "Preview Next",
+    "hide_changes": "Back to Current",
+    "preview_badge": "Preview",
+    "preview_hint": "Show substitutions for R{{rotation}}",
+    "no_changes": "No lineup changes in the next rotation.",
+    "no_outgoing_pair": "No outgoing pair",
+    "no_incoming_pair": "No incoming pair",
+    "position_only_changes": "No substitutions in or out; players only changed positions.",
+    "no_goalie": "No goalie assigned in R{{rotation}}."
   },
   "swap": {
     "title": "Swap {{playerA}} and {{playerB}}",

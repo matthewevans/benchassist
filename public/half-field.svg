@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-30 -20 740 575">
+  <!--
+    Half soccer field (FIFA proportions)
+    Field: 68m wide × 52.5m deep, scaled ×10
+    Origin (0,0) = top-left corner (halfway line)
+    Goal line at y=525
+  -->
+  <defs>
+    <clipPath id="field">
+      <rect width="680" height="525"/>
+    </clipPath>
+  </defs>
+
+  <!-- Surround -->
+  <rect x="-30" y="-20" width="740" height="575" fill="#3a7a33"/>
+
+  <!-- Pitch -->
+  <rect width="680" height="525" fill="#4a9e42"/>
+
+  <!-- Mowing stripes -->
+  <g clip-path="url(#field)" fill="#fff" opacity=".06">
+    <rect y="0"   width="680" height="75"/>
+    <rect y="150" width="680" height="75"/>
+    <rect y="300" width="680" height="75"/>
+    <rect y="450" width="680" height="75"/>
+  </g>
+
+  <!-- Line markings -->
+  <g fill="none" stroke="#fff" stroke-width="2.5">
+    <!-- Field outline + halfway line (top edge) -->
+    <rect width="680" height="525"/>
+
+    <!-- Center circle half-arc (r = 9.15m) -->
+    <path d="M248.5 0 A91.5 91.5 0 0 1 431.5 0"/>
+
+    <!-- Penalty area (40.32m × 16.5m) -->
+    <rect x="138.4" y="360" width="403.2" height="165"/>
+
+    <!-- Goal area (18.32m × 5.5m) -->
+    <rect x="248.4" y="470" width="183.2" height="55"/>
+
+    <!-- Penalty arc (r = 9.15m from penalty spot, outside box) -->
+    <path d="M266.87 360 A91.5 91.5 0 0 1 413.13 360"/>
+
+    <!-- Corner arcs (r = 1m) -->
+    <path d="M10 525 A10 10 0 0 0 0 515"/>
+    <path d="M670 525 A10 10 0 0 1 680 515"/>
+  </g>
+
+  <!-- Goal (7.32m wide, extends below goal line) -->
+  <rect x="303.4" y="525" width="73.2" height="20" rx="3"
+        fill="none" stroke="#fff" stroke-width="2"/>
+
+  <!-- Center spot -->
+  <circle cx="340" cy="0" r="4" fill="#fff"/>
+
+  <!-- Penalty spot (11m from goal line) -->
+  <circle cx="340" cy="415" r="3.5" fill="#fff"/>
+</svg>

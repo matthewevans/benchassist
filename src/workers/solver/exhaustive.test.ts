@@ -52,6 +52,37 @@ describe('exhaustiveSearch', () => {
     }
   });
 
+  it('still assigns exactly one goalie per rotation when full-period goalie is disabled', () => {
+    const players = buildRoster(9);
+    const config = gameConfigFactory.build({
+      fieldSize: 7,
+      periods: 2,
+      rotationsPerPeriod: 3,
+      useGoalie: true,
+      goaliePlayFullPeriod: false,
+      goalieRestAfterPeriod: false,
+    });
+    const totalRotations = config.periods * config.rotationsPerPeriod;
+
+    const schedule = exhaustiveSearch({
+      players,
+      config,
+      goalieAssignments: [],
+      manualOverrides: [],
+      totalRotations,
+      benchSlotsPerRotation: players.length - config.fieldSize,
+      onProgress: () => {},
+      cancellation: { cancelled: false },
+    });
+
+    for (const rotation of schedule.rotations) {
+      const goalies = Object.values(rotation.assignments).filter(
+        (a) => a === RotationAssignment.Goalie,
+      );
+      expect(goalies).toHaveLength(1);
+    }
+  });
+
   it('respects the no-consecutive-bench rule', () => {
     const players = buildRoster(9);
     const config = gameConfigFactory.build({

@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 import { RotationAssignment } from '@/types/domain.ts';
 import type { Player, PlayerId, Rotation, SubPosition } from '@/types/domain.ts';
-import { getAssignmentDisplay } from '@/utils/positions.ts';
+import { getAssignmentDisplay, SUB_POSITION_GROUP } from '@/utils/positions.ts';
+import {
+  getRotationTransitions,
+  type RotationTransitionKind,
+} from '@/utils/rotationTransitions.ts';
 
 // Display order for pitch positions: forwards at top -> mids -> defenders -> GK
 const POSITION_GROUP_ORDER: Record<string, number> = { FWD: 0, MID: 1, DEF: 2, GK: 3 };
@@ -26,23 +30,6 @@ const SUB_POSITION_ORDER: Partial<Record<SubPosition, number>> = {
   CB: 2,
   RCB: 3,
   RB: 4,
-};
-
-const SUB_POSITION_GROUP: Partial<Record<SubPosition, string>> = {
-  LB: 'DEF',
-  CB: 'DEF',
-  RB: 'DEF',
-  LCB: 'DEF',
-  RCB: 'DEF',
-  LM: 'MID',
-  CM: 'MID',
-  RM: 'MID',
-  LCM: 'MID',
-  RCM: 'MID',
-  LW: 'FWD',
-  RW: 'FWD',
-  ST: 'FWD',
-  CF: 'FWD',
 };
 
 function positionSortKey(
@@ -91,54 +78,85 @@ function sortPlayers(
   return { field, bench };
 }
 
-type TransitionKind = 'in' | 'out' | 'position' | 'role';
-
 interface PlayerTransition {
   playerId: PlayerId;
   playerName: string;
-  kind: TransitionKind;
+  kind: RotationTransitionKind;
   fromLabel: string;
   toLabel: string;
 }
 
-function getTransitionTone(kind: TransitionKind) {
-  if (kind === 'in') {
-    return {
-      icon: ArrowUpIcon,
-      iconTone: 'text-green-600 dark:text-green-400',
-      iconBg: 'bg-green-500/12 dark:bg-green-500/18',
-      chipTone: 'text-green-700 dark:text-green-300 bg-green-500/12 dark:bg-green-500/18',
-    };
+const TRANSITION_TONE: Record<
+  RotationTransitionKind,
+  {
+    icon: typeof ArrowUpIcon;
+    iconTone: string;
+    chipTone: string;
   }
-  if (kind === 'out') {
-    return {
-      icon: ArrowDownIcon,
-      iconTone: 'text-orange-600 dark:text-orange-400',
-      iconBg: 'bg-orange-500/12 dark:bg-orange-500/18',
-      chipTone: 'text-orange-700 dark:text-orange-300 bg-orange-500/12 dark:bg-orange-500/18',
-    };
-  }
-  if (kind === 'position') {
-    return {
-      icon: ArrowRightLeftIcon,
-      iconTone: 'text-blue-600 dark:text-blue-400',
-      iconBg: 'bg-blue-500/12 dark:bg-blue-500/18',
-      chipTone: 'text-blue-700 dark:text-blue-300 bg-blue-500/12 dark:bg-blue-500/18',
-    };
-  }
-  return {
+> = {
+  in: {
+    icon: ArrowUpIcon,
+    iconTone: 'text-green-600 dark:text-green-400',
+    chipTone: 'text-green-700 dark:text-green-300 bg-green-500/12 dark:bg-green-500/18',
+  },
+  out: {
+    icon: ArrowDownIcon,
+    iconTone: 'text-orange-600 dark:text-orange-400',
+    chipTone: 'text-orange-700 dark:text-orange-300 bg-orange-500/12 dark:bg-orange-500/18',
+  },
+  position: {
     icon: ArrowRightLeftIcon,
-    iconTone: 'text-indigo-600 dark:text-indigo-400',
-    iconBg: 'bg-indigo-500/12 dark:bg-indigo-500/18',
-    chipTone: 'text-indigo-700 dark:text-indigo-300 bg-indigo-500/12 dark:bg-indigo-500/18',
-  };
-}
+    iconTone: 'text-blue-600 dark:text-blue-400',
+    chipTone: 'text-blue-700 dark:text-blue-300 bg-blue-500/12 dark:bg-blue-500/18',
+  },
+  role: {
+    icon: ArrowRightLeftIcon,
+    iconTone: 'text-violet-600 dark:text-violet-400',
+    chipTone: 'text-violet-700 dark:text-violet-300 bg-violet-500/12 dark:bg-violet-500/18',
+  },
+};
 
-function transitionLabelKey(kind: TransitionKind) {
-  if (kind === 'in') return 'live.sub_in' as const;
-  if (kind === 'out') return 'live.sub_out' as const;
-  if (kind === 'position') return 'live.position_change' as const;
-  return 'live.role_change' as const;
+const TRANSITION_LABEL_KEY = {
+  in: 'live.sub_in',
+  out: 'live.sub_out',
+  position: 'live.position_change',
+  role: 'live.role_change',
+} as const satisfies Record<RotationTransitionKind, string>;
+
+function TransitionSummary({ transitions }: { transitions: PlayerTransition[] }) {
+  const { t } = useTranslation('game');
+  const counts: Record<RotationTransitionKind, number> = { in: 0, out: 0, position: 0, role: 0 };
+  for (const transition of transitions) {
+    counts[transition.kind]++;
+  }
+
+  if (transitions.length === 0) {
+    return <p className="mx-4 text-ios-footnote text-muted-foreground">{t('field.no_changes')}</p>;
+  }
+
+  const orderedKinds: RotationTransitionKind[] = ['in', 'out', 'position', 'role'];
+  return (
+    <div className="mx-4 flex flex-wrap gap-2">
+      {orderedKinds.map((kind) => {
+        const count = counts[kind];
+        if (count === 0) return null;
+        const tone = TRANSITION_TONE[kind];
+        const ToneIcon = tone.icon;
+        return (
+          <span
+            key={kind}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide',
+              tone.chipTone,
+            )}
+          >
+            <ToneIcon className="size-3.5" />
+            {count} {t(TRANSITION_LABEL_KEY[kind])}
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 interface PlayerRowProps {
@@ -161,7 +179,7 @@ function PlayerRow({
   const { t } = useTranslation('game');
   const display = getAssignmentDisplay(assignment, fieldPos, usePositions);
   const isBench = assignment === RotationAssignment.Bench;
-  const tone = transition ? getTransitionTone(transition.kind) : null;
+  const tone = transition ? TRANSITION_TONE[transition.kind] : null;
   const ToneIcon = tone?.icon;
 
   return (
@@ -201,7 +219,7 @@ function PlayerRow({
           )}
         >
           <ToneIcon className="size-3.5" />
-          {t(transitionLabelKey(transition.kind))}
+          {t(TRANSITION_LABEL_KEY[transition.kind])}
         </span>
       )}
     </div>
@@ -279,11 +297,6 @@ export function LiveFocusView({ currentRotation, nextRotation, playerMap, usePos
   const transitions: PlayerTransition[] = [];
 
   if (nextRotation) {
-    const playerIds = new Set<PlayerId>([
-      ...(Object.keys(currentRotation.assignments) as PlayerId[]),
-      ...(Object.keys(nextRotation.assignments) as PlayerId[]),
-    ]);
-
     function displayLabel(
       assignment: RotationAssignment | undefined,
       fieldPos: SubPosition | undefined,
@@ -297,42 +310,16 @@ export function LiveFocusView({ currentRotation, nextRotation, playerMap, usePos
       return t('live.role_bench');
     }
 
-    for (const playerId of playerIds) {
-      const player = playerMap.get(playerId);
+    for (const transition of getRotationTransitions(currentRotation, nextRotation)) {
+      const player = playerMap.get(transition.playerId);
       if (!player) continue;
 
-      const fromAssignment = currentRotation.assignments[playerId];
-      const toAssignment = nextRotation.assignments[playerId];
-      const fromPos = currentRotation.fieldPositions?.[playerId];
-      const toPos = nextRotation.fieldPositions?.[playerId];
-
-      const assignmentChanged = fromAssignment !== toAssignment;
-      const positionChanged = fromPos !== toPos;
-      if (!assignmentChanged && !positionChanged) continue;
-
-      let kind: TransitionKind;
-      if (
-        fromAssignment === RotationAssignment.Bench &&
-        toAssignment !== RotationAssignment.Bench
-      ) {
-        kind = 'in';
-      } else if (
-        fromAssignment !== RotationAssignment.Bench &&
-        toAssignment === RotationAssignment.Bench
-      ) {
-        kind = 'out';
-      } else if (assignmentChanged) {
-        kind = 'role';
-      } else {
-        kind = 'position';
-      }
-
       transitions.push({
-        playerId,
+        playerId: transition.playerId,
         playerName: player.name,
-        kind,
-        fromLabel: displayLabel(fromAssignment, fromPos),
-        toLabel: displayLabel(toAssignment, toPos),
+        kind: transition.kind,
+        fromLabel: displayLabel(transition.fromAssignment, transition.fromPos),
+        toLabel: displayLabel(transition.toAssignment, transition.toPos),
       });
     }
 
@@ -345,6 +332,8 @@ export function LiveFocusView({ currentRotation, nextRotation, playerMap, usePos
 
   return (
     <div className="space-y-5">
+      {nextRotation && <TransitionSummary transitions={transitions} />}
+
       <RotationSection
         rotation={currentRotation}
         label={t('live.now')}

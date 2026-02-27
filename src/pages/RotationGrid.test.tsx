@@ -187,11 +187,11 @@ describe('RotationGrid', () => {
   });
 
   describe('setup mode', () => {
-    it('renders setup nav title, game name, and back link to Games', () => {
+    it('renders setup nav title, mode context, and back link to Games', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
       expect(screen.getByRole('heading', { name: 'Game' })).toBeInTheDocument();
-      expect(screen.getAllByText('Test Match').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByTitle(/Rotation 1 of 4/)).toBeInTheDocument();
       const backLink = screen.getByRole('link', { name: 'Back to Games' });
       expect(backLink).toHaveAttribute('href', '/games');
     });
@@ -224,12 +224,12 @@ describe('RotationGrid', () => {
       expect(screen.getByText('R4')).toBeInTheDocument();
     });
 
-    it('shows overall stats cards', () => {
+    it('shows compact setup balance summary with help icon in the context rail', () => {
       const { state, game } = buildTestState();
       renderGrid(state, game.id);
-      expect(screen.getByText('Schedule Overview')).toBeInTheDocument();
-      expect(screen.getByText(/Spread/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /show details/i })).toBeInTheDocument();
+      expect(screen.getByText(/Very steady|Steady|Mixed|Uneven/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /what is strength spread/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /show details/i })).not.toBeInTheDocument();
     });
 
     it('flags high play-percentage outliers in the grid', () => {

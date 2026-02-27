@@ -5,18 +5,20 @@ import { BottomSheet } from '@/components/ui/bottom-sheet.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
 import { cn } from '@/lib/utils.ts';
-import { EllipsisIcon, LayoutGridIcon } from 'lucide-react';
+import { CircleHelpIcon, EllipsisIcon, LayoutGridIcon } from 'lucide-react';
 import { cloneGame } from '@/utils/gameClone.ts';
 import { useRotationGame } from '@/hooks/useRotationGame.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
+import { FieldView } from '@/components/game/FieldView.tsx';
 import { LiveBottomBar } from '@/components/game/LiveBottomBar.tsx';
 import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
+import { PeriodRotationIndicator } from '@/components/game/PeriodRotationIndicator.tsx';
 import { SolverStatusCard } from '@/components/game/SolverStatusCard.tsx';
 import { GameSettingsSheet } from '@/components/game/GameSettingsSheet.tsx';
 import { LiveRegenerateLockPolicySheet } from '@/components/game/LiveRegenerateLockPolicySheet.tsx';
-import { OverallStatsCards } from '@/components/game/OverallStatsCards.tsx';
 import { RotationTable } from '@/components/game/RotationTable.tsx';
 import { PeriodDivisionSheet } from '@/components/game/PeriodDivisionSheet.tsx';
 import { RegeneratePreviewSheet } from '@/components/game/RegeneratePreviewSheet.tsx';
@@ -25,62 +27,19 @@ import { OptimizeDivisionsSheet } from '@/components/game/OptimizeDivisionsSheet
 import { IOSAlert } from '@/components/ui/ios-alert.tsx';
 import { SwapScopeDialog } from '@/components/game/SwapScopeDialog.tsx';
 import { NavBar } from '@/components/layout/NavBar.tsx';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from '@/components/ui/popover.tsx';
 import type { PlayerId } from '@/types/domain.ts';
 import { redivideSchedulePeriod } from '@/utils/rotationDivision.ts';
 import { getPeriodRange } from '@/utils/rotationLayout.ts';
 import { getHighPlayPercentageOutlierIds } from '@/utils/playPercentageOutliers.ts';
-
-function RotationPips({
-  periodGroups,
-  currentRotationIndex,
-}: {
-  periodGroups: { periodIndex: number; rotations: { index: number }[] }[];
-  currentRotationIndex: number;
-}) {
-  const { t } = useTranslation('game');
-  const totalRotations = periodGroups.reduce((sum, g) => sum + g.rotations.length, 0);
-  const currentPeriodIndex =
-    periodGroups.find((g) => g.rotations.some((r) => r.index === currentRotationIndex))
-      ?.periodIndex ?? 0;
-
-  return (
-    <div
-      className="flex items-center gap-1.5"
-      role="status"
-      aria-label={t('live.rotation_progress', {
-        current: currentRotationIndex + 1,
-        total: totalRotations,
-        period: currentPeriodIndex + 1,
-      })}
-      title={t('live.rotation_progress_title', {
-        current: currentRotationIndex + 1,
-        total: totalRotations,
-        period: currentPeriodIndex + 1,
-      })}
-    >
-      {periodGroups.map((group) => (
-        <div key={group.periodIndex} className="flex items-center gap-0.5">
-          {group.rotations.map((r) => {
-            const isPast = r.index < currentRotationIndex;
-            const isCurrent = r.index === currentRotationIndex;
-            return (
-              <div
-                key={r.index}
-                className={cn(
-                  'h-2 w-3 rounded-sm transition-colors',
-                  isCurrent && 'bg-primary',
-                  isPast && 'bg-primary/40',
-                  !isPast && !isCurrent && 'bg-muted-foreground/25',
-                )}
-              />
-            );
-          })}
-        </div>
-      ))}
-    </div>
-  );
-}
+import { formatStrengthValue, getBalanceTier } from '@/utils/stats.ts';
 
 export function RotationGrid() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -159,6 +118,14 @@ export function RotationGrid() {
     );
   }
 
+  const isGridActive = g.viewMode === 'grid' || (!g.isLive && g.viewMode === 'focus');
+  const hasSolverStatus = g.solver.isRunning || Boolean(g.solver.error);
+  const showSetupOverview = Boolean(g.schedule && !g.isLive && !g.isCompleted);
+  const setupSpread = g.schedule
+    ? Math.max(0, g.schedule.overallStats.maxStrength - g.schedule.overallStats.minStrength)
+    : 0;
+  const setupBalance = getBalanceTier(setupSpread);
+
   function canEditPeriodDivision(periodIndex: number): boolean {
     if (g.isCompleted || !g.schedule) return false;
     if (!g.isLive) return true;
@@ -206,6 +173,9 @@ export function RotationGrid() {
     g.dispatch({ type: 'UPDATE_GAME', payload: { ...g.game, name: editName.trim() } });
     setRenamingOpen(false);
   }
+
+  const setupMenuItemClass =
+    'flex items-center w-full min-h-11 px-3 text-left text-ios-body active:bg-accent/80 transition-colors disabled:opacity-50';
 
   return (
     <div>
@@ -284,63 +254,69 @@ export function RotationGrid() {
           backTo="/games"
           backLabel={tCommon('nav.games')}
           trailing={
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="plain" size="icon-sm" aria-label={t('live.game_actions_aria')}>
                     <EllipsisIcon className="size-5" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-52 p-1.5">
-                  <button
-                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                    onClick={handleStartRename}
-                  >
-                    {t('history.rename')}
-                  </button>
-                  <button
-                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                    onClick={() => {
-                      g.setSettingsOpen(true);
-                    }}
-                  >
-                    {t('live.settings')}
-                  </button>
-                  <button
-                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                    onClick={g.handleOpenRegenerate}
-                    disabled={g.solver.isRunning}
-                  >
-                    {g.solver.isRunning
-                      ? t('live.solving')
-                      : g.schedule
-                        ? t('live.regenerate')
-                        : t('setup.generate_rotations')}
-                  </button>
-                  <button
-                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                    onClick={handleOpenDirectEntry}
-                  >
-                    {t('setup.enter_coach_plan')}
-                  </button>
-                  <button
-                    className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                    onClick={handleDuplicate}
-                  >
-                    {t('history.duplicate')}
-                  </button>
-                  {g.divisionsModified && (
+                <PopoverContent align="end" className="w-56 p-1">
+                  <div className="overflow-hidden rounded-[10px]">
                     <button
-                      className="flex items-center w-full h-11 px-3 text-ios-body rounded-lg active:bg-accent/80 transition-colors"
-                      onClick={g.handleResetDivisions}
+                      className={cn(setupMenuItemClass, 'border-b border-border/50')}
+                      onClick={() => {
+                        g.setSettingsOpen(true);
+                      }}
                     >
-                      {t('live.reset_rotations')}
+                      {t('live.settings')}
                     </button>
-                  )}
+                    <button
+                      className={cn(setupMenuItemClass, 'border-b border-border/50')}
+                      onClick={handleOpenDirectEntry}
+                    >
+                      {t('setup.enter_coach_plan')}
+                    </button>
+                    <button
+                      className={cn(
+                        setupMenuItemClass,
+                        g.divisionsModified && 'border-b border-border/50',
+                      )}
+                      onClick={g.handleOpenRegenerate}
+                      disabled={g.solver.isRunning}
+                    >
+                      {g.solver.isRunning
+                        ? t('live.solving')
+                        : g.schedule
+                          ? t('live.regenerate')
+                          : t('setup.generate_rotations')}
+                    </button>
+                    {g.divisionsModified && (
+                      <button className={setupMenuItemClass} onClick={g.handleResetDivisions}>
+                        {t('live.reset_rotations')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="my-1 h-px bg-border/50" />
+                  <div className="overflow-hidden rounded-[10px]">
+                    <button
+                      className={cn(setupMenuItemClass, 'border-b border-border/50')}
+                      onClick={handleStartRename}
+                    >
+                      {t('history.rename')}
+                    </button>
+                    <button className={setupMenuItemClass} onClick={handleDuplicate}>
+                      {t('history.duplicate')}
+                    </button>
+                  </div>
                 </PopoverContent>
               </Popover>
               {g.schedule && (
-                <Button size="sm" className="h-10" onClick={g.handleStartGame}>
+                <Button
+                  size="sm"
+                  className="min-w-[110px] font-semibold"
+                  onClick={g.handleStartGame}
+                >
                   {t('live.start_game')}
                 </Button>
               )}
@@ -349,16 +325,7 @@ export function RotationGrid() {
         />
       )}
 
-      <div className="space-y-6 pt-4">
-        {!g.isLive && !g.isCompleted && g.game.name.trim().length > 0 && (
-          <p
-            className="max-w-4xl mx-auto px-4 text-ios-subheadline text-muted-foreground truncate"
-            title={g.game.name}
-          >
-            {g.game.name}
-          </p>
-        )}
-
+      <div className="space-y-5 pt-3">
         {/* Completed indicator */}
         {g.isCompleted && (
           <p className="max-w-4xl mx-auto text-ios-footnote text-muted-foreground px-4">
@@ -366,21 +333,116 @@ export function RotationGrid() {
           </p>
         )}
 
-        {/* Solver progress/error — visible in all modes */}
-        <div className="max-w-4xl mx-auto px-4">
-          <SolverStatusCard
-            isRunning={g.solver.isRunning}
-            progress={g.solver.progress}
-            message={g.solver.message}
-            error={g.solver.error}
-            onCancel={g.solver.cancel}
-          />
-        </div>
-
-        {/* Overall stats — setup mode only */}
-        {!g.isLive && !g.isCompleted && g.schedule && (
+        {/* Context rail */}
+        {g.schedule && (
           <div className="max-w-4xl mx-auto px-4">
-            <OverallStatsCards stats={g.schedule.overallStats} />
+            <div className="rounded-[12px] border border-border/40 bg-card px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none space-y-2.5">
+              <div
+                className={cn(
+                  'flex flex-wrap items-center gap-3',
+                  showSetupOverview ? 'justify-between' : 'justify-center',
+                )}
+              >
+                <PeriodRotationIndicator
+                  periodGroups={g.periodGroups}
+                  currentRotationIndex={g.currentRotationIndex}
+                />
+                {showSetupOverview && g.schedule && (
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={cn(
+                        'inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                        setupBalance.className,
+                        'bg-secondary/70',
+                      )}
+                    >
+                      {t(`schedule.${setupBalance.key}`)} · {formatStrengthValue(setupSpread)} (
+                      {t('schedule.min_max_inline', {
+                        min: formatStrengthValue(g.schedule.overallStats.minStrength),
+                        max: formatStrengthValue(g.schedule.overallStats.maxStrength),
+                      })}
+                      )
+                    </span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground active:bg-accent/60"
+                          aria-label={t('schedule.strength_range_help_button')}
+                        >
+                          <CircleHelpIcon className="size-3.5" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="end" className="w-64 p-3">
+                        <PopoverHeader>
+                          <PopoverTitle className="text-ios-subheadline">
+                            {t('schedule.strength_range')}
+                          </PopoverTitle>
+                          <PopoverDescription className="text-ios-caption1">
+                            {t('schedule.strength_range_help')}
+                          </PopoverDescription>
+                        </PopoverHeader>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
+              </div>
+
+              <Tabs
+                value={g.isLive ? g.viewMode : g.viewMode === 'field' ? 'field' : 'grid'}
+                onValueChange={(value) => {
+                  if (
+                    (value === 'focus' || value === 'grid' || value === 'field') &&
+                    value !== g.viewMode
+                  ) {
+                    g.setViewMode(value);
+                  }
+                }}
+                className="w-full"
+              >
+                <TabsList
+                  aria-label={t('live.view_mode_aria')}
+                  className={cn(
+                    'rounded-lg bg-secondary/80 p-0.5 h-auto w-full grid',
+                    g.isLive ? 'grid-cols-3' : 'grid-cols-2',
+                  )}
+                >
+                  {g.isLive && (
+                    <TabsTrigger
+                      value="focus"
+                      className="min-h-8 px-2.5 py-1 text-ios-caption1 font-medium"
+                    >
+                      {t('live.focus_view')}
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger
+                    value="grid"
+                    className="min-h-8 px-2.5 py-1 text-ios-caption1 font-medium"
+                  >
+                    {t('live.grid_view')}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="field"
+                    className="min-h-8 px-2.5 py-1 text-ios-caption1 font-medium"
+                  >
+                    {t('live.field_view')}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+        )}
+
+        {/* Solver progress/error — only when active */}
+        {hasSolverStatus && (
+          <div className="max-w-4xl mx-auto px-4">
+            <SolverStatusCard
+              isRunning={g.solver.isRunning}
+              progress={g.solver.progress}
+              message={g.solver.message}
+              error={g.solver.error}
+              onCancel={g.solver.cancel}
+            />
           </div>
         )}
 
@@ -421,51 +483,7 @@ export function RotationGrid() {
           </div>
         )}
 
-        {/* Live toolbar: pips + view toggle — inline in content area */}
-        {g.isLive && g.schedule && (
-          <div className="flex items-center justify-between px-4 max-w-4xl mx-auto">
-            <RotationPips
-              periodGroups={g.periodGroups}
-              currentRotationIndex={g.currentRotationIndex}
-            />
-            <div
-              className="inline-flex rounded-lg bg-secondary/80 p-0.5"
-              role="tablist"
-              aria-label={t('live.view_mode_aria')}
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={g.viewMode === 'focus'}
-                className={cn(
-                  'min-h-8 min-w-8 px-2.5 text-ios-caption1 font-medium rounded-md transition-colors',
-                  g.viewMode === 'focus'
-                    ? 'bg-background shadow-sm text-foreground'
-                    : 'text-muted-foreground',
-                )}
-                onClick={() => g.setViewMode('focus')}
-              >
-                {t('live.focus_view')}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={g.viewMode === 'grid'}
-                className={cn(
-                  'min-h-8 min-w-8 px-2.5 text-ios-caption1 font-medium rounded-md transition-colors',
-                  g.viewMode === 'grid'
-                    ? 'bg-background shadow-sm text-foreground'
-                    : 'text-muted-foreground',
-                )}
-                onClick={() => g.setViewMode('grid')}
-              >
-                {t('live.grid_view')}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Live focus view — default in live mode */}
+        {/* Live focus view — only in live mode with focus tab */}
         {g.isLive && g.schedule && g.viewMode === 'focus' && g.currentRotation && (
           <div className="max-w-4xl mx-auto">
             <LiveFocusView
@@ -477,8 +495,23 @@ export function RotationGrid() {
           </div>
         )}
 
+        {/* Field view — all modes */}
+        {g.schedule && g.viewMode === 'field' && g.config && (
+          <div className="max-w-4xl mx-auto px-4">
+            <FieldView
+              rotations={g.schedule.rotations}
+              initialRotationIndex={g.currentRotationIndex}
+              playerMap={g.playerMap}
+              usePositions={g.config.usePositions}
+              useGoalie={g.config.useGoalie}
+              isLive={g.isLive}
+              periodDivisions={g.periodDivisions}
+            />
+          </div>
+        )}
+
         {/* Rotation grid table — full width for horizontal scrolling */}
-        {g.schedule && (!g.isLive || g.viewMode === 'grid') && g.config && (
+        {g.schedule && isGridActive && g.config && (
           <RotationTable
             ref={gridRef}
             periodGroups={g.periodGroups}

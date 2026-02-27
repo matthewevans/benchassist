@@ -1,5 +1,5 @@
 import { forwardRef, useMemo } from 'react';
-import { ChevronRightIcon, ChevronDownIcon, EllipsisIcon } from 'lucide-react';
+import { ChevronRightIcon, ChevronDownIcon, Settings2Icon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils.ts';
 import { PlayerPopover } from '@/components/game/PlayerPopover.tsx';
@@ -80,12 +80,12 @@ function PeriodActionButton({
   return (
     <button
       type="button"
-      className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40 disabled:pointer-events-none outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-md border border-border/45 bg-background/35 backdrop-blur-sm transition-colors hover:bg-accent/60 active:bg-accent/70 disabled:opacity-40 disabled:pointer-events-none outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
       aria-label={t('rotation_table.period_actions', { number: periodIndex + 1 })}
       disabled={disabled}
       onClick={onClick}
     >
-      <EllipsisIcon className="size-4 text-muted-foreground" />
+      <Settings2Icon className="size-3.5 text-muted-foreground/85" />
     </button>
   );
 }
@@ -181,8 +181,11 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
       <div className="overflow-x-auto px-4" ref={ref}>
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border/50">
-              <th className="text-left py-2.5 pr-3 pl-1 sticky left-0 bg-background text-ios-footnote uppercase tracking-wide text-muted-foreground z-10">
+            <tr className="border-b border-border/40">
+              <th
+                rowSpan={2}
+                className="text-left py-2.5 pr-3 pl-1 sticky left-0 bg-background text-ios-footnote uppercase tracking-wide text-muted-foreground z-10 align-bottom"
+              >
                 {t('rotation_table.player')}
               </th>
               {periodGroups.map((group) => {
@@ -190,7 +193,11 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                   return (
                     <th
                       key={`collapsed-${group.periodIndex}`}
-                      className="text-center py-1.5 px-0.5 font-medium min-w-12 w-12 align-top"
+                      rowSpan={2}
+                      className={cn(
+                        'text-center py-1.5 px-0.5 font-medium min-w-12 w-12 align-top',
+                        group.periodIndex > 0 && 'border-l border-border/55',
+                      )}
                     >
                       <div className="mx-auto flex flex-col items-center justify-start gap-0.5">
                         <button
@@ -217,6 +224,59 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                     </th>
                   );
                 }
+
+                return (
+                  <th
+                    key={`period-${group.periodIndex}`}
+                    colSpan={group.rotations.length}
+                    className={cn(
+                      'px-1.5 py-1.5 text-center text-ios-caption2 font-semibold tracking-wide text-muted-foreground',
+                      group.periodIndex % 2 === 0 ? 'bg-secondary/20' : 'bg-secondary/30',
+                      group.periodIndex > 0 && 'border-l border-border/55',
+                    )}
+                  >
+                    <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center">
+                      <div className="col-start-2">
+                        {isLive ? (
+                          <button
+                            type="button"
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-0.5 rounded-md px-1 transition-colors hover:bg-accent/80 active:bg-accent/80 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            onClick={() => togglePeriod(group.periodIndex)}
+                          >
+                            <span className="text-ios-caption1 font-semibold text-muted-foreground">
+                              P{group.periodIndex + 1}
+                            </span>
+                            <ChevronDownIcon className="size-3" />
+                          </button>
+                        ) : (
+                          <span className="inline-flex min-h-11 items-center text-ios-caption1 font-semibold text-muted-foreground">
+                            P{group.periodIndex + 1}
+                          </span>
+                        )}
+                      </div>
+                      {showPeriodActions && (
+                        <div className="col-start-3 justify-self-end">
+                          <PeriodActionButton
+                            periodIndex={group.periodIndex}
+                            disabled={!canEditPeriodDivision(group.periodIndex)}
+                            onClick={() => onPeriodActionsClick(group.periodIndex)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
+              <th
+                rowSpan={2}
+                className="text-center py-2 px-2 font-medium text-ios-caption1 text-muted-foreground align-bottom"
+              >
+                %
+              </th>
+            </tr>
+            <tr className="border-b border-border/50">
+              {periodGroups.map((group) => {
+                if (collapsedPeriods.has(group.periodIndex)) return null;
                 return group.rotations.map((r, i) => {
                   const isCurrent = isLive && r.index === currentRotationIndex;
                   const isPast = isLive && r.index < currentRotationIndex;
@@ -264,70 +324,10 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                           {isCurrent ? t('live.now') : t('live.next')}
                         </span>
                       )}
-                      <div className="mt-1 min-h-11 text-ios-caption1 text-muted-foreground font-normal flex items-center justify-center">
-                        {i === 0 ? (
-                          isLive ? (
-                            <div
-                              className={cn(
-                                'flex items-center justify-center',
-                                group.rotations.length === 1 ? 'flex-col' : 'gap-1',
-                              )}
-                            >
-                              <button
-                                type="button"
-                                className="inline-flex items-center justify-center gap-0.5 min-h-11 min-w-11 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                onClick={() => togglePeriod(group.periodIndex)}
-                              >
-                                <span className="text-ios-caption1 font-semibold text-muted-foreground">
-                                  P{r.periodIndex + 1}
-                                </span>
-                                <ChevronDownIcon className="size-3" />
-                              </button>
-                              {showPeriodActions && (
-                                <PeriodActionButton
-                                  periodIndex={group.periodIndex}
-                                  disabled={!canEditPeriodDivision(group.periodIndex)}
-                                  onClick={() => onPeriodActionsClick(group.periodIndex)}
-                                />
-                              )}
-                            </div>
-                          ) : showPeriodActions ? (
-                            <button
-                              type="button"
-                              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-0.5 rounded-md transition-colors hover:bg-accent/80 active:bg-accent/80 disabled:opacity-40 disabled:pointer-events-none outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                              disabled={!canEditPeriodDivision(group.periodIndex)}
-                              onClick={() => onPeriodActionsClick(group.periodIndex)}
-                              aria-label={t('rotation_table.period_actions', {
-                                number: group.periodIndex + 1,
-                              })}
-                            >
-                              P{r.periodIndex + 1}
-                              <ChevronDownIcon className="size-2.5 text-muted-foreground" />
-                            </button>
-                          ) : (
-                            <span className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center">
-                              P{r.periodIndex + 1}
-                            </span>
-                          )
-                        ) : (
-                          <>
-                            {isLive ? (
-                              <span aria-hidden="true" className="opacity-0 select-none">
-                                P{r.periodIndex + 1}
-                              </span>
-                            ) : (
-                              <>P{r.periodIndex + 1}</>
-                            )}
-                          </>
-                        )}
-                      </div>
                     </th>
                   );
                 });
               })}
-              <th className="text-center py-2 px-2 font-medium text-ios-caption1 text-muted-foreground">
-                %
-              </th>
             </tr>
           </thead>
           <tbody>

@@ -10,7 +10,7 @@ import type {
 } from '@/types/domain.ts';
 
 /** Which broad position each sub-position belongs to */
-const SUB_POSITION_GROUP: Record<SubPosition, Position> = {
+export const SUB_POSITION_GROUP: Record<SubPosition, Position> = {
   LB: PositionCode.DEF,
   CB: PositionCode.DEF,
   RB: PositionCode.DEF,

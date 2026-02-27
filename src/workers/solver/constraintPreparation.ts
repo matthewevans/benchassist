@@ -174,9 +174,12 @@ export function prepareConstraints(ctx: SolverContext): PreparedConstraints {
     for (let period = 0; period < config.periods; period++) {
       const periodStart = periodOffsets[period] ?? 0;
       const periodDivision = normalizedPeriodDivisions[period] ?? 1;
-      const goalieDutyRotations = config.goaliePlayFullPeriod
-        ? Array.from({ length: periodDivision }, (_, rot) => periodStart + rot)
-        : [periodStart];
+      // Check ALL rotations in the period regardless of goaliePlayFullPeriod — a hard
+      // field lock on any rotation disqualifies the player from goalie duty for the period.
+      const goalieDutyRotations = Array.from(
+        { length: periodDivision },
+        (_, rot) => periodStart + rot,
+      );
 
       const disallowed = new Set<PlayerId>();
       for (const rotIndex of goalieDutyRotations) {
@@ -223,11 +226,11 @@ export function prepareConstraints(ctx: SolverContext): PreparedConstraints {
       const goalieId = goaliePerPeriod[period];
       const periodStart = periodOffsets[period] ?? 0;
       const periodDivision = normalizedPeriodDivisions[period] ?? 1;
+      // Every rotation needs a goalie in the goalieMap regardless of goaliePlayFullPeriod.
+      // The flag only affects hard override expansion (per-period vs per-rotation) below.
       for (let rot = 0; rot < periodDivision; rot++) {
         const rotIndex = periodStart + rot;
-        if (config.goaliePlayFullPeriod || rot === 0) {
-          goalieMap.set(rotIndex, goalieId);
-        }
+        goalieMap.set(rotIndex, goalieId);
       }
     }
 

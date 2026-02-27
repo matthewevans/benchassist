@@ -269,7 +269,7 @@ export function useRotationGame(gameId: string | undefined) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmEndGame, setConfirmEndGame] = useState(false);
   const [removingPlayerId, setRemovingPlayerId] = useState<PlayerId | null>(null);
-  const [viewMode, setViewMode] = useState<'focus' | 'grid'>('focus');
+  const [viewMode, setViewMode] = useState<'focus' | 'grid' | 'field'>('focus');
   const [regeneratePreviewBase, setRegeneratePreviewBase] = useState<RotationSchedule | null>(null);
   const [solverResultBehavior, setSolverResultBehavior] = useState<'apply' | 'preview-regenerate'>(
     'apply',

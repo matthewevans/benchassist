@@ -65,6 +65,24 @@ export function calculatePlayerStats(
   return stats;
 }
 
+/** Format a strength/stat value to one decimal place, omitting the decimal for whole numbers. */
+export function formatStrengthValue(value: number): string {
+  if (!Number.isFinite(value)) return '0';
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
+}
+
+type BalanceKey = 'balance_very_steady' | 'balance_steady' | 'balance_mixed' | 'balance_uneven';
+
+/** Map strength spread to a balance tier (i18n key suffix and Tailwind color class). */
+export function getBalanceTier(spread: number): { key: BalanceKey; className: string } {
+  if (spread <= 2)
+    return { key: 'balance_very_steady', className: 'text-emerald-700 dark:text-emerald-300' };
+  if (spread <= 4) return { key: 'balance_steady', className: 'text-teal-700 dark:text-teal-300' };
+  if (spread <= 6) return { key: 'balance_mixed', className: 'text-amber-700 dark:text-amber-300' };
+  return { key: 'balance_uneven', className: 'text-rose-700 dark:text-rose-300' };
+}
+
 export function computeStrengthStats(strengths: number[]) {
   if (strengths.length === 0) return { avg: 0, variance: 0, min: 0, max: 0 };
   const avg = strengths.reduce((s, v) => s + v, 0) / strengths.length;

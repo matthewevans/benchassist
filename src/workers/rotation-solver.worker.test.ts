@@ -332,7 +332,7 @@ describe('buildMidGameSolveWindow', () => {
     );
   });
 
-  it('falls back to full-game solve for mid-period windows when goalie only plays first rotation', () => {
+  it('allows mid-period re-solve when goaliePlayFullPeriod is false', () => {
     const p1 = playerFactory.build({ name: 'A', canPlayGoalie: true });
     const p2 = playerFactory.build({ name: 'B', canPlayGoalie: true });
 
@@ -362,7 +362,9 @@ describe('buildMidGameSolveWindow', () => {
       players: [p1, p2],
     });
 
-    expect(window).toBeNull();
+    // Mid-period re-solve is now supported regardless of goaliePlayFullPeriod
+    expect(window).not.toBeNull();
+    expect(window!.config.periods).toBe(1);
   });
 
   it('pins the first remaining period goalie to the existing live schedule when auto-assigned', () => {

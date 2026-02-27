@@ -35,6 +35,10 @@ const baseProps = {
     { id: 'field:1', label: 'Field 2', assignment: RotationAssignment.Field },
   ],
   totalRotations: 2,
+  periodGroups: [
+    { periodIndex: 0, rotations: [{ index: 0 }] },
+    { periodIndex: 1, rotations: [{ index: 1 }] },
+  ],
   draft: {
     '0:field:0': { playerId: 'p1', lockMode: 'hard' as const },
   },
@@ -53,6 +57,8 @@ describe('DirectEntryMatrix', () => {
 
     expect(screen.getByText('Slot')).toBeInTheDocument();
     expect(screen.getByText('Rotation 2')).toBeInTheDocument();
+    expect(screen.getAllByText('P1').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('P2').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole('button', { name: /previous rotation/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /next rotation/i })).not.toBeInTheDocument();
   });
@@ -62,6 +68,7 @@ describe('DirectEntryMatrix', () => {
 
     render(<DirectEntryMatrix {...baseProps} />);
 
+    expect(screen.getByTitle(/Rotation 1 of 2/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /previous rotation/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /next rotation/i })).toBeInTheDocument();
     expect(screen.queryByText('Rotation 2')).not.toBeInTheDocument();
