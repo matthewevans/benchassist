@@ -24,11 +24,7 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
           if (id.includes('/highs/')) return;
-          if (
-            id.includes('/react/') ||
-            id.includes('/react-dom/') ||
-            id.includes('/scheduler/')
-          ) {
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) {
             return 'vendor-react';
           }
           if (id.includes('/react-router-dom/') || id.includes('/react-router/')) {
@@ -73,7 +69,6 @@ export default defineConfig({
       ],
       workbox: {
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        globIgnores: ['**/highs.wasm'],
       },
       manifest: {
         name: 'BenchAssist',
