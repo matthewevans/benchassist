@@ -665,10 +665,11 @@ export function useRotationGame(gameId: string | undefined) {
     if (!returningPlayer) return;
     const updatedPlayers = [...activePlayers, returningPlayer];
     const updatedRemoved = game.removedPlayerIds.filter((id) => id !== playerId);
+    const updatedAbsent = game.absentPlayerIds.filter((id) => id !== playerId);
     runSolve({
       players: updatedPlayers,
       config,
-      absentPlayerIds: [...game.absentPlayerIds, ...updatedRemoved],
+      absentPlayerIds: [...updatedAbsent, ...updatedRemoved],
       goalieAssignments: game.goalieAssignments,
       manualOverrides: [],
       periodDivisions,
@@ -901,12 +902,19 @@ export function useRotationGame(gameId: string | undefined) {
     () => [...activePlayers].sort((a, b) => b.skillRanking - a.skillRanking),
     [activePlayers],
   );
+  const absentPlayers = useMemo(
+    () =>
+      isLive ? (roster?.players.filter((p) => game?.absentPlayerIds.includes(p.id)) ?? []) : [],
+    [isLive, roster, game?.absentPlayerIds],
+  );
+
   const allDisplayPlayers = useMemo(
     () => [
       ...sortedPlayers,
+      ...[...absentPlayers].sort((a, b) => b.skillRanking - a.skillRanking),
       ...[...removedPlayers].sort((a, b) => b.skillRanking - a.skillRanking),
     ],
-    [sortedPlayers, removedPlayers],
+    [sortedPlayers, absentPlayers, removedPlayers],
   );
 
   return {
@@ -933,6 +941,7 @@ export function useRotationGame(gameId: string | undefined) {
     sortedPlayers,
     allDisplayPlayers,
     removedPlayers,
+    absentPlayers,
     isLastRotation,
     manyRotations,
     isCrossingPeriod,

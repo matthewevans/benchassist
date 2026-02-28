@@ -185,7 +185,9 @@
     "add_back": "Volver a agregar",
     "stats_title": "Estadísticas del jugador",
     "played": "jugado",
-    "bench": "banca"
+    "bench": "banca",
+    "add_to_game": "Agregar al partido",
+    "absent": "Ausente"
   },
   "schedule": {
     "overview": "Resumen del horario",

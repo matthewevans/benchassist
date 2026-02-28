@@ -9,6 +9,7 @@ interface PlayerPopoverProps {
   belowMinimum?: boolean;
   highDeviation?: boolean;
   isRemoved: boolean;
+  isAbsent?: boolean;
   onRemove: () => void;
   onAddBack: () => void;
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export function PlayerPopover({
   belowMinimum = false,
   highDeviation = false,
   isRemoved,
+  isAbsent = false,
   onRemove,
   onAddBack,
   children,
@@ -52,7 +54,11 @@ export function PlayerPopover({
               </p>
             </div>
           )}
-          {isRemoved ? (
+          {isAbsent ? (
+            <Button variant="outline" size="sm" className="w-full" onClick={onAddBack}>
+              {t('player.add_to_game')}
+            </Button>
+          ) : isRemoved ? (
             <Button variant="outline" size="sm" className="w-full" onClick={onAddBack}>
               {t('player.add_back')}
             </Button>

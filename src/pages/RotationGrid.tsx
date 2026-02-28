@@ -76,7 +76,11 @@ export function RotationGrid() {
       g.schedule
         ? getHighPlayPercentageOutlierIds(
             g.allDisplayPlayers
-              .filter((player) => !g.game!.removedPlayerIds.includes(player.id))
+              .filter(
+                (player) =>
+                  !g.game!.removedPlayerIds.includes(player.id) &&
+                  !g.game!.absentPlayerIds.includes(player.id),
+              )
               .map((player) => ({
                 playerId: player.id,
                 playPercentage: g.schedule!.playerStats[player.id]?.playPercentage ?? 0,
@@ -550,6 +554,7 @@ export function RotationGrid() {
             playerStats={g.schedule.playerStats}
             config={g.config}
             gameRemovedPlayerIds={g.game.removedPlayerIds}
+            gameAbsentPlayerIds={g.game.absentPlayerIds}
             isLive={g.isLive}
             isCompleted={g.isCompleted}
             currentRotationIndex={g.currentRotationIndex}

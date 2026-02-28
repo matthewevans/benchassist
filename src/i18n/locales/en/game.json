@@ -185,7 +185,9 @@
     "add_back": "Add back",
     "stats_title": "Player Statistics",
     "played": "played",
-    "bench": "bench"
+    "bench": "bench",
+    "add_to_game": "Add to game",
+    "absent": "Absent"
   },
   "schedule": {
     "overview": "Schedule Overview",

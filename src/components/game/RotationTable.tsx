@@ -101,6 +101,7 @@ interface RotationTableProps {
   playerStats: Record<PlayerId, PlayerStats>;
   config: GameConfig;
   gameRemovedPlayerIds: PlayerId[];
+  gameAbsentPlayerIds?: PlayerId[];
   isLive: boolean;
   isCompleted: boolean;
   currentRotationIndex: number;
@@ -128,6 +129,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
       playerStats,
       config,
       gameRemovedPlayerIds,
+      gameAbsentPlayerIds = [],
       isLive,
       isCompleted,
       currentRotationIndex,
@@ -334,6 +336,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
             {allDisplayPlayers.map((player) => {
               const stats = playerStats[player.id];
               const isRemoved = gameRemovedPlayerIds.includes(player.id);
+              const isAbsent = gameAbsentPlayerIds.includes(player.id);
               const belowMinimum = stats != null && stats.playPercentage < config.minPlayPercentage;
               const highDeviation = stats != null && highPlayOutlierIds.has(player.id);
               const playerNameEl = (
@@ -341,11 +344,54 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                   className={cn(
                     'whitespace-nowrap text-ios-subheadline',
                     isRemoved && 'line-through opacity-50',
+                    isAbsent && 'opacity-50',
                   )}
                 >
                   {player.name}
                 </span>
               );
+              if (isAbsent) {
+                const totalRotationCols = periodGroups.reduce(
+                  (sum, group) =>
+                    sum + (collapsedPeriods.has(group.periodIndex) ? 1 : group.rotations.length),
+                  0,
+                );
+                return (
+                  <tr key={player.id} className="border-b border-border/30 min-h-[44px] opacity-60">
+                    <td
+                      className={cn(
+                        'pr-3 pl-1 sticky left-0 bg-background z-10',
+                        isLive ? 'py-3' : 'py-2',
+                      )}
+                    >
+                      {isLive ? (
+                        <PlayerPopover
+                          playerName={player.name}
+                          stats={undefined}
+                          isRemoved={false}
+                          isAbsent
+                          onRemove={() => onRemovePlayer(player.id)}
+                          onAddBack={() => onAddPlayerBack(player.id)}
+                        >
+                          <button className="text-left min-h-11 flex items-center hover:text-primary active:opacity-60 transition-colors">
+                            {playerNameEl}
+                          </button>
+                        </PlayerPopover>
+                      ) : (
+                        playerNameEl
+                      )}
+                    </td>
+                    <td colSpan={totalRotationCols} className="text-center py-2 px-2">
+                      <span className="text-ios-caption1 text-muted-foreground">
+                        {t('player.absent')}
+                      </span>
+                    </td>
+                    <td className="text-center py-1.5 px-2">
+                      <span className="text-ios-caption1 text-muted-foreground">--</span>
+                    </td>
+                  </tr>
+                );
+              }
               return (
                 <tr
                   key={player.id}
