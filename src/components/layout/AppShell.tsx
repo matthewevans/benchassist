@@ -78,8 +78,8 @@ export function AppShell() {
       <main
         className={
           showGameBar
-            ? 'flex-1 w-full pb-[calc(49px+56px+env(safe-area-inset-bottom)+2rem)] lg:pb-[calc(56px+env(safe-area-inset-bottom)+2rem)]'
-            : 'flex-1 w-full pb-[calc(49px+env(safe-area-inset-bottom)+2rem)] lg:pb-12'
+            ? 'flex-1 min-w-0 w-full pb-[calc(49px+56px+env(safe-area-inset-bottom)+2rem)] lg:pb-[calc(56px+env(safe-area-inset-bottom)+2rem)]'
+            : 'flex-1 min-w-0 w-full pb-[calc(49px+env(safe-area-inset-bottom)+2rem)] lg:pb-12'
         }
       >
         <Outlet />
