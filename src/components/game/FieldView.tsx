@@ -57,12 +57,16 @@ function PlayerMarker({
   showPosition = false,
   displayName,
   markerScale = 1,
+  isSelected = false,
+  onTap,
 }: {
   placement: PlacedPlayer;
   transitionKind?: RotationTransitionKind;
   showPosition?: boolean;
   displayName?: string;
   markerScale?: number;
+  isSelected?: boolean;
+  onTap?: () => void;
 }) {
   const tintFill = GROUP_TINT_FILL[placement.group] ?? GROUP_TINT_FILL.MID;
   const label = displayName ?? getMarkerLabel(placement, showPosition);
@@ -82,8 +86,34 @@ function PlayerMarker({
   const segmentHeight = height - segmentInset * 2;
   const labelX = centerX + (tone ? segmentWidth / 2 : 0);
 
+  const selectionPad = 4 * markerScale;
+
   return (
-    <>
+    <g
+      onClick={
+        onTap
+          ? (e) => {
+              e.stopPropagation();
+              onTap();
+            }
+          : undefined
+      }
+      style={onTap ? { cursor: 'pointer' } : undefined}
+    >
+      {isSelected && (
+        <rect
+          x={centerX + x - selectionPad}
+          y={centerY + y - selectionPad}
+          width={width + selectionPad * 2}
+          height={height + selectionPad * 2}
+          rx={14 * markerScale}
+          fill="none"
+          stroke="#fff"
+          strokeWidth={2.5 * markerScale}
+          strokeDasharray={`${5 * markerScale} ${3 * markerScale}`}
+          opacity={0.9}
+        />
+      )}
       <rect
         x={centerX + x}
         y={centerY + y}
@@ -107,8 +137,8 @@ function PlayerMarker({
         height={height}
         rx={11 * markerScale}
         fill="none"
-        stroke="rgba(255,255,255,0.82)"
-        strokeWidth={2.25 * markerScale}
+        stroke={isSelected ? '#fff' : 'rgba(255,255,255,0.82)'}
+        strokeWidth={(isSelected ? 3 : 2.25) * markerScale}
       />
 
       {tone && (
@@ -151,7 +181,7 @@ function PlayerMarker({
       >
         {label}
       </text>
-    </>
+    </g>
   );
 }
 
@@ -324,6 +354,7 @@ interface Props {
   drawMode?: boolean;
   drawing?: UseFieldDrawingResult;
   onStylusDetected?: () => void;
+  onSwapPlayers?: (rotationIndex: number, playerAId: PlayerId, playerBId: PlayerId) => void;
 }
 
 export function FieldView({
@@ -338,6 +369,7 @@ export function FieldView({
   drawMode = false,
   drawing,
   onStylusDetected,
+  onSwapPlayers,
 }: Props) {
   const { t } = useTranslation('game');
   const fieldContainerRef = useRef<HTMLDivElement>(null);
@@ -348,6 +380,11 @@ export function FieldView({
   const [showChanges, setShowChanges] = useState(false);
   const [markerScale, setMarkerScale] = useState(getCurrentMarkerScale);
   const markerScaleRef = useRef(markerScale);
+  const [swapSelection, setSwapSelection] = useState<{
+    viewingIndex: number;
+    playerId: PlayerId;
+  } | null>(null);
+  const swapEnabled = Boolean(onSwapPlayers) && !drawMode;
 
   useEffect(() => {
     markerScaleRef.current = markerScale;
@@ -385,6 +422,9 @@ export function FieldView({
     ? clampRotationIndex(manualView.index)
     : parentViewingIndex;
 
+  const selectedPlayerId =
+    swapSelection?.viewingIndex === viewingIndex ? swapSelection.playerId : null;
+
   const rotation = rotations[viewingIndex];
   const nextRotation = rotations[viewingIndex + 1];
   const hasNext = viewingIndex < rotations.length - 1;
@@ -416,6 +456,24 @@ export function FieldView({
     ) ?? -1;
   const rotationWithinPeriod = displayedRotationOffset >= 0 ? displayedRotationOffset + 1 : 1;
   const totalInPeriod = displayedPeriodGroup?.rotations.length ?? 1;
+
+  const handleMarkerTap = (playerId: PlayerId) => {
+    if (!swapEnabled) return;
+    if (!selectedPlayerId) {
+      setSwapSelection({ viewingIndex, playerId });
+      return;
+    }
+    if (selectedPlayerId === playerId) {
+      setSwapSelection(null);
+      return;
+    }
+    onSwapPlayers!(viewingIndex, selectedPlayerId, playerId);
+    setSwapSelection(null);
+  };
+
+  const handleFieldBackgroundClick = () => {
+    if (selectedPlayerId) setSwapSelection(null);
+  };
 
   const handleFieldPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === 'pen' && !drawMode && onStylusDetected) {
@@ -509,7 +567,11 @@ export function FieldView({
         onPointerDown={handleFieldPointerDown}
       >
         <FieldPitchSvg ref={drawing?.svgRef} fullField={drawMode}>
-          <g opacity={drawMode ? 0.35 : 1} style={drawMode ? { pointerEvents: 'none' } : undefined}>
+          <g
+            opacity={drawMode ? 0.35 : 1}
+            style={drawMode ? { pointerEvents: 'none' } : undefined}
+            onClick={swapEnabled ? handleFieldBackgroundClick : undefined}
+          >
             {preview ? (
               <>
                 {preview.outgoingPlacements.map((placement) => (
@@ -564,6 +626,10 @@ export function FieldView({
                   key={placement.player.id}
                   placement={placement}
                   markerScale={markerScale}
+                  isSelected={selectedPlayerId === placement.player.id}
+                  onTap={
+                    swapEnabled ? () => handleMarkerTap(placement.player.id as PlayerId) : undefined
+                  }
                 />
               ))
             )}

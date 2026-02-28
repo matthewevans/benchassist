@@ -542,16 +542,17 @@ export function useRotationGame(gameId: string | undefined) {
     }
   }
 
-  function handleSwapThisRotation() {
-    if (!pendingSwap || !schedule || !gameId) return;
-    const newSchedule = previewSwap(
-      schedule,
-      pendingSwap.rotationIndex,
-      pendingSwap.playerAId,
-      pendingSwap.playerBId,
-      activePlayers,
-    );
+  function handleSwapAtRotation(rotationIndex: number, playerAId: PlayerId, playerBId: PlayerId) {
+    if (!schedule || !gameId) return;
+    if (isCompleted) return;
+    if (isLive && rotationIndex < currentRotationIndex) return;
+    const newSchedule = previewSwap(schedule, rotationIndex, playerAId, playerBId, activePlayers);
     dispatch({ type: 'SET_GAME_SCHEDULE', payload: { gameId, schedule: newSchedule } });
+  }
+
+  function handleSwapThisRotation() {
+    if (!pendingSwap) return;
+    handleSwapAtRotation(pendingSwap.rotationIndex, pendingSwap.playerAId, pendingSwap.playerBId);
     setPendingSwap(null);
   }
 
@@ -983,6 +984,7 @@ export function useRotationGame(gameId: string | undefined) {
     dispatch,
     // Handlers
     handleCellClick,
+    handleSwapAtRotation,
     handleSwapThisRotation,
     handleSwapAllRemaining,
     handleStartGame,

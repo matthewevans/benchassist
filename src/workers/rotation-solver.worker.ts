@@ -232,7 +232,23 @@ export function buildMidGameSolveWindow(params: {
       ...override,
       rotationIndex: override.rotationIndex - safeStart,
     }));
-  const nextPositionContinuityPreferences = positionContinuityPreferences
+  // When no explicit position continuity preferences are provided, auto-derive
+  // from existing rotations so that players staying on the field keep their
+  // positions unless the solver must change them.
+  let effectivePreferences = positionContinuityPreferences;
+  if (effectivePreferences.length === 0 && config.usePositions) {
+    const derived: PositionContinuityPreference[] = [];
+    for (let r = safeStart; r < existingRotations.length; r++) {
+      const rotation = existingRotations[r];
+      if (!rotation?.fieldPositions) continue;
+      for (const [playerId, fieldPosition] of Object.entries(rotation.fieldPositions)) {
+        if (rotation.assignments[playerId] !== RotationAssignment.Field) continue;
+        derived.push({ playerId, rotationIndex: r, fieldPosition });
+      }
+    }
+    effectivePreferences = derived;
+  }
+  const nextPositionContinuityPreferences = effectivePreferences
     .filter((preference) => preference.rotationIndex >= safeStart)
     .map((preference) => ({
       ...preference,

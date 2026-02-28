@@ -541,6 +541,7 @@ export function RotationGrid() {
               drawMode={drawMode}
               drawing={drawing}
               onStylusDetected={handleStylusDetected}
+              onSwapPlayers={!g.isCompleted && !drawMode ? g.handleSwapAtRotation : undefined}
             />
           </div>
         )}
