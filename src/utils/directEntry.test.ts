@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { RotationAssignment } from '@/types/domain.ts';
 import { gameConfigFactory, playerFactory } from '@/test/factories.ts';
+import type { GoalieAssignment, PlayerId } from '@/types/domain.ts';
 import {
   buildDirectEntrySlots,
+  buildGoalieDraft,
   compileDirectEntryOverrides,
   makeDirectEntryCellKey,
   type DirectEntryDraft,
@@ -25,6 +27,38 @@ describe('buildDirectEntrySlots', () => {
     expect(slots[0].assignment).toBe(RotationAssignment.Goalie);
     expect(slots.filter((slot) => slot.assignment === RotationAssignment.Field)).toHaveLength(6);
     expect(slots.filter((slot) => slot.assignment === RotationAssignment.Bench)).toHaveLength(0);
+  });
+});
+
+describe('buildGoalieDraft', () => {
+  const periodDivisions = [2, 3]; // period 0: rotations 0-1, period 1: rotations 2-4
+
+  it('populates goalie cells for explicitly assigned periods', () => {
+    const assignments: GoalieAssignment[] = [
+      { periodIndex: 0, playerId: 'player-1' as PlayerId },
+      { periodIndex: 1, playerId: 'auto' },
+    ];
+
+    const draft = buildGoalieDraft(assignments, periodDivisions);
+
+    expect(draft[makeDirectEntryCellKey(0, 'goalie:0')]).toEqual({
+      playerId: 'player-1',
+      lockMode: 'hard',
+    });
+    expect(draft[makeDirectEntryCellKey(1, 'goalie:0')]).toEqual({
+      playerId: 'player-1',
+      lockMode: 'hard',
+    });
+    expect(draft[makeDirectEntryCellKey(2, 'goalie:0')]).toBeUndefined();
+  });
+
+  it('returns empty draft when all assignments are auto', () => {
+    const assignments: GoalieAssignment[] = [
+      { periodIndex: 0, playerId: 'auto' },
+      { periodIndex: 1, playerId: 'auto' },
+    ];
+
+    expect(buildGoalieDraft(assignments, periodDivisions)).toEqual({});
   });
 });
 

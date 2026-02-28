@@ -1,6 +1,7 @@
 import { RotationAssignment } from '@/types/domain.ts';
 import type {
   GameConfig,
+  GoalieAssignment,
   ManualOverride,
   OverrideLockMode,
   Player,
@@ -8,6 +9,7 @@ import type {
   SubPosition,
 } from '@/types/domain.ts';
 import { deriveSubPositions } from '@/utils/positions.ts';
+import { getPeriodRange } from '@/utils/rotationLayout.ts';
 
 export interface DirectEntrySlot {
   id: string;
@@ -64,6 +66,27 @@ export function buildDirectEntrySlots(config: GameConfig): DirectEntrySlot[] {
   }
 
   return slots;
+}
+
+export function buildGoalieDraft(
+  goalieAssignments: GoalieAssignment[],
+  periodDivisions: number[],
+): DirectEntryDraft {
+  const draft: DirectEntryDraft = {};
+
+  for (const assignment of goalieAssignments) {
+    if (assignment.playerId === 'auto') continue;
+
+    const range = getPeriodRange(periodDivisions, assignment.periodIndex);
+    if (!range) continue;
+
+    for (let r = range.start; r < range.endExclusive; r++) {
+      const key = makeDirectEntryCellKey(r, 'goalie:0');
+      draft[key] = { playerId: assignment.playerId, lockMode: 'hard' };
+    }
+  }
+
+  return draft;
 }
 
 export function compileDirectEntryOverrides(params: {

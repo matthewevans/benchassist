@@ -16,6 +16,7 @@ import {
 } from '@/utils/rotationLayout.ts';
 import {
   buildDirectEntrySlots,
+  buildGoalieDraft,
   compileDirectEntryOverrides,
   makeDirectEntryCellKey,
   type DirectEntryDraft,
@@ -36,7 +37,14 @@ export function DirectEntry() {
   const { t } = useTranslation('game');
   const { t: tCommon } = useTranslation('common');
 
-  const [draft, setDraft] = useState<DirectEntryDraft>({});
+  const [draft, setDraft] = useState<DirectEntryDraft>(() => {
+    const g = gameId ? state.games[gameId] : undefined;
+    const t = g ? state.teams[g.teamId] : undefined;
+    const c = t?.gameConfigs.find((cfg) => cfg.id === g?.gameConfigId);
+    if (!g || !c) return {};
+    const divisions = normalizePeriodDivisions(g.periodDivisions, c.periods, c.rotationsPerPeriod);
+    return buildGoalieDraft(g.goalieAssignments, divisions);
+  });
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
   const [currentRotationIndex, setCurrentRotationIndex] = useState(0);
   const [entryErrors, setEntryErrors] = useState<string[]>([]);
