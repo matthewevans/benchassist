@@ -154,6 +154,7 @@ interface StackItem {
   y: number;
   width: number;
   height: number;
+  preferUp?: boolean;
 }
 
 export interface PreviewData {
@@ -368,6 +369,9 @@ function stackCoordsByOverlap(
   for (const item of sorted) {
     let y = item.y;
     let moved = true;
+    const minY = item.height / 2 + 6;
+    const maxY = 525 - item.height / 2 - 6;
+    const prefersUp = item.preferUp === true;
 
     while (moved) {
       moved = false;
@@ -376,16 +380,30 @@ function stackCoordsByOverlap(
           Math.abs(item.x - prior.x) < (item.width + prior.width) / 2 + horizontalPadding;
         const overlapsVertically = Math.abs(y - prior.y) < (item.height + prior.height) / 2 + gap;
         if (overlapsHorizontally && overlapsVertically) {
-          const candidateY = prior.y + (item.height + prior.height) / 2 + gap;
-          if (candidateY > y) {
-            y = candidateY;
+          const distance = (item.height + prior.height) / 2 + gap;
+          const upCandidate = prior.y - distance;
+          const downCandidate = prior.y + distance;
+
+          if (prefersUp) {
+            if (upCandidate >= minY && upCandidate < y) {
+              y = upCandidate;
+              moved = true;
+            } else if (downCandidate <= maxY && downCandidate > y) {
+              y = downCandidate;
+              moved = true;
+            }
+          } else if (downCandidate <= maxY && downCandidate > y) {
+            y = downCandidate;
+            moved = true;
+          } else if (upCandidate >= minY && upCandidate < y) {
+            y = upCandidate;
             moved = true;
           }
         }
       }
     }
 
-    const boundedY = Math.max(item.height / 2 + 6, Math.min(525 - item.height / 2 - 6, y));
+    const boundedY = Math.max(minY, Math.min(maxY, y));
     spreadById.set(item.id, { x: item.x, y: boundedY });
     placed.push({ ...item, y: boundedY });
   }
@@ -466,6 +484,7 @@ export function buildNextPreview(
       y: placement.y,
       width: getMarkerWidth(label, markerScale) + 10 * markerScale,
       height: 34 * markerScale + 6,
+      preferUp: placement.subPos === 'GK',
     };
   }
 

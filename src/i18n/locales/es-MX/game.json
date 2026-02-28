@@ -160,7 +160,8 @@
     "no_outgoing_pair": "Sin salida emparejada",
     "no_incoming_pair": "Sin entrada emparejada",
     "position_only_changes": "No hay sustituciones; solo cambios de posición.",
-    "no_goalie": "No hay portero asignado en R{{rotation}}."
+    "no_goalie": "No hay portero asignado en R{{rotation}}.",
+    "draw": "Dibujar"
   },
   "swap": {
     "title": "Cambiar {{playerA}} y {{playerB}}",

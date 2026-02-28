@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,7 +11,10 @@ import {
 import { Switch } from '@/components/ui/switch.tsx';
 import { PeriodRotationIndicator } from '@/components/game/PeriodRotationIndicator.tsx';
 import type { PeriodRotationGroup } from '@/components/game/PeriodRotationIndicator.tsx';
+import { FieldDrawingCanvas } from './DrawingCanvas.tsx';
+import { FieldPitchSvg } from './FieldPitchSvg.tsx';
 import { cn } from '@/lib/utils.ts';
+import type { UseFieldDrawingResult } from '@/hooks/useFieldDrawing.ts';
 import type { PlayerId, Player, Rotation } from '@/types/domain.ts';
 import type { RotationTransitionKind } from '@/utils/rotationTransitions.ts';
 import {
@@ -246,70 +249,6 @@ function OutgoingMarker({
 }
 
 // ---------------------------------------------------------------------------
-// Half-field SVG wrapper
-// ---------------------------------------------------------------------------
-
-function HalfFieldSvg({ children }: { children?: ReactNode }) {
-  const id = useId();
-  const clipId = `fv-clip${id}`;
-  const shadowId = `fv-shadow${id}`;
-
-  return (
-    <svg
-      viewBox="-30 -20 740 575"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-full h-auto"
-      role="img"
-    >
-      <defs>
-        <clipPath id={clipId}>
-          <rect width={680} height={525} />
-        </clipPath>
-        <filter id={shadowId} x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx={0} dy={1} stdDeviation={2} floodOpacity={0.25} />
-        </filter>
-      </defs>
-
-      <rect x={-30} y={-20} width={740} height={575} fill="#3a7a33" />
-      <rect width={680} height={525} fill="#4a9e42" />
-
-      <g clipPath={`url(#${clipId})`} fill="#fff" opacity={0.06}>
-        <rect y={0} width={680} height={75} />
-        <rect y={150} width={680} height={75} />
-        <rect y={300} width={680} height={75} />
-        <rect y={450} width={680} height={75} />
-      </g>
-
-      <g fill="none" stroke="#fff" strokeWidth={2.5}>
-        <rect width={680} height={525} />
-        <path d="M248.5 0 A91.5 91.5 0 0 1 431.5 0" />
-        <rect x={138.4} y={360} width={403.2} height={165} />
-        <rect x={248.4} y={470} width={183.2} height={55} />
-        <path d="M266.87 360 A91.5 91.5 0 0 1 413.13 360" />
-        <path d="M10 525 A10 10 0 0 0 0 515" />
-        <path d="M670 525 A10 10 0 0 1 680 515" />
-      </g>
-
-      <rect
-        x={303.4}
-        y={525}
-        width={73.2}
-        height={20}
-        rx={3}
-        fill="none"
-        stroke="#fff"
-        strokeWidth={2}
-      />
-
-      <circle cx={340} cy={0} r={4} fill="#fff" />
-      <circle cx={340} cy={415} r={3.5} fill="#fff" />
-
-      <g filter={`url(#${shadowId})`}>{children}</g>
-    </svg>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Transition summary UI
 // ---------------------------------------------------------------------------
 
@@ -382,6 +321,9 @@ interface Props {
   useGoalie: boolean;
   isLive: boolean;
   showPeriodStatusIndicator?: boolean;
+  drawMode?: boolean;
+  drawing?: UseFieldDrawingResult;
+  onStylusDetected?: () => void;
 }
 
 export function FieldView({
@@ -393,8 +335,12 @@ export function FieldView({
   useGoalie,
   isLive,
   showPeriodStatusIndicator = false,
+  drawMode = false,
+  drawing,
+  onStylusDetected,
 }: Props) {
   const { t } = useTranslation('game');
+  const fieldContainerRef = useRef<HTMLDivElement>(null);
   const maxRotationIndex = Math.max(rotations.length - 1, 0);
   const clampRotationIndex = (index: number) => Math.min(Math.max(index, 0), maxRotationIndex);
   const parentViewingIndex = clampRotationIndex(initialRotationIndex);
@@ -471,9 +417,15 @@ export function FieldView({
   const rotationWithinPeriod = displayedRotationOffset >= 0 ? displayedRotationOffset + 1 : 1;
   const totalInPeriod = displayedPeriodGroup?.rotations.length ?? 1;
 
+  const handleFieldPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'pen' && !drawMode && onStylusDetected) {
+      onStylusDetected();
+    }
+  };
+
   return (
     <div className="space-y-3">
-      {!isLive && (
+      {!isLive && !drawMode && (
         <div className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center">
           <button
             type="button"
@@ -551,65 +503,78 @@ export function FieldView({
         </div>
       )}
 
-      <div className="rounded-xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.12)] dark:shadow-none">
-        <HalfFieldSvg>
-          {preview ? (
-            <>
-              {preview.outgoingPlacements.map((placement) => (
-                <OutgoingMarker
-                  key={`out-${placement.player.id}`}
+      <div
+        ref={fieldContainerRef}
+        className="relative rounded-xl overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.12)] dark:shadow-none"
+        onPointerDown={handleFieldPointerDown}
+      >
+        <FieldPitchSvg ref={drawing?.svgRef} fullField={drawMode}>
+          <g opacity={drawMode ? 0.35 : 1} style={drawMode ? { pointerEvents: 'none' } : undefined}>
+            {preview ? (
+              <>
+                {preview.outgoingPlacements.map((placement) => (
+                  <OutgoingMarker
+                    key={`out-${placement.player.id}`}
+                    placement={placement}
+                    showPosition={false}
+                    displayName={preview.markerNameByPlayerId.get(placement.player.id as PlayerId)}
+                    markerScale={markerScale}
+                  />
+                ))}
+
+                {preview.placements
+                  .filter(
+                    (placement) =>
+                      !preview.transitionKindByPlayerId.has(placement.player.id as PlayerId),
+                  )
+                  .map((placement) => (
+                    <PlayerMarker
+                      key={placement.player.id}
+                      placement={placement}
+                      showPosition={false}
+                      displayName={preview.markerNameByPlayerId.get(
+                        placement.player.id as PlayerId,
+                      )}
+                      markerScale={markerScale}
+                    />
+                  ))}
+
+                {preview.placements
+                  .filter((placement) =>
+                    preview.transitionKindByPlayerId.has(placement.player.id as PlayerId),
+                  )
+                  .map((placement) => (
+                    <PlayerMarker
+                      key={placement.player.id}
+                      placement={placement}
+                      transitionKind={preview.transitionKindByPlayerId.get(
+                        placement.player.id as PlayerId,
+                      )}
+                      showPosition={false}
+                      displayName={preview.markerNameByPlayerId.get(
+                        placement.player.id as PlayerId,
+                      )}
+                      markerScale={markerScale}
+                    />
+                  ))}
+              </>
+            ) : (
+              placements.map((placement) => (
+                <PlayerMarker
+                  key={placement.player.id}
                   placement={placement}
-                  showPosition={false}
-                  displayName={preview.markerNameByPlayerId.get(placement.player.id as PlayerId)}
                   markerScale={markerScale}
                 />
-              ))}
-
-              {preview.placements
-                .filter(
-                  (placement) =>
-                    !preview.transitionKindByPlayerId.has(placement.player.id as PlayerId),
-                )
-                .map((placement) => (
-                  <PlayerMarker
-                    key={placement.player.id}
-                    placement={placement}
-                    showPosition={false}
-                    displayName={preview.markerNameByPlayerId.get(placement.player.id as PlayerId)}
-                    markerScale={markerScale}
-                  />
-                ))}
-
-              {preview.placements
-                .filter((placement) =>
-                  preview.transitionKindByPlayerId.has(placement.player.id as PlayerId),
-                )
-                .map((placement) => (
-                  <PlayerMarker
-                    key={placement.player.id}
-                    placement={placement}
-                    transitionKind={preview.transitionKindByPlayerId.get(
-                      placement.player.id as PlayerId,
-                    )}
-                    showPosition={false}
-                    displayName={preview.markerNameByPlayerId.get(placement.player.id as PlayerId)}
-                    markerScale={markerScale}
-                  />
-                ))}
-            </>
-          ) : (
-            placements.map((placement) => (
-              <PlayerMarker
-                key={placement.player.id}
-                placement={placement}
-                markerScale={markerScale}
-              />
-            ))
-          )}
-        </HalfFieldSvg>
+              ))
+            )}
+          </g>
+        </FieldPitchSvg>
+        {drawMode && drawing && (
+          <FieldDrawingCanvas drawing={drawing} containerRef={fieldContainerRef} />
+        )}
       </div>
 
-      {hasNext && (
+      {hasNext && !drawMode && (
         <div className="bg-card rounded-[10px] overflow-hidden border border-border/40 shadow-[0_1px_3px_rgba(0,0,0,0.08)] dark:shadow-none">
           <div className="flex items-center gap-3 px-4 py-2 min-h-11">
             <div className="flex-1 min-w-0">

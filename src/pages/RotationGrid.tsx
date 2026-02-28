@@ -7,11 +7,13 @@ import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
 import { cn } from '@/lib/utils.ts';
-import { CircleHelpIcon, EllipsisIcon, LayoutGridIcon } from 'lucide-react';
+import { CircleHelpIcon, EllipsisIcon, LayoutGridIcon, PenLineIcon } from 'lucide-react';
 import { cloneGame } from '@/utils/gameClone.ts';
 import { useRotationGame } from '@/hooks/useRotationGame.ts';
+import { useFieldDrawing } from '@/hooks/useFieldDrawing.ts';
 import { usePeriodTimer } from '@/hooks/usePeriodTimer.ts';
 import { usePeriodCollapse } from '@/hooks/usePeriodCollapse.ts';
+import { DrawingToolbar } from '@/components/game/DrawingToolbar.tsx';
 import { FieldView } from '@/components/game/FieldView.tsx';
 import { LiveBottomBar } from '@/components/game/LiveBottomBar.tsx';
 import { LiveFocusView } from '@/components/game/LiveFocusView.tsx';
@@ -47,6 +49,9 @@ export function RotationGrid() {
   const { t } = useTranslation('game');
   const { t: tCommon } = useTranslation('common');
   const g = useRotationGame(gameId);
+  const [drawMode, setDrawMode] = useState(false);
+  const drawing = useFieldDrawing();
+  const [drawToolForRender, setDrawToolForRender] = useState<'pen' | 'arrow'>('pen');
   const [periodActionPeriodIndex, setPeriodActionPeriodIndex] = useState<number | null>(null);
   const [renamingOpen, setRenamingOpen] = useState(false);
   const [editName, setEditName] = useState('');
@@ -177,6 +182,20 @@ export function RotationGrid() {
     if (!g.game || !editName.trim()) return;
     g.dispatch({ type: 'UPDATE_GAME', payload: { ...g.game, name: editName.trim() } });
     setRenamingOpen(false);
+  }
+
+  function handleEnterDrawMode() {
+    if (g.viewMode !== 'field') g.setViewMode('field');
+    setDrawMode(true);
+  }
+
+  function handleExitDrawMode() {
+    setDrawMode(false);
+    drawing.clear();
+  }
+
+  function handleStylusDetected() {
+    if (!drawMode) handleEnterDrawMode();
   }
 
   const setupMenuItemClass =
@@ -398,6 +417,7 @@ export function RotationGrid() {
               <Tabs
                 value={g.isLive ? g.viewMode : g.viewMode === 'field' ? 'field' : 'grid'}
                 onValueChange={(value) => {
+                  if (drawMode) return;
                   if (
                     (value === 'focus' || value === 'grid' || value === 'field') &&
                     value !== g.viewMode
@@ -514,6 +534,9 @@ export function RotationGrid() {
               isLive={g.isLive}
               periodGroups={g.periodGroups}
               showPeriodStatusIndicator={isSetupFieldView}
+              drawMode={drawMode}
+              drawing={drawing}
+              onStylusDetected={handleStylusDetected}
             />
           </div>
         )}
@@ -544,21 +567,57 @@ export function RotationGrid() {
           />
         )}
 
-        {/* Live bottom bar */}
-        {g.isLive && g.schedule && <div className="h-20" />}
-        {g.isLive && g.schedule && (
-          <LiveBottomBar
-            timer={timer}
-            onAdvance={g.handleAdvance}
-            onRetreat={g.handleRetreat}
-            isFirstRotation={g.currentRotationIndex === 0}
-            isLastRotation={g.isLastRotation}
-            isCrossingPeriod={g.isCrossingPeriod}
-            swapPlayerName={
-              g.swapSource ? (g.playerMap.get(g.swapSource.playerId)?.name ?? null) : null
-            }
-            onCancelSwap={() => g.setSwapSource(null)}
+        {/* Draw mode FAB — field view only, above bottom bar */}
+        {g.schedule && g.viewMode === 'field' && !drawMode && (
+          <button
+            type="button"
+            className={cn(
+              'fixed right-4 z-50 flex items-center justify-center size-11 rounded-full',
+              'bg-secondary text-foreground shadow-md',
+              'active:bg-secondary/80 transition-colors cursor-pointer',
+              g.isLive
+                ? 'bottom-[calc(49px+env(safe-area-inset-bottom)+68px)] lg:bottom-[68px]'
+                : 'bottom-[calc(49px+env(safe-area-inset-bottom)+16px)] lg:bottom-4',
+            )}
+            onClick={handleEnterDrawMode}
+            aria-label={t('field.draw')}
+          >
+            <PenLineIcon className="size-[18px]" />
+          </button>
+        )}
+
+        {/* Bottom bar spacer + bar */}
+        {((g.isLive && g.schedule) || (drawMode && g.viewMode === 'field')) && (
+          <div className="h-20" />
+        )}
+        {drawMode && g.viewMode === 'field' ? (
+          <DrawingToolbar
+            activeTool={drawToolForRender}
+            canUndo={drawing.canUndo}
+            onToolChange={(tool) => {
+              drawing.setActiveTool(tool);
+              setDrawToolForRender(tool);
+            }}
+            onUndo={drawing.undo}
+            onClear={drawing.clear}
+            onDone={handleExitDrawMode}
           />
+        ) : (
+          g.isLive &&
+          g.schedule && (
+            <LiveBottomBar
+              timer={timer}
+              onAdvance={g.handleAdvance}
+              onRetreat={g.handleRetreat}
+              isFirstRotation={g.currentRotationIndex === 0}
+              isLastRotation={g.isLastRotation}
+              isCrossingPeriod={g.isCrossingPeriod}
+              swapPlayerName={
+                g.swapSource ? (g.playerMap.get(g.swapSource.playerId)?.name ?? null) : null
+              }
+              onCancelSwap={() => g.setSwapSource(null)}
+            />
+          )
         )}
 
         {/* Swap scope dialog */}

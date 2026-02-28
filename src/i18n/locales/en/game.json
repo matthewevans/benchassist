@@ -160,7 +160,8 @@
     "no_outgoing_pair": "No outgoing pair",
     "no_incoming_pair": "No incoming pair",
     "position_only_changes": "No substitutions in or out; players only changed positions.",
-    "no_goalie": "No goalie assigned in R{{rotation}}."
+    "no_goalie": "No goalie assigned in R{{rotation}}.",
+    "draw": "Draw"
   },
   "swap": {
     "title": "Swap {{playerA}} and {{playerB}}",

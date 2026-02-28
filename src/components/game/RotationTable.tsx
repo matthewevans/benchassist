@@ -235,7 +235,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                       group.periodIndex > 0 && 'border-l border-border/55',
                     )}
                   >
-                    <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center">
+                    <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-2">
                       <div className="col-start-2">
                         {isLive ? (
                           <button
@@ -255,7 +255,7 @@ export const RotationTable = forwardRef<HTMLDivElement, RotationTableProps>(
                         )}
                       </div>
                       {showPeriodActions && (
-                        <div className="col-start-3 justify-self-end">
+                        <div className="col-start-3 justify-self-end pr-1">
                           <PeriodActionButton
                             periodIndex={group.periodIndex}
                             disabled={!canEditPeriodDivision(group.periodIndex)}
